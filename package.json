@@ -1,0 +1,16 @@
+{
+  "name": "ceasul-leului",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Cât pierd economiile în lei din cauza inflației și a deprecierii față de euro și dolar.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node serve.mjs --open",
+    "start": "node serve.mjs",
+    "build": "node build.mjs",
+    "test": "node --test"
+  }
+}

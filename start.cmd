@@ -1,4 +1,5 @@
 @echo off
+rem Porneste Ceasul leului local si deschide browserul cand serverul e gata.
 cd /d "%~dp0"
 where node >nul 2>nul
 if errorlevel 1 (
@@ -6,5 +7,5 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-start "" http://localhost:5173
-node serve.mjs
+node serve.mjs --open
+if errorlevel 1 pause

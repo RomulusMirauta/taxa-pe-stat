@@ -346,8 +346,9 @@ Nu este consultanță financiară.
 
 ## 9. Structura proiectului
 
-**Locație:** `C:\Users\R\Desktop\ClaudeZone\TaxaPeStat`
-**Artifact:** https://claude.ai/artifact/TjBbJYapbxWkrAHmyup8Cx
+**Site:** https://romulusmirauta.github.io/taxa-pe-stat/
+**Cod:** https://github.com/RomulusMirauta/taxa-pe-stat
+**Cum lucrăm (artifact, copia locală, sync):** [`docs/LUCRU.md`](docs/LUCRU.md)
 
 | Fișier / folder | Rol |
 |---|---|
@@ -361,8 +362,11 @@ Nu este consultanță financiară.
 | `data/rates.json` | Datele zilnice, actualizate de GitHub Actions. |
 | `.github/workflows/` | `publish.yml` (date zilnice + publicare pe GitHub Pages), `ci.yml` (teste la fiecare pull request). |
 | `LICENSE` | MIT. |
-| `vercel.json` | Configurare pentru Vercel, dacă îl folosim. |
 | `package.json` | Comenzi: `npm run dev`, `npm test`, `npm run build`. Fără dependențe. |
+| `CHANGELOG.md` | Versiunile, pe scurt; fiecare are un tag git. |
+| `docs/LUCRU.md` | Cum lucrăm: artifact-ul de pe claude.ai, copia locală, sincronizarea. |
+| `docs/screenshot.png` | Captura din README. |
+| `assets/og.png` | Imaginea de previzualizare când trimiți linkul (WhatsApp, Facebook etc.). |
 | `FINDINGS.md` | Registrul de probleme. Bug-urile găsite se trec aici. |
 | `BAZA.md` | Acest document. |
 | `README.md` | Cum rulezi, testezi, publici. |
@@ -408,17 +412,12 @@ De ce:
 - datele ajung ca fișier (`data/rates.json`), același pentru local, cloud și artifact.
 
 Pași, o singură dată:
-1. Creezi pe contul personal repo-ul public gol `taxa-pe-stat`. Claude pune codul și istoricul.
+1. Repo-ul public `RomulusMirauta/taxa-pe-stat`, cu tot istoricul.
 2. În repo: Settings → Pages → Source: **GitHub Actions**.
 3. Actions → Publicare → **Run workflow**, ca datele să vină imediat, nu abia la următoarea rulare programată.
-4. Adresa: `https://<utilizator>.github.io/taxa-pe-stat/`. Căile relative din build funcționează sub acest prefix.
+4. Adresa: https://romulusmirauta.github.io/taxa-pe-stat/. Căile relative din build funcționează sub acest prefix.
 
-**Vercel: pregătit, opțional.**
-- `vercel.json` e gata. Import repo pe vercel.com și restul se configurează singur.
-- Avantajul real: un **link de preview pentru fiecare pull request**, util pentru testare.
-- Planul gratuit (Hobby) e doar pentru uz necomercial.
-
-**Alternative:** Cloudflare Pages și Netlify merg cu aceeași comandă (`node build.mjs`, folder `dist`).
+**Nefolosite:** Vercel, Cloudflare Pages și Netlify ar merge cu aceeași comandă (`node build.mjs`, folderul `dist`), fără alt fișier de configurare. `vercel.json`, pregătit înainte de decizie, a fost scos (FINDINGS F-34).
 
 **De ce nu un API pe server (serverless):** artifact-ul nu poate citi alte site-uri, iar un API ar servi doar varianta din cloud. Un fișier de date merge peste tot.
 
@@ -430,8 +429,8 @@ Pași, o singură dată:
 - [x] `scripts/update-data.mjs`: curs BNR (rezervă BCE), inflație Eurostat, `data/rates.json`.
 - [x] Workflow `publish.yml`: date în zilele lucrătoare după ora 13, commit de la bot, publicare.
 - [x] `app.html` citește `data/rates.json`; altfel folosește valorile din pagină.
-- [ ] Repo-ul public pe contul personal, apoi GitHub Pages; prima rulare verifică BNR și BCE pe date reale (O-11, O-12).
-- [ ] Link spre codul sursă în subsolul paginii, după ce există repo-ul.
+- [x] Link spre codul sursă în subsolul paginii; `og:url`, `canonical`, imagine de previzualizare.
+- [ ] Push în `RomulusMirauta/taxa-pe-stat`, apoi GitHub Pages; prima rulare verifică BNR și BCE pe date reale (O-11, O-12).
 - [ ] Opțional: un grafic cu cursul EUR/RON din ultimele 12 luni (datele sunt deja în `fx.series`).
 - [ ] Opțional: CASS, spread valutar, inflație personală, comparația lei vs. euro (O-01…O-04).
 

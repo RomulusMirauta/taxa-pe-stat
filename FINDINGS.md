@@ -56,6 +56,9 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 | F-31 | Major | Setul Eurostat plănuit (`prc_hicp_manr`) a fost oprit | Reparat | `data.test` |
 | F-32 | Minor | Un commit al botului nu ar fi republicat site-ul | Reparat (arhitectură) | — |
 | F-33 | Info | Inflația automată e IAPC (Eurostat), nu IPC (INS) | Acceptat | — |
+| F-34 | Minor | `vercel.json` rămas după alegerea GitHub Pages | Reparat | — |
+| F-35 | Major | Commit-uri cu autor provizoriu; căi locale și linkuri provizorii în documente | Reparat | `build.test` |
+| F-36 | Minor | Linkul trimis prietenilor nu avea imagine de previzualizare; README fără captură | Reparat | `build.test` |
 
 ---
 
@@ -269,6 +272,33 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 ### F-33 · Info · Inflația automată e IAPC (Eurostat), nu IPC (INS)
 - **Problema:** INS nu oferă o sursă de date stabilă pentru automatizare. IAPC diferă puțin de IPC: în septembrie 2026, 6,5% vs. 6,61% total și 9,3% vs. 11,12% la servicii.
 - **Decizie:** IAPC. Sursa apare în pagină, iar BAZA §2 arată ambele valori.
+
+## Găsite înainte de publicarea pe GitHub
+
+### F-34 · Minor · `vercel.json` rămas după alegerea GitHub Pages
+- **Găsit de:** Romulus, la review-ul de dinainte de publicare.
+- **Problema:** fișierul fusese pregătit cât timp hostul nu era ales. După decizia pentru GitHub Pages era doar zgomot și sugera un host care nu e folosit.
+- **Fix:** șters, iar mențiunile din documente sunt actualizate.
+- **Consecință acceptată:** antetele de securitate din el (`frame-ancestors`, `nosniff`, `no-referrer`) nu se pot seta pe GitHub Pages. Rămâne CSP-ul din pagină, care acoperă scripturile, fonturile și conexiunile.
+
+### F-35 · Major · Autor provizoriu, căi locale și linkuri provizorii
+- **Problema:**
+  - toate commit-urile aveau o adresă provizorie, deci nu ar fi fost legate de contul GitHub;
+  - documentele conțineau calea locală (`C:\Users\…`) și `<utilizator>` în loc de adresa site-ului;
+  - pagina nu avea link spre cod.
+- **Fix:**
+  - autorul e contul personal, cu adresa „noreply” de la GitHub (emailul nu apare public);
+  - adresele sunt cele reale, iar calea locală e scoasă;
+  - pagina are link spre repo, `og:url` și `canonical`.
+- **Test:** `build.test` → „adresa publică vine din package.json”.
+
+### F-36 · Minor · Fără imagine de previzualizare la distribuire
+- **Problema:** WhatsApp, Facebook și Discord arată un card cu imagine pentru linkurile care au `og:image`. Fără ea, linkul trimis prietenilor apărea ca text simplu. Nici README-ul nu arăta cum arată aplicația.
+- **Fix:**
+  - `assets/og.png` (1200×630), cu `og:image`, `og:image:alt` și `twitter:card` în build, la adresa absolută din `package.json`;
+  - `docs/screenshot.png` în README.
+- **Atenție:** aplicațiile de mesagerie țin minte previzualizarea. Primul link trimis înainte de publicare poate rămâne fără imagine.
+- **Test:** `build.test` → „imaginea de previzualizare”.
 
 ---
 

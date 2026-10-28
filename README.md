@@ -10,6 +10,7 @@ Calculator pentru cât pierd economiile în lei din cauza inflației și a depre
 | `serve.mjs` | Server local fără dependențe (Node). Învelește `app.html` în scheletul artifact-ului și reîncarcă pagina când salvezi. |
 | `start.cmd` | Dublu-click pe Windows: pornește serverul și deschide browserul. |
 | `artifact.json` | Linkul artifact-ului publicat și ultima versiune. |
+| `BAZA.md` | Baza proiectului: date, cauze, formule, exemplu calculat, limite, pași următori. |
 
 ## Rulare locală
 

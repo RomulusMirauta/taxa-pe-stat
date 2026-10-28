@@ -1,0 +1,6 @@
+# Capete de linie consecvente, inclusiv pe Windows.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.woff2 binary
+*.png binary
+*.bundle binary

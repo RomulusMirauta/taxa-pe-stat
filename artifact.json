@@ -2,9 +2,9 @@
   "name": "Taxa pe stat",
   "source": "app.html",
   "artifactUrl": "https://claude.ai/artifact/TjBbJYapbxWkrAHmyup8Cx",
-  "lastPublishedVersion": 3,
+  "lastPublishedVersion": 4,
   "lastPublishedAt": "2026-10-29",
-  "note": "v3: Taxa pe stat, cu data/rates.json publicat lângă pagină",
+  "note": "v4: link spre codul sursă în subsol",
   "formerName": "Ceasul leului",
   "files": [
     "data/rates.json"

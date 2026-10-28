@@ -28,6 +28,8 @@ Pe lângă tabel, pagina mai are:
 
 Câmpurile acceptă numere scrise ca în română („6,61”, „50.000”) sau ca în engleză. Câmpurile greșite sunt marcate și explicate.
 
+Cursul și inflația se actualizează singure, în fiecare zi lucrătoare (§5.10).
+
 ---
 
 ## 2. Datele de pornire (valorile implicite)
@@ -64,10 +66,19 @@ Scăderea din vară e **efect de bază**: scumpirile din iulie–august 2025 (TV
 
 **Zona euro** (Eurostat): 3,8% în septembrie 2026, de la 3,2% în august, împinsă de energie și servicii.
 
+**Ce folosește aplicația (automat, din octombrie 2026): Eurostat, IAPC.** INS nu are o sursă de date stabilă pentru automatizare, așa că inflația vine de la Eurostat, din indicele armonizat (setul `prc_hicp_minr`). E foarte aproape de cel al INS (FINDINGS F-33):
+
+| Indicator (sept. 2026) | IPC, INS | IAPC, Eurostat (în aplicație) |
+|---|---|---|
+| Rata anuală | 6,61% | **6,5%** |
+| Servicii | 11,12% | **9,3%** |
+| Media pe 12 luni | 9,2% | **8,4%** |
+| Zona euro | — | **3,8%** |
+
 **Ce înseamnă pentru aplicație:**
-- rata implicită e cea anuală, 6,61%;
-- 9,2% e o medie care privește înapoi și nu e folosită ca rată pentru viitor (FINDINGS F-19);
-- butoanele de scenariu sunt: ultimele 12 luni (6,61%), doar servicii (11,12%) și prognoza BNR (3,4%).
+- rata implicită e cea anuală;
+- media pe 12 luni privește înapoi și nu e folosită ca rată pentru viitor (FINDINGS F-19);
+- butoanele de scenariu sunt: ultimele 12 luni, doar servicii și prognoza BNR (3,4%).
 
 ### Cursul BNR
 
@@ -244,6 +255,22 @@ Inflația din România include deja o parte din efectul cursului: produsele impo
 | „1.234,56” / „1,234.56” | 1234,56 | |
 | „50.000” / „50,000” / „50 000” | 50000 | la sume și comisioane |
 | „50.000” | 50 | la rate, punctul e zecimal |
+
+### 5.10 Datele automate
+
+Datele se actualizează pe serverele GitHub, fără calculatorul tău.
+
+1. **Când:** în zilele lucrătoare, la 13:30 și 17:30 ora României iarna (o oră mai târziu vara). BNR publică în jur de 13:00, iar a doua rulare e o plasă de siguranță.
+2. **Ce:** `scripts/update-data.mjs` aduce:
+   - **cursul:** XML-urile BNR (anul trecut, anul curent, ziua curentă), din care alege cursul de azi și pe cel de acum un an (ultima zi lucrătoare cel mult până la aceeași dată). Dacă BNR nu răspunde, folosește cursurile BCE;
+   - **inflația:** Eurostat, IAPC (`prc_hicp_minr`): România total, servicii, media pe 12 luni și zona euro.
+3. **Unde:** scrie `data/rates.json` doar dacă s-a schimbat ceva. Workflow-ul face commit ca `github-actions[bot]`, rulează testele, construiește și publică.
+4. **Când ceva cade:**
+   - o sursă indisponibilă → rămân valorile anterioare și apare un avertisment în Actions;
+   - niciun curs, nici măcar unul vechi → jobul eșuează, iar GitHub trimite email.
+5. **În pagină:** `app.html` citește `data/rates.json` de pe același domeniu și îl validează (`Calc.normalizeRates`). Ce nu trece validarea e ignorat și rămân valorile din pagină. Ce ai modificat deja în formular nu e suprascris.
+
+Testat în `tests/data.test.mjs`, cu rețeaua simulată: parsarea fiecărei surse, cursul de acum un an, trecerea pe BCE, păstrarea datelor vechi, eșecul.
 | „abc”, „”, „12.34.56” | invalid | câmpul e marcat; nu devine 0 |
 
 ---
@@ -304,7 +331,7 @@ Nu este consultanță financiară.
 
 ## 8. Limitele aplicației
 
-- **Datele se introduc manual sau vin cu aplicația.** Actualizarea automată e pasul următor (§11).
+- **Cursul și inflația sunt automate; prognoza BNR și dobânzile, nu.** Acestea două se actualizează manual, în `app.html`.
 - Inflația și ritmul leului sunt presupuse **constante** în proiecții.
 - Nu modelează:
   - CASS;
@@ -330,7 +357,10 @@ Nu este consultanță financiară.
 | `start.cmd` | Dublu-click pe Windows: pornește serverul și deschide browserul. |
 | `fonts/` | Fonturile, găzduite local (OFL). Folosite local și în cloud; artifact-ul folosește Google Fonts. |
 | `tests/` | Testele (`node:test`). Toate testele proiectului stau aici. |
-| `github-workflows/` | `ci.yml` (teste + build la fiecare push/PR), `pages.yml` (publicare pe GitHub Pages). Se mută în `.github/workflows/` înainte de primul push (vezi README). |
+| `scripts/update-data.mjs` | Aduce cursul (BNR, rezervă BCE) și inflația (Eurostat) și scrie `data/rates.json` (§5.10). |
+| `data/rates.json` | Datele zilnice, actualizate de GitHub Actions. |
+| `.github/workflows/` | `publish.yml` (date zilnice + publicare pe GitHub Pages), `ci.yml` (teste la fiecare pull request). |
+| `LICENSE` | MIT. |
 | `vercel.json` | Configurare pentru Vercel, dacă îl folosim. |
 | `package.json` | Comenzi: `npm run dev`, `npm test`, `npm run build`. Fără dependențe. |
 | `FINDINGS.md` | Registrul de probleme. Bug-urile găsite se trec aici. |
@@ -344,7 +374,7 @@ Nu este consultanță financiară.
 |---|---|---|
 | Fonturi | Google Fonts (singura sursă permisă acolo) | `fonts/`, găzduite local |
 | `<head>`, CSP | ale platformei | din `build.mjs` |
-| Date live | nu (cererile externe sunt blocate) | `data/rates.json` de pe același domeniu (pasul următor) |
+| Date zilnice | `data/rates.json` publicat lângă pagină la fiecare sync (nu se actualizează singur) | `data/rates.json` de pe același domeniu, actualizat zilnic |
 
 **Reguli pentru `app.html`** (impuse de artifact și verificate de `tests/page.test.mjs`):
 - fragment, fără `<!doctype>`, `<html>`, `<head>` sau `<body>`;
@@ -360,12 +390,15 @@ Nu este consultanță financiară.
 | Local → artifact | Modifici `app.html`, apoi îi spui lui Claude „sync TaxaPeStat”. Claude rulează testele, publică pe același link și actualizează `artifact.json`. |
 | Chat → local | Modificările făcute în chat sunt scrise în folder. |
 | Local → cloud | Push pe GitHub. Actions rulează testele, apoi build-ul, apoi publică. |
+| Date → cloud | Automat, în zilele lucrătoare (§5.10). Nimic de făcut. |
+
+**Istoric (git):** fiecare pas e un commit: prima versiune (Ceasul leului), proiectul local, BAZA, review-ul 1 (reparații, build, teste, docs), redenumirea, licența, datele automate. Commit-urile de date sunt ale lui `github-actions[bot]`.
 
 ---
 
-## 10. Hosting: propunerea
+## 10. Hosting
 
-**Recomandare: GitHub Pages pentru producție, cu GitHub Actions.**
+**Decis: GitHub Pages, pe contul personal, cu GitHub Actions.**
 
 De ce:
 - e gratuit și fără cont nou;
@@ -375,9 +408,10 @@ De ce:
 - datele ajung ca fișier (`data/rates.json`), același pentru local, cloud și artifact.
 
 Pași, o singură dată:
-1. Creezi repo-ul pe GitHub și faci push.
+1. Creezi pe contul personal repo-ul public gol `taxa-pe-stat`. Claude pune codul și istoricul.
 2. În repo: Settings → Pages → Source: **GitHub Actions**.
-3. Adresa va fi `https://<utilizator>.github.io/taxa-pe-stat/`. Căile relative din build funcționează sub acest prefix.
+3. Actions → Publicare → **Run workflow**, ca datele să vină imediat, nu abia la următoarea rulare programată.
+4. Adresa: `https://<utilizator>.github.io/taxa-pe-stat/`. Căile relative din build funcționează sub acest prefix.
 
 **Vercel: pregătit, opțional.**
 - `vercel.json` e gata. Import repo pe vercel.com și restul se configurează singur.
@@ -392,11 +426,13 @@ Pași, o singură dată:
 
 ## 11. Pași următori
 
-- [ ] Repo pe GitHub + alegerea licenței (O-07). Apoi GitHub Pages.
-- [ ] `scripts/update-data.mjs`: descarcă XML-ul zilnic de la BNR (și inflația INS / Eurostat) și scrie `data/rates.json`.
-- [ ] Workflow programat, zilnic după ora 13 (ora României), care rulează scriptul și face commit dacă datele s-au schimbat (O-08, O-09).
-- [ ] `app.html` citește `data/rates.json` dacă există; altfel folosește valorile din pagină.
-- [ ] Sync artifact: publicăm și `data/rates.json` lângă pagină.
+- [x] Licența: MIT.
+- [x] `scripts/update-data.mjs`: curs BNR (rezervă BCE), inflație Eurostat, `data/rates.json`.
+- [x] Workflow `publish.yml`: date în zilele lucrătoare după ora 13, commit de la bot, publicare.
+- [x] `app.html` citește `data/rates.json`; altfel folosește valorile din pagină.
+- [ ] Repo-ul public pe contul personal, apoi GitHub Pages; prima rulare verifică BNR și BCE pe date reale (O-11, O-12).
+- [ ] Link spre codul sursă în subsolul paginii, după ce există repo-ul.
+- [ ] Opțional: un grafic cu cursul EUR/RON din ultimele 12 luni (datele sunt deja în `fx.series`).
 - [ ] Opțional: CASS, spread valutar, inflație personală, comparația lei vs. euro (O-01…O-04).
 
 ---

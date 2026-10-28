@@ -4,6 +4,8 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 
 **Review 1:** 29 octombrie 2026, versiunea 0.1 (artifact v1) → reparat în 0.2 (artifact v2).
 
+**Implementarea datelor automate:** 29 octombrie 2026, F-31…F-33.
+
 **Severitate:**
 - **Major:** rezultat greșit, pagină inutilizabilă sau risc la publicare.
 - **Minor:** rezultat derutant sau caz-limită.
@@ -51,6 +53,9 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 | F-28 | Minor | `app.html` nu se putea publica pe un host | Reparat | `build.test` |
 | F-29 | Minor | Niciun test | Reparat | `tests/` |
 | F-30 | Minor | Fără CSP / antete de securitate | Reparat | `build.test` |
+| F-31 | Major | Setul Eurostat plănuit (`prc_hicp_manr`) a fost oprit | Reparat | `data.test` |
+| F-32 | Minor | Un commit al botului nu ar fi republicat site-ul | Reparat (arhitectură) | — |
+| F-33 | Info | Inflația automată e IAPC (Eurostat), nu IPC (INS) | Acceptat | — |
 
 ---
 
@@ -250,6 +255,21 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
   - `vercel.json` adaugă `frame-ancestors 'none'`, `nosniff`, `no-referrer`.
 - **Test:** `build.test` → „CSP: fiecare script inline are hash-ul lui”.
 
+## Găsite la implementarea datelor automate
+
+### F-31 · Major · Setul Eurostat plănuit a fost oprit
+- **Problema:** setul clasic `prc_hicp_manr` nu mai primește date din 2026; ultima lună e decembrie 2025. Eurostat a trecut la ECOICOP 2, în setul `prc_hicp_minr`, cu alte coduri: `TOTAL` în loc de `CP00`, dimensiunea `coicop18`.
+- **Fix:** scriptul folosește `prc_hicp_minr`, câte o serie pe cerere.
+- **Test:** `data.test` → „Eurostat: inflația”.
+
+### F-32 · Minor · Un commit al botului nu ar fi republicat site-ul
+- **Problema:** commit-urile făcute cu tokenul GitHub Actions nu pornesc alte workflow-uri. Cu un job separat pentru date, site-ul ar fi rămas cu datele vechi.
+- **Fix:** un singur workflow (`publish.yml`) aduce datele, face commit și publică.
+
+### F-33 · Info · Inflația automată e IAPC (Eurostat), nu IPC (INS)
+- **Problema:** INS nu oferă o sursă de date stabilă pentru automatizare. IAPC diferă puțin de IPC: în septembrie 2026, 6,5% vs. 6,61% total și 9,3% vs. 11,12% la servicii.
+- **Decizie:** IAPC. Sursa apare în pagină, iar BAZA §2 arată ambele valori.
+
 ---
 
 ## Deschise (nereparate, de decis)
@@ -262,7 +282,9 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 | O-04 | Comparație completă „lei vs euro” | Dobânzile la euro, inflația zonei euro și spread-ul decid dacă euro a fost mai bun. |
 | O-05 | Inflația și ritmul leului sunt presupuse constante | Proiecțiile pe 10 ani sunt ilustrative. |
 | O-06 | Depozitele plătesc dobânda la scadență | Sub un an, calculul folosește dobândă compusă; diferența e neglijabilă. |
-| O-07 | Licența pentru varianta open-source (de ex. MIT) | Decizia ta, înainte de repo-ul public. |
+| O-07 | ~~Licența pentru varianta open-source~~ | Rezolvat: MIT. |
 | O-08 | GitHub oprește workflow-urile programate după 60 de zile fără activitate în repo-urile publice | Contează pentru actualizarea zilnică a datelor. |
 | O-09 | BNR publică doar în zilele lucrătoare, în jur de 13:00 | În weekend, „cursul de azi” e cel din ultima zi lucrătoare; scriptul de date trebuie să știe asta. |
 | O-10 | `start.cmd` netestat pe Windows real | Serverul a fost testat pe Linux; scriptul `.cmd`, nu. |
+| O-11 | Rezerva BCE n-a fost încercată pe date reale | API-ul BCE nu e accesibil din mediul în care lucrează Claude; se verifică la prima rulare în GitHub Actions. |
+| O-12 | BNR poate refuza cererile automate de pe serverele GitHub | Dacă se întâmplă, scriptul trece pe BCE și lasă un avertisment; cursul BCE diferă foarte puțin de cel BNR. |

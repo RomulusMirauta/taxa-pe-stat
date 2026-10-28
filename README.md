@@ -1,12 +1,24 @@
 # Taxa pe stat
 
+Taxa pe care o plătești când banii stau: cât pierd leii tăi din cauza inflației și a leului care scade față de euro și dolar, pe zi, săptămână, lună și an.
+
 Fostul nume: *Ceasul leului* (redenumit pe 29 octombrie 2026).
 
-Cât pierd economiile în lei din cauza inflației și a deprecierii față de EUR și USD: pe zi, săptămână, lună și an.
+- **Site:** `https://<utilizator>.github.io/taxa-pe-stat/`, după prima publicare.
+- **Cum calculează și de unde vin datele:** [`BAZA.md`](BAZA.md)
+- **Probleme găsite și reparate:** [`FINDINGS.md`](FINDINGS.md)
 
-- **Pe web (implicit):** https://claude.ai/artifact/TjBbJYapbxWkrAHmyup8Cx
-- **Logica și datele:** [`BAZA.md`](BAZA.md)
-- **Probleme găsite:** [`FINDINGS.md`](FINDINGS.md)
+## Cum funcționează
+
+- **Pagina** e un singur fișier, `app.html`, fără framework și fără dependențe.
+- **Calculele** stau separat, în `<script id="calc">`, ca să poată fi testate.
+- **Datele se actualizează singure.** În fiecare zi lucrătoare, după ce BNR publică cursul, GitHub Actions rulează `scripts/update-data.mjs`:
+  - ia cursul BNR (rezervă: BCE) și inflația de la Eurostat;
+  - scrie `data/rates.json`;
+  - face commit ca `github-actions[bot]`;
+  - republică site-ul.
+- **Dacă o sursă cade,** rămân datele anterioare și apare un avertisment în Actions. Dacă nu există deloc un curs, jobul eșuează și GitHub trimite email.
+- **Pagina citește `data/rates.json`** de pe același domeniu și îl validează. Fără fișier, folosește valorile din `app.html`.
 
 ## Rulare locală
 
@@ -20,6 +32,7 @@ Ai nevoie de Node.js 20 sau mai nou. Nu există dependențe de instalat.
   npm start          # la fel, fără să deschidă browserul
   ```
 
+- **Datele de azi, local:** `node scripts/update-data.mjs` (are nevoie de internet).
 - **Alt port:**
   - PowerShell: `$env:PORT=8080; npm start`
   - cmd: `set PORT=8080 && npm start`
@@ -31,53 +44,66 @@ Ai nevoie de Node.js 20 sau mai nou. Nu există dependențe de instalat.
 npm test
 ```
 
-- Folosesc `node:test`, fără dependențe.
-- Stau toate în `tests/`:
+- Folosesc `node:test`, fără dependențe, și stau toate în `tests/`:
 
   | Fișier | Ce verifică |
   |---|---|
-  | `calc.test.mjs` | calculele (funcțiile din `<script id="calc">`) |
-  | `page.test.mjs` | regulile artifact-ului, legăturile cod ↔ pagină, temele light/dark |
-  | `build.test.mjs` | build-ul pentru cloud |
+  | `calc.test.mjs` | calculele |
+  | `data.test.mjs` | datele automate: parsarea BNR, BCE, Eurostat, cu rețea simulată, inclusiv când sursele cad |
+  | `page.test.mjs` | regulile paginii și temele light/dark |
+  | `build.test.mjs` | build-ul |
   | `serve.test.mjs` | serverul local |
 
-- Rulează și în GitHub Actions, la fiecare push și pull request.
+- Rulează în GitHub Actions înainte de fiecare publicare și la fiecare pull request.
+- Un bug găsit se trece în `FINDINGS.md`, cu un ID nou, și, unde se poate, primește un test.
 
-Un bug găsit se trece în `FINDINGS.md`, cu un ID nou, și, unde se poate, primește un test.
-
-## Build pentru cloud
+## Build și publicare
 
 ```
-npm run build      # → dist/index.html + dist/fonts/
+npm run build      # → dist/index.html + dist/fonts/ + dist/data/
 ```
 
-`app.html` e un fragment (formatul cerut de artifact). `build.mjs` îl învelește într-un document complet:
+`build.mjs` învelește `app.html` într-un document complet:
 - `<head>` cu `lang="ro"`, descriere și favicon;
-- fonturi locale în loc de Google Fonts;
+- fonturi găzduite local, fără cereri către Google;
 - CSP cu hash pentru fiecare script.
 
-## Publicare
+**GitHub Pages**, o singură dată:
+1. Settings → Pages → Source: **GitHub Actions**.
+2. Actions → **Publicare** → Run workflow, ca datele să vină imediat.
 
-| Unde | Cum |
-|---|---|
-| **GitHub Pages** (recomandat) | Push pe `main`. `.github/workflows/pages.yml` rulează testele, build-ul și publică. O singură dată: Settings → Pages → Source: GitHub Actions. |
+Apoi totul merge singur:
+- push pe `main` → teste → build → publicare;
+- în zilele lucrătoare → date noi → commit → publicare.
 
-> **Workflow-urile stau în `github-workflows/`.** Instrumentele lui Claude nu pot scrie în `.github/workflows/` pe calculatorul tău, din motive de siguranță. Înainte de primul push, mută-le acolo:
->
-> - PowerShell: `New-Item -ItemType Directory .github\workflows -Force; Move-Item github-workflows\*.yml .github\workflows\`
-> - cmd: `mkdir .github\workflows & move github-workflows\*.yml .github\workflows\`
-| **Vercel** (opțional, preview pe fiecare PR) | Import repo pe vercel.com; `vercel.json` face restul. |
-| **Cloudflare Pages / Netlify** | Comanda de build: `node build.mjs`; folderul: `dist`. |
+**Alternative:** `vercel.json` e pregătit pentru Vercel. Cloudflare Pages și Netlify merg cu comanda `node build.mjs` și folderul `dist`.
 
-## Sincronizare cu artifact-ul
+## Istoric
 
-- **Local → artifact:** modifici `app.html`, apoi îi spui lui Claude: **„sync TaxaPeStat”**. Claude rulează testele, publică pe același link și actualizează `artifact.json`.
-- **Chat → local:** modificările făcute în chat sunt scrise în folder.
+Fiecare pas e un commit, așa că `git log` spune povestea proiectului:
+- prima versiune (*Ceasul leului*);
+- review-ul cu problemele din `FINDINGS.md` și reparațiile lor;
+- redenumirea;
+- datele automate.
+
+Commit-urile zilnice de date sunt ale lui `github-actions[bot]`.
+
+## Artifact și copia locală
+
+- **Artifact (privat, pe claude.ai):** https://claude.ai/artifact/TjBbJYapbxWkrAHmyup8Cx. Pentru actualizare, îi spui lui Claude **„sync TaxaPeStat”**: rulează testele și publică `app.html` și `data/rates.json` pe același link.
+- **Copia din `ClaudeZone\TaxaPeStat`** e o oglindă scrisă de Claude:
+  - nu conține `.github/`, pentru că Claude nu are voie să scrie acolo pe calculatorul tău;
+  - până există repo-ul pe GitHub, istoricul complet e în `taxa-pe-stat.bundle` (`git clone taxa-pe-stat.bundle`);
+  - după aceea, clonează repo-ul.
 
 ## Reguli pentru `app.html`
 
 Verificate de `tests/page.test.mjs`:
-- fragment: fără `<!doctype>`, `<html>`, `<head>`, `<body>`;
-- fără `fetch` către alte site-uri (în artifact sunt blocate); datele live vin ca fișier `data/rates.json`, de pe același domeniu;
+- fragment: fără `<!doctype>`, `<html>`, `<head>`, `<body>` (formatul artifact-ului);
+- fără cereri către alte site-uri; datele vin din `data/rates.json`, de pe același domeniu;
 - culorile doar ca tokeni, cu tema light și dark;
-- calculele stau în `<script id="calc">`, fără DOM, ca să poată fi testate.
+- calculele stau în `<script id="calc">`, fără DOM.
+
+## Licență
+
+[MIT](LICENSE)

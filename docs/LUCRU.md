@@ -12,6 +12,8 @@ Proiectul e construit cu ajutorul lui Claude (Anthropic), ca asistent:
 
 Commit-urile făcute de Claude au linia `Co-Authored-By: Claude`.
 
+Instrucțiunile pentru Claude Code (sesiuni locale, de exemplu din VS Code) sunt în [`CLAUDE.md`](../CLAUDE.md). Claude Code îl citește automat la pornire: proiectul pe scurt, unde am rămas, regulile de lucru.
+
 **Convenții:**
 - toate testele stau în `tests/`;
 - orice bug găsit se trece în [`FINDINGS.md`](../FINDINGS.md), cu un ID nou care nu se refolosește, și, unde se poate, primește un test.

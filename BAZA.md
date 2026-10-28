@@ -365,6 +365,7 @@ Nu este consultanță financiară.
 | `package.json` | Comenzi: `npm run dev`, `npm test`, `npm run build`. Fără dependențe. |
 | `CHANGELOG.md` | Versiunile, pe scurt; fiecare are un tag git. |
 | `docs/LUCRU.md` | Cum lucrăm: artifact-ul de pe claude.ai, copia locală, sincronizarea. |
+| `CLAUDE.md` | Instrucțiunile pentru Claude Code: unde am rămas și regulile de lucru. |
 | `docs/screenshot.png` | Captura din README. |
 | `assets/og.png` | Imaginea de previzualizare când trimiți linkul (WhatsApp, Facebook etc.). |
 | `FINDINGS.md` | Registrul de probleme. Bug-urile găsite se trec aici. |

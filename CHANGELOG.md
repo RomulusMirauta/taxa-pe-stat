@@ -15,6 +15,7 @@ Versiunile proiectului, pe scurt. Detaliile problemelor sunt în [`FINDINGS.md`]
 - **Publicare pe GitHub Pages:** `.github/workflows/publish.yml` aduce datele în zilele lucrătoare, face commit ca `github-actions[bot]` și publică (F-32).
 - **Pentru distribuire:** link spre cod în pagină, `og:url`, `canonical` și o imagine de previzualizare pentru linkuri (F-35, F-36).
 - **Documente:** licența MIT, `CHANGELOG.md`, `docs/LUCRU.md`, `.gitattributes`.
+- **`CLAUDE.md`:** instrucțiunile pentru Claude Code (unde am rămas, reguli de lucru).
 - **Teste:** `tests/data.test.mjs`, cu rețeaua simulată; 120+ teste în total.
 
 ### Scos

@@ -17,7 +17,7 @@ describe('serverul local', () => {
     assert.equal(r.status, 200);
     assert.match(r.headers.get('content-type'), /text\/html/);
     const t = await r.text();
-    assert.match(t, /<title>Ceasul leului<\/title>/);
+    assert.match(t, /<title>Taxa pe stat<\/title>/);
     assert.match(t, /\/__v/);
   });
   test('/__v întoarce versiunea lui app.html', async () => {

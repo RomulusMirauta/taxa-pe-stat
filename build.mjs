@@ -37,7 +37,7 @@ export function inlineScriptHashes(html) {
 
 /** Învelește fragmentul app.html într-un document complet. `reloadScript` e folosit doar de serverul local. */
 export function wrap(app, { reloadScript = '' } = {}) {
-  const title = (app.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? 'Ceasul leului').trim();
+  const title = (app.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? 'Taxa pe stat').trim();
   let body = app
     .replace(/<title>[\s\S]*?<\/title>\s*/, '')
     .replace(/<meta name="claude:[^"]*"[^>]*>\s*/g, '')

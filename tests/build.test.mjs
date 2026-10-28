@@ -11,7 +11,7 @@ describe('build pentru cloud', () => {
   let out;
   let page;
   before(async () => {
-    out = await mkdtemp(join(tmpdir(), 'ceasul-leului-'));
+    out = await mkdtemp(join(tmpdir(), 'taxa-pe-stat-'));
     await build(out);
     page = await readFile(join(out, 'index.html'), 'utf8');
   });
@@ -19,14 +19,14 @@ describe('build pentru cloud', () => {
 
   test('document complet, în română, cu un singur <title> în <head>', () => {
     assert.match(page, /^<!doctype html>\n<html lang="ro">/);
-    assert.match(page, /<head>[\s\S]*<title>Ceasul leului<\/title>[\s\S]*<\/head>/);
+    assert.match(page, /<head>[\s\S]*<title>Taxa pe stat<\/title>[\s\S]*<\/head>/);
     assert.equal(page.match(/<title>/g).length, 1);
   });
   test('fără Google Fonts: fonturile sunt servite local', () => {
     assert.doesNotMatch(page, /fonts\.googleapis\.com|fonts\.gstatic\.com/);
     assert.match(page, /<link rel="stylesheet" href="fonts\/fonts\.css">/);
   });
-  test('căi relative (merge și pe GitHub Pages, sub /CeasulLeului/)', () => {
+  test('căi relative (merge și pe GitHub Pages, sub /taxa-pe-stat/)', () => {
     assert.doesNotMatch(page, /(?:href|src)="\/(?!\/)/);
   });
   test('fără meta-ul claude: (e doar pentru artifact)', () => assert.doesNotMatch(page, /name="claude:/));

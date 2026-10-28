@@ -1,5 +1,5 @@
 @echo off
-rem Porneste Ceasul leului local si deschide browserul cand serverul e gata.
+rem Porneste Taxa pe stat local si deschide browserul cand serverul e gata.
 cd /d "%~dp0"
 where node >nul 2>nul
 if errorlevel 1 (

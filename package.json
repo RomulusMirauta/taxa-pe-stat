@@ -1,8 +1,8 @@
 {
-  "name": "ceasul-leului",
+  "name": "taxa-pe-stat",
   "version": "0.2.0",
   "private": true,
-  "description": "Cât pierd economiile în lei din cauza inflației și a deprecierii față de euro și dolar.",
+  "description": "Taxa pe stat: cât pierd banii ținuți în lei din cauza inflației și a deprecierii față de euro și dolar.",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -12,5 +12,6 @@
     "start": "node serve.mjs",
     "build": "node build.mjs",
     "test": "node --test"
-  }
+  },
+  "license": "MIT"
 }

@@ -88,7 +88,7 @@ if (isMain) {
     .then((server) => {
       const { port, address } = server.address();
       const url = `http://localhost:${port}`;
-      console.log(`Ceasul leului rulează pe ${url}  (Ctrl+C ca să oprești)`);
+      console.log(`Taxa pe stat rulează pe ${url}  (Ctrl+C ca să oprești)`);
       if (address === '0.0.0.0' || address === '::') {
         for (const list of Object.values(networkInterfaces())) {
           for (const n of list ?? []) if (n.family === 'IPv4' && !n.internal) console.log(`  din rețeaua de acasă: http://${n.address}:${port}`);

@@ -1,4 +1,4 @@
-# FINDINGS: Ceasul leului
+# FINDINGS: Taxa pe stat (fost Ceasul leului)
 
 Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; ID-urile nu se refolosesc.
 
@@ -232,7 +232,7 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 
 ### F-28 · Minor · `app.html` nu se putea publica pe un host
 - **Problema:** `app.html` e un fragment, în formatul cerut de artifact.
-- **Fix:** `build.mjs` produce `dist/index.html` complet, cu `lang="ro"`, descriere, favicon și căi relative (merge și sub `/CeasulLeului/` pe GitHub Pages).
+- **Fix:** `build.mjs` produce `dist/index.html` complet, cu `lang="ro"`, descriere, favicon și căi relative (merge și sub `/taxa-pe-stat/` pe GitHub Pages).
 - **Test:** `build.test`.
 
 ### F-29 · Minor · Niciun test

@@ -1,4 +1,6 @@
-# Ceasul leului
+# Taxa pe stat
+
+Fostul nume: *Ceasul leului* (redenumit pe 29 octombrie 2026).
 
 Cât pierd economiile în lei din cauza inflației și a deprecierii față de EUR și USD: pe zi, săptămână, lună și an.
 
@@ -69,7 +71,7 @@ npm run build      # → dist/index.html + dist/fonts/
 
 ## Sincronizare cu artifact-ul
 
-- **Local → artifact:** modifici `app.html`, apoi îi spui lui Claude: **„sync CeasulLeului”**. Claude rulează testele, publică pe același link și actualizează `artifact.json`.
+- **Local → artifact:** modifici `app.html`, apoi îi spui lui Claude: **„sync TaxaPeStat”**. Claude rulează testele, publică pe același link și actualizează `artifact.json`.
 - **Chat → local:** modificările făcute în chat sunt scrise în folder.
 
 ## Reguli pentru `app.html`

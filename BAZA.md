@@ -1,4 +1,6 @@
-# Ceasul leului: baza proiectului
+# Taxa pe stat: baza proiectului
+
+Fostul nume: *Ceasul leului* (redenumit pe 29 octombrie 2026).
 
 Documentul de referință: de ce există aplicația, pe ce date se bazează, ce calculează și cum. Problemele găsite sunt în [`FINDINGS.md`](FINDINGS.md).
 
@@ -317,7 +319,7 @@ Nu este consultanță financiară.
 
 ## 9. Structura proiectului
 
-**Locație:** `C:\Users\R\Desktop\ClaudeZone\CeasulLeului`
+**Locație:** `C:\Users\R\Desktop\ClaudeZone\TaxaPeStat`
 **Artifact:** https://claude.ai/artifact/TjBbJYapbxWkrAHmyup8Cx
 
 | Fișier / folder | Rol |
@@ -355,7 +357,7 @@ Nu este consultanță financiară.
 
 | Direcție | Cum |
 |---|---|
-| Local → artifact | Modifici `app.html`, apoi îi spui lui Claude „sync CeasulLeului”. Claude rulează testele, publică pe același link și actualizează `artifact.json`. |
+| Local → artifact | Modifici `app.html`, apoi îi spui lui Claude „sync TaxaPeStat”. Claude rulează testele, publică pe același link și actualizează `artifact.json`. |
 | Chat → local | Modificările făcute în chat sunt scrise în folder. |
 | Local → cloud | Push pe GitHub. Actions rulează testele, apoi build-ul, apoi publică. |
 
@@ -375,7 +377,7 @@ De ce:
 Pași, o singură dată:
 1. Creezi repo-ul pe GitHub și faci push.
 2. În repo: Settings → Pages → Source: **GitHub Actions**.
-3. Adresa va fi `https://<utilizator>.github.io/CeasulLeului/`. Căile relative din build funcționează sub acest prefix.
+3. Adresa va fi `https://<utilizator>.github.io/taxa-pe-stat/`. Căile relative din build funcționează sub acest prefix.
 
 **Vercel: pregătit, opțional.**
 - `vercel.json` e gata. Import repo pe vercel.com și restul se configurează singur.

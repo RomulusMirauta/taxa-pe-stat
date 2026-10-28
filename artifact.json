@@ -2,6 +2,7 @@
   "name": "Ceasul leului",
   "source": "app.html",
   "artifactUrl": "https://claude.ai/artifact/TjBbJYapbxWkrAHmyup8Cx",
-  "lastPublishedVersion": 1,
-  "lastPublishedAt": "2026-10-28"
+  "lastPublishedVersion": 2,
+  "lastPublishedAt": "2026-10-29",
+  "note": "v2: reparațiile din FINDINGS.md (F-01…F-30)"
 }

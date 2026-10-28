@@ -1,9 +1,7 @@
-# Rulează testele și build-ul la fiecare push și pull request.
+# Testele și build-ul pentru fiecare pull request (publicarea are workflow-ul ei: publish.yml).
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
 
 permissions:

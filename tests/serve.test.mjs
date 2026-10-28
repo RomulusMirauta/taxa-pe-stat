@@ -31,7 +31,13 @@ describe('serverul local', () => {
     assert.match(r.headers.get('content-type'), /text\/css/);
     await r.arrayBuffer();
   });
-  for (const p of ['/package.json', '/app.html', '/build.mjs', '/fonts/../package.json', '/fonts/..%2f..%2fpackage.json',
+  test('servește datele zilnice', async () => {
+    const r = await fetch(base + '/data/rates.json');
+    assert.equal(r.status, 200);
+    assert.match(r.headers.get('content-type'), /application\/json/);
+    assert.ok((await r.json()).fx);
+  });
+  for (const p of ['/package.json', '/scripts/update-data.mjs', '/app.html', '/build.mjs', '/fonts/../package.json', '/fonts/..%2f..%2fpackage.json',
     '/fonts/%2e%2e/%2e%2e/package.json', '/fonts/', '/nimic']) {
     test(`refuză ${p}`, async () => {
       const r = await fetch(base + p);

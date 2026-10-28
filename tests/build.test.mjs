@@ -43,6 +43,10 @@ describe('build pentru cloud', () => {
     assert.match(csp, /connect-src 'self'/);
     assert.match(csp, /font-src 'self'/);
   });
+  test('datele zilnice sunt copiate lângă pagină', async () => {
+    const data = JSON.parse(await readFile(join(out, 'data', 'rates.json'), 'utf8'));
+    assert.ok(data.fx && data.inflation);
+  });
   test('fonts.css și toate fișierele lui sunt copiate', async () => {
     const css = await readFile(join(out, 'fonts', 'fonts.css'), 'utf8');
     const files = [...css.matchAll(/url\(\.\/([^)]+)\)/g)].map((m) => m[1]);

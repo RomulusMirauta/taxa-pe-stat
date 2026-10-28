@@ -38,6 +38,7 @@ h1{font-size:clamp(28px,5vw,44px);line-height:1.05;font-weight:700}
 h2{font-size:20px;font-weight:700}
 .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
 .lede{color:var(--muted);max-width:62ch;margin:8px 0 0}
+.lede strong{color:var(--ink);font-weight:600}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .fresh{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13.5px;color:var(--muted);margin:12px 0 0;padding:0;list-style:none}
 .badge{display:inline-block;font-size:12.5px;border-radius:999px;padding:0 9px;margin-left:4px;background:var(--warn-soft);color:var(--warn);font-weight:600}
@@ -95,9 +96,9 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Taxa pe stat</div>
-    <h1>Cât pierd leii tăi, zi de zi</h1>
-    <p class="lede">Taxa pe care o plătești când banii stau: inflația și leul care pierde teren față de euro și dolar. Introdu suma și vezi cât te costă pe zi, săptămână, lună și an.</p>
+    <div class="eyebrow">Calculator · lei · RON</div>
+    <h1>Taxa pe stat</h1>
+    <p class="lede"><strong>Cât pierd leii tăi, zi de zi.</strong> Taxa pe care o plătești când banii stau: inflația și leul care pierde teren față de euro și dolar. Introdu suma și vezi cât te costă pe zi, săptămână, lună și an.</p>
     <ul class="fresh" id="fresh" aria-label="Cât de noi sunt datele"></ul>
   </header>
 
@@ -314,12 +315,37 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * pow;
   }
 
+  /* Validează data/rates.json înainte să fie folosit în pagină. Întoarce doar ce e valid, sau null. */
+  function normalizeRates(j) {
+    if (!j || typeof j !== 'object') return null;
+    var out = {};
+    var label = function (v) { return typeof v === 'string' ? v.slice(0, 40) : ''; };
+    var month = function (v) { return typeof v === 'string' && /^\d{4}-\d{2}$/.test(v) && Number.isFinite(parseISODate(v + '-01')); };
+    var pctOk = function (v) { return typeof v === 'number' && v > -50 && v < 500; };
+    var f = j.fx;
+    if (f && daysBetween(f.d0, f.d1) > 0 &&
+        [f.eur0, f.eur1, f.usd0, f.usd1].every(function (v) { return typeof v === 'number' && v > 0 && v < 1000; })) {
+      out.fx = { source: label(f.source) || 'BNR', d0: f.d0, d1: f.d1, eur0: f.eur0, eur1: f.eur1, usd0: f.usd0, usd1: f.usd1 };
+    }
+    var i = j.inflation;
+    if (i && month(i.month) && pctOk(i.yoy)) {
+      out.inflation = { source: label(i.source) || 'Eurostat (IAPC)', month: i.month, yoy: i.yoy };
+      if (pctOk(i.services)) out.inflation.services = i.services;
+      if (pctOk(i.avg12)) out.inflation.avg12 = i.avg12;
+      if (pctOk(i.euroArea)) {
+        out.inflation.euroArea = i.euroArea;
+        out.inflation.euroAreaMonth = month(i.euroAreaMonth) ? i.euroAreaMonth : i.month;
+      }
+    }
+    return out.fx || out.inflation ? out : null;
+  }
+
   root.Calc = Object.freeze({
     YEAR_DAYS: YEAR_DAYS, PERIODS: PERIODS, parseNum: parseNum, parseISODate: parseISODate,
     daysBetween: daysBetween, fxTrend: fxTrend, netRate: netRate, growth: growth,
     nominalBalance: nominalBalance, realLoss: realLoss, fxLoss: fxLoss, realValue: realValue,
     lossRatePerYear: lossRatePerYear, breakEvenRate: breakEvenRate, extraNeeded: extraNeeded,
-    niceStep: niceStep
+    niceStep: niceStep, normalizeRates: normalizeRates
   });
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -329,15 +355,19 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   'use strict';
   var C = window.Calc;
 
-  /* Datele implicite. Pasul următor: încărcate din data/rates.json, actualizat zilnic. */
+  /* Valorile din pagină. Sunt folosite până se încarcă data/rates.json (actualizat zilnic de GitHub Actions)
+     sau când fișierul lipsește. Prognoza BNR și dobânzile se actualizează manual. */
   var DATA = {
     sum: 50000,
-    inflation: { month: '2026-09', published: '2026-10-13', yoy: 6.61, services: 11.12, avg12: 9.2, bnrDec2027: 3.4, euroArea: 3.8 },
-    fx: { d0: '2025-10-28', eur0: 5.0844, usd0: 4.3591, d1: '2026-10-28', eur1: 5.3495, usd1: 4.8088 },
+    live: false,
+    inflation: { source: 'Eurostat (IAPC)', month: '2026-09', yoy: 6.5, services: 9.3, avg12: 8.4, euroArea: 3.8, euroAreaMonth: '2026-09' },
+    forecast: { bnrDec2027: 3.4 },
+    fx: { source: 'BNR', d0: '2025-10-28', eur0: 5.0844, usd0: 4.3591, d1: '2026-10-28', eur1: 5.3495, usd1: 4.8088 },
     savings: { asOf: '2026-10', deposit12: 5.5, tezaur1y: 6.5, tax: 10 }
   };
 
   var $ = function (id) { return document.getElementById(id); };
+  function esc(v) { return String(v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   /* ---------- formatare (română) ---------- */
   var NF = {};
@@ -467,8 +497,11 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     } else {
       t = 'Bani ținuți fără dobândă (cash, cont curent).';
     }
-    t += ' Rândurile EUR și USD sunt în valuta respectivă și presupun că ritmul leului din intervalul ales continuă. Nici euro nu e ferit de inflație: în zona euro a fost ' +
-         short(DATA.inflation.euroArea) + '% în ' + fmtMonth(DATA.inflation.month) + '.';
+    t += ' Rândurile EUR și USD sunt în valuta respectivă și presupun că ritmul leului din intervalul ales continuă.';
+    if (DATA.inflation.euroArea !== undefined) {
+      t += ' Nici euro nu e ferit de inflație: în zona euro a fost ' + short(DATA.inflation.euroArea) + '% în ' +
+           fmtMonth(DATA.inflation.euroAreaMonth || DATA.inflation.month) + '.';
+    }
     $('modeHint').textContent = t;
   }
 
@@ -547,12 +580,13 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   function renderFresh(s) {
     var items = [];
     var fxAge = s.d1 ? daysSince(s.d1) : NaN;
-    items.push('<li>Curs BNR: ' + (s.d1 ? fmtDate(s.d1) : '—') +
+    items.push('<li>Curs: ' + esc(DATA.fx.source) + ', ' + (s.d1 ? fmtDate(s.d1) : '—') +
       (fxAge > 7 ? '<span class="badge">de acum ' + daysWord(fxAge) + '</span>' : '') + '</li>');
-    var infAge = daysSince(DATA.inflation.published);
-    items.push('<li>Inflație: INS, ' + fmtMonth(DATA.inflation.month) +
-      (infAge > 35 ? '<span class="badge">a apărut probabil o lună nouă</span>' : '') + '</li>');
+    var infAge = daysSince(DATA.inflation.month + '-01');
+    items.push('<li>Inflație: ' + esc(DATA.inflation.source) + ', ' + fmtMonth(DATA.inflation.month) +
+      (infAge > 75 ? '<span class="badge">a apărut probabil o lună nouă</span>' : '') + '</li>');
     items.push('<li>Dobânzi: orientative, ' + fmtMonth(DATA.savings.asOf) + '</li>');
+    if (DATA.live) items.push('<li>Curs și inflație actualizate automat</li>');
     $('fresh').innerHTML = items.join('');
 
     var fxHint = $('fxHint');
@@ -611,25 +645,40 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   }
 
   /* ---------- pornire ---------- */
-  function setup() {
-    var I = DATA.inflation, F = DATA.fx, Sv = DATA.savings;
-    $('thead').innerHTML = '<th scope="col">Cauza</th>' + C.PERIODS.map(function (q) { return '<th scope="col">' + q.label + '</th>'; }).join('');
+  var edited = false;
 
-    $('inflChips').innerHTML = [
-      [I.yoy, 'Ultimele 12 luni · ' + short(I.yoy) + '%'],
-      [I.services, 'Doar servicii · ' + short(I.services) + '%'],
-      [I.bnrDec2027, 'Prognoza BNR, dec. 2027 · ' + short(I.bnrDec2027) + '%']
-    ].map(function (c) { return '<button type="button" class="chip" data-infl="' + c[0] + '" aria-pressed="false">' + c[1] + '</button>'; }).join('');
-    $('inflHint').textContent = 'Rata anuală compară prețurile din ' + fmtMonth(I.month) + ' cu aceeași lună de anul trecut (INS). Media pe 12 luni, ' +
-      short(I.avg12) + '%, include scumpirile din vara lui 2025 (TVA, energie) și exagerează ritmul de acum.';
+  /* Textele care depind de date: butoanele de scenariu, explicațiile, sursele. */
+  function renderStatic() {
+    var I = DATA.inflation, F = DATA.fx, Sv = DATA.savings;
+    var chips = [[I.yoy, 'Ultimele 12 luni · ' + short(I.yoy) + '%']];
+    if (I.services !== undefined) chips.push([I.services, 'Doar servicii · ' + short(I.services) + '%']);
+    chips.push([DATA.forecast.bnrDec2027, 'Prognoza BNR, dec. 2027 · ' + short(DATA.forecast.bnrDec2027) + '%']);
+    $('inflChips').innerHTML = chips.map(function (c) {
+      return '<button type="button" class="chip" data-infl="' + c[0] + '" aria-pressed="false">' + c[1] + '</button>';
+    }).join('');
+    var hint = 'Rata anuală, după ' + I.source + ', compară prețurile din ' + fmtMonth(I.month) + ' cu aceeași lună de anul trecut.';
+    if (I.avg12 !== undefined && I.avg12 - I.yoy > 1) {
+      hint += ' Media pe 12 luni, ' + short(I.avg12) + '%, e mai mare pentru că include scumpiri mai vechi; pentru viitor, rata anuală e un reper mai bun.';
+    }
+    $('inflHint').textContent = hint;
 
     $('rateChips').innerHTML = [
       [0, Sv.tax, 'Cont curent · 0%'],
       [Sv.deposit12, Sv.tax, 'Depozit 12 luni, bănci mari · ~' + short(Sv.deposit12) + '%'],
       [Sv.tezaur1y, 0, 'Tezaur 1 an · ' + short(Sv.tezaur1y) + '%, fără impozit']
-    ].map(function (c) { return '<button type="button" class="chip" data-rate="' + c[0] + '" data-tax="' + c[1] + '" aria-pressed="false">' + c[2] + '</button>'; }).join('');
+    ].map(function (c) {
+      return '<button type="button" class="chip" data-rate="' + c[0] + '" data-tax="' + c[1] + '" aria-pressed="false">' + c[2] + '</button>';
+    }).join('');
     $('rateHint').textContent = 'Dobânzi orientative. Impozitul de 10% se reține automat; peste un prag anual de venituri din investiții se poate adăuga CASS, pe care calculul nu îl include.';
 
+    $('foot').textContent = 'Surse: curs ' + F.source + ' (de referință, ' + fmtDate(F.d0) + ' și ' + fmtDate(F.d1) + '); inflație ' + I.source +
+      ' (' + fmtMonth(I.month) + '), inclusiv zona euro; prognoza BNR din raportul asupra inflației, august 2026; dobânzi orientative din ' + fmtMonth(Sv.asOf) + '. ' +
+      'Pierderile pe cauze nu se adună: inflația din România include deja o parte din efectul cursului. Inflația și ritmul leului sunt presupuse constante. ' +
+      'Nu este consultanță financiară. Ce introduci rămâne în browserul tău.';
+  }
+
+  function fillInputs() {
+    var I = DATA.inflation, F = DATA.fx, Sv = DATA.savings;
     $('sum').value = short(DATA.sum);
     $('infl').value = short(I.yoy);
     $('rate').value = '0';
@@ -641,15 +690,14 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     $('eur1').value = RATE4.format(F.eur1);
     $('usd0').value = RATE4.format(F.usd0);
     $('usd1').value = RATE4.format(F.usd1);
+  }
 
-    $('foot').textContent = 'Surse: INS (comunicatul din ' + fmtDate(I.published) + ', inflația pe ' + fmtMonth(I.month) + '), BNR (cursurile de referință din ' +
-      fmtDate(F.d0) + ' și ' + fmtDate(F.d1) + ', prognoza din raportul asupra inflației, august 2026), Eurostat (zona euro). ' +
-      'Pierderile pe cauze nu se adună: inflația din România include deja o parte din efectul cursului. Inflația și ritmul leului sunt presupuse constante. ' +
-      'Nu este consultanță financiară. Ce introduci rămâne în browserul tău.';
-
+  function setup() {
+    $('thead').innerHTML = '<th scope="col">Cauza</th>' + C.PERIODS.map(function (q) { return '<th scope="col">' + q.label + '</th>'; }).join('');
     document.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('.chip');
       if (!b) return;
+      edited = true;
       if (b.dataset.infl !== undefined) {
         $('infl').value = short(Number(b.dataset.infl));
       } else if (b.dataset.rate !== undefined) {
@@ -662,7 +710,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     });
     $('mRaw').addEventListener('click', function () { setMode('raw'); });
     $('mNet').addEventListener('click', function () { setMode('net'); });
-    $('f').addEventListener('input', render);
+    $('f').addEventListener('input', function () { edited = true; render(); });
     $('f').addEventListener('submit', function (e) { e.preventDefault(); });
     var pending = false;
     window.addEventListener('resize', function () {
@@ -678,8 +726,30 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     render();
   }
 
+  /* Datele zilnice, de pe același domeniu (GitHub Pages, serverul local, artifact-ul dacă fișierul e publicat lângă pagină).
+     Dacă lipsesc sau nu trec validarea, rămân valorile din pagină. Nu suprascrie ce ai modificat deja. */
+  function loadData() {
+    if (!window.fetch) return;
+    fetch('data/rates.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        var d = C.normalizeRates(j);
+        if (!d) return;
+        if (d.fx) DATA.fx = d.fx;
+        if (d.inflation) DATA.inflation = d.inflation;
+        DATA.live = true;
+        renderStatic();
+        if (!edited) fillInputs();
+        render();
+      })
+      .catch(function () { /* fără date: rămân valorile din pagină */ });
+  }
+
   setup();
+  renderStatic();
+  fillInputs();
   render();
   loop();
+  loadData();
 })();
 </script>

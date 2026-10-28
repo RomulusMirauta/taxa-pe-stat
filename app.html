@@ -1,0 +1,286 @@
+<title>Ceasul leului</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one column header + ticker, then inputs | results split that stacks on phones */
+:root{
+  --bg:#f3f4f8; --surface:#ffffff; --ink:#1b2036; --muted:#5d6380; --line:#dfe2ec;
+  --accent:#3d3fa0; --accent-soft:#e7e7f7;
+  --loss:#b8322a; --loss-soft:#fbe9e7; --gain:#1f7a4d; --gain-soft:#e4f3ea;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Source Sans 3",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12141f; --surface:#1a1d2c; --ink:#e8e9f2; --muted:#9a9fbb; --line:#2c3047;
+  --accent:#9c9ef0; --accent-soft:#25274a;
+  --loss:#f07a6e; --loss-soft:#3a1f22; --gain:#5fcf94; --gain-soft:#173326; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12141f; --surface:#1a1d2c; --ink:#e8e9f2; --muted:#9a9fbb; --line:#2c3047;
+  --accent:#9c9ef0; --accent-soft:#25274a;
+  --loss:#f07a6e; --loss-soft:#3a1f22; --gain:#5fcf94; --gain-soft:#173326; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:28px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(28px,5vw,44px);line-height:1.05;font-weight:700}
+h2{font-size:20px;font-weight:700}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.lede{color:var(--muted);max-width:62ch;margin:8px 0 0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.ticker{background:var(--ink);color:var(--bg);border-radius:14px;padding:22px 24px;display:grid;gap:6px}
+.ticker .big{font-family:var(--mono);font-size:clamp(30px,6.5vw,56px);font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;color:#ff9b8f}
+.ticker small{opacity:.75;font-size:14px}
+
+.grid{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:18px;min-width:0}
+fieldset{border:0;padding:0;margin:0;display:grid;gap:10px;min-width:0}
+legend{font-family:var(--display);font-weight:700;font-size:16px;margin-bottom:6px;padding:0}
+label{display:grid;gap:4px;font-size:14px;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input{font:inherit;font-family:var(--mono);font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;background:var(--accent-soft);color:var(--accent);border:1px solid transparent;border-radius:999px;padding:4px 10px;cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--bg)}
+.toggle button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--muted);padding:6px 14px;border-radius:999px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.head{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
+
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:10px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+thead th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td .sub{display:block;font-size:12px;color:var(--muted);font-family:var(--body)}
+.loss{color:var(--loss)} .gain{color:var(--gain)}
+tr.total td{font-weight:600;border-bottom:0}
+.pill{display:inline-block;font-size:12px;font-family:var(--body);border-radius:999px;padding:1px 8px;margin-left:6px}
+.pill.loss{background:var(--loss-soft)} .pill.gain{background:var(--gain-soft)}
+
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.fact{border-top:2px solid var(--line);padding-top:8px}
+.fact b{display:block;font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums}
+.fact span{font-size:13px;color:var(--muted)}
+
+svg text{fill:var(--muted);font-family:var(--mono);font-size:11px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+footer{font-size:13px;color:var(--muted);max-width:75ch}
+footer a{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Calculator · lei · RON</div>
+    <h1>Cât pierd leii tăi, zi de zi</h1>
+    <p class="lede">Introdu suma ținută în lei și unde stă. Calculul arată cât pierzi din puterea de cumpărare (inflație) și cât pierzi măsurat în euro și dolari (deprecierea leului), pe zi, săptămână, lună și an.</p>
+  </header>
+
+  <section class="ticker" aria-live="off">
+    <small>De când ai deschis pagina, inflația a mâncat din <span id="tkSum" class="num"></span>:</small>
+    <div class="big" id="tk">0,0000 lei</div>
+    <small id="tkNote"></small>
+  </section>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <fieldset>
+        <legend>Banii tăi</legend>
+        <label for="sum">Suma în lei
+          <input id="sum" type="number" min="0" step="100" value="50000"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Inflația</legend>
+        <label for="infl">Rata anuală (%)
+          <input id="infl" type="number" step="0.01" value="6.61"></label>
+        <div class="chips">
+          <button type="button" class="chip" data-infl="6.61">IPC sept. 2026 · 6,61%</button>
+          <button type="button" class="chip" data-infl="9.2">Media 12 luni · 9,2%</button>
+          <button type="button" class="chip" data-infl="11.12">Servicii · 11,12%</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Unde stau banii</legend>
+        <div class="row2">
+          <label for="rate">Dobândă brută (%/an)
+            <input id="rate" type="number" step="0.01" value="0"></label>
+          <label for="tax">Impozit dobândă (%)
+            <input id="tax" type="number" step="1" value="10"></label>
+        </div>
+        <label for="fees">Comisioane bancare (lei/an)
+          <input id="fees" type="number" step="1" value="0"></label>
+        <div class="chips">
+          <button type="button" class="chip" data-r="0" data-t="10">Cont curent · 0%</button>
+          <button type="button" class="chip" data-r="5.25" data-t="10">Depozit 12 luni · ~5,25%</button>
+          <button type="button" class="chip" data-r="7" data-t="0">Tezaur / Fidelis · ~7%, neimpozabil</button>
+        </div>
+        <p class="hint">Dobânzile sunt orientative. Pune dobânda exactă a produsului tău.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Cursul BNR (lei pentru 1 unitate)</legend>
+        <div class="row2">
+          <label for="d0">Data de referință
+            <input id="d0" type="date" value="2026-01-05"></label>
+          <label for="d1">Data curentă
+            <input id="d1" type="date" value="2026-10-21"></label>
+          <label for="eur0">EUR atunci
+            <input id="eur0" type="number" step="0.0001" value="5.0905"></label>
+          <label for="eur1">EUR acum
+            <input id="eur1" type="number" step="0.0001" value="5.3297"></label>
+          <label for="usd0">USD atunci
+            <input id="usd0" type="number" step="0.0001" value="4.3557"></label>
+          <label for="usd1">USD acum
+            <input id="usd1" type="number" step="0.0001" value="4.7489"></label>
+        </div>
+        <p class="hint">Ritmul de depreciere dintre cele două date e extrapolat la zi, săptămână, lună și an. Ia cursul zilei de pe bnr.ro și actualizează câmpurile.</p>
+      </fieldset>
+    </form>
+
+    <div style="display:grid;gap:24px;min-width:0">
+      <section class="panel">
+        <div class="head">
+          <h2>Pierderea, pe perioade</h2>
+          <div class="toggle" role="group" aria-label="Mod de calcul">
+            <button type="button" id="mRaw" aria-pressed="false">Fără dobândă</button>
+            <button type="button" id="mNet" aria-pressed="true">După dobânda netă</button>
+          </div>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Cauza</th><th>Zi</th><th>Săptămână</th><th>Lună</th><th>An</th></tr></thead>
+            <tbody id="tb"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="modeHint"></p>
+      </section>
+
+      <section class="panel">
+        <h2>Ce s-a întâmplat deja</h2>
+        <div class="facts" id="facts"></div>
+      </section>
+
+      <section class="panel">
+        <div class="head"><h2>Puterea de cumpărare în 10 ani</h2>
+          <div class="legend"><span><i style="background:var(--loss)"></i>Fără dobândă</span><span><i style="background:var(--accent)"></i>Cu dobânda netă</span></div>
+        </div>
+        <div style="overflow-x:auto"><svg id="ch" viewBox="0 0 640 260" width="100%" role="img" aria-label="Valoarea reală a sumei în următorii 10 ani"></svg></div>
+        <p class="hint" id="chHint"></p>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    Date implicite: inflația anuală IPC 6,61% (sept. 2026), media pe 12 luni 9,2%, servicii +11,12% (INS, comunicat 13 oct. 2026). Cursuri BNR: 5 ian. 2026 (EUR 5,0905 / USD 4,3557) și 21 oct. 2026 (EUR 5,3297 / USD 4,7489). Pierderea față de euro și dolar contează doar dacă cheltuielile sau planurile tale sunt legate de valută (vacanțe, rate în euro, produse importate). Pierderile pe cauze nu se adună: inflația din România include deja o parte din efectul cursului. Nu este consultanță financiară.
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = (v, d=2) => new Intl.NumberFormat('ro-RO',{minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
+const pct = v => fmt(v*100,2)+'%';
+let mode = 'net';
+const P = [['Zi',1],['Săptămână',7],['Lună',365/12],['An',365]];
+
+function val(id){const v=parseFloat($(id).value);return isFinite(v)?v:0}
+function state(){
+  const S=Math.max(0,val('sum')), pi=val('infl')/100, gross=val('rate')/100, tax=val('tax')/100, fees=Math.max(0,val('fees'));
+  const iNet=gross*(1-tax);
+  const t0=new Date($('d0').value), t1=new Date($('d1').value);
+  const days=Math.max(1,Math.round((t1-t0)/864e5));
+  const fx=(a,b)=>{ if(!(a>0&&b>0)) return null; const kept=a/b; return {kept, lost:1-kept, annual:1-Math.pow(kept,365/days), nowRate:b}; };
+  return {S,pi,iNet,fees,days,eur:fx(val('eur0'),val('eur1')),usd:fx(val('usd0'),val('usd1'))};
+}
+
+function rowHTML(label,sub,vals,unit){
+  return `<tr><td>${label}<span class="sub">${sub}</span></td>${vals.map(v=>{
+    const cls=v>0.0005?'loss':(v<-0.0005?'gain':'');
+    return `<td class="num ${cls}">${v<0?'+':'−'}${fmt(Math.abs(v))} ${unit}</td>`}).join('')}</tr>`;
+}
+
+function render(){
+  const s=state(), net=mode==='net';
+  const g = net ? (1+s.iNet) : 1;           // growth of nominal lei per year
+  const feeY = net ? s.fees : 0;
+  let html='';
+  // inflation: loss of purchasing power in today's lei
+  const infl = P.map(([,n])=>{const y=n/365; return s.S*(1-Math.pow(g/(1+s.pi),y)) + feeY*y;});
+  html+=rowHTML('Inflație', `putere de cumpărare, ${pct(s.pi)}/an`, infl,'lei');
+  for(const [k,cur,sym] of [['eur','EUR','€'],['usd','USD','$']]){
+    const fx=s[k]; if(!fx) continue;
+    const v=P.map(([,n])=>{const y=n/365; const factor=Math.pow(1-fx.annual,y)*Math.pow(g,y); return (s.S*(1-factor)+feeY*y)/fx.nowRate;});
+    html+=rowHTML(`Față de ${cur}`, `leul pierde ~${pct(fx.annual)}/an în ${cur}`, v, sym);
+  }
+  $('tb').innerHTML=html;
+  $('modeHint').textContent = net
+    ? `Cu dobânda netă de ${pct(s.iNet)} pe an${s.fees?` și ${fmt(s.fees,0)} lei comisioane`:''}. Valorile verzi cu + înseamnă că dobânda acoperă pierderea.`
+    : 'Bani ținuți fără dobândă (cash sau cont curent). Pierderea în euro și dolari e exprimată în valuta respectivă.';
+
+  // facts already realized
+  let f='';
+  for(const [k,cur,sym] of [['eur','EUR','€'],['usd','USD','$']]){
+    const fx=s[k]; if(!fx) continue;
+    const before=s.S/val(k+'0'), after=s.S/fx.nowRate;
+    f+=`<div class="fact"><b class="loss">−${fmt(before-after)} ${sym}</b><span>${fmt(s.S,0)} lei valorau ${fmt(before)} ${sym}, acum ${fmt(after)} ${sym} (−${pct(fx.lost)} în ${s.days} zile)</span></div>`;
+  }
+  const realYr=s.S*(1-1/(1+s.pi));
+  f+=`<div class="fact"><b class="loss">−${fmt(realYr)} lei</b><span>putere de cumpărare pierdută într-un an la inflație de ${pct(s.pi)}, fără dobândă</span></div>`;
+  const taxR=Math.min(0.99,Math.max(0,val('tax')/100));
+  f+=`<div class="fact"><b>${pct(s.pi/(1-taxR))}</b><span>dobânda brută de care ai nevoie ca să ții pasul cu inflația (impozit ${fmt(val('tax'),0)}%)</span></div>`;
+  $('facts').innerHTML=f;
+
+  chart(s);
+  $('tkSum').textContent=fmt(s.S,0)+' lei';
+  perSec = s.S*Math.log(1+s.pi)/31536000;
+  $('tkNote').textContent=`≈ ${fmt(perSec*3600,4)} lei pe oră · ${fmt(perSec*86400,2)} lei pe zi, la ${pct(s.pi)} inflație și fără dobândă`;
+}
+
+function chart(s){
+  const W=640,H=260,L=64,R=16,T=14,B=30, yrs=10;
+  const raw=[],netv=[];
+  for(let t=0;t<=yrs;t++){raw.push(s.S/Math.pow(1+s.pi,t)); netv.push(Math.max(0,s.S*Math.pow((1+s.iNet)/(1+s.pi),t)-s.fees*t));}
+  const maxV=Math.max(...raw,...netv,1);
+  const niceStep = (()=>{const r=maxV/4, p=Math.pow(10,Math.floor(Math.log10(r))); const m=r/p; return (m<=1?1:m<=2?2:m<=5?5:10)*p;})();
+  const top=Math.ceil(maxV/niceStep)*niceStep;
+  const x=t=>L+(W-L-R)*t/yrs, y=v=>T+(H-T-B)*(1-v/top);
+  let g='';
+  for(let v=0;v<=top+1e-9;v+=niceStep){g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${fmt(v,0)}</text>`;}
+  for(let t=0;t<=yrs;t+=2) g+=`<text x="${x(t)}" y="${H-10}" text-anchor="middle">${t===0?'azi':'+'+t+' ani'}</text>`;
+  const path=a=>a.map((v,t)=>`${t?'L':'M'}${x(t).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const area=`${path(raw)}L${x(yrs)},${y(0)}L${x(0)},${y(0)}Z`;
+  g+=`<path d="${area}" fill="var(--loss-soft)" stroke="none"/>`;
+  g+=`<path d="${path(raw)}" fill="none" stroke="var(--loss)" stroke-width="2.5"/>`;
+  g+=`<path d="${path(netv)}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="${s.iNet?0:'5 4'}"/>`;
+  g+=`<circle cx="${x(yrs)}" cy="${y(raw[yrs])}" r="4" fill="var(--loss)"/><circle cx="${x(yrs)}" cy="${y(netv[yrs])}" r="4" fill="var(--accent)"/>`;
+  $('ch').innerHTML=g;
+  $('chHint').textContent=`În lei de azi: peste 10 ani, ${fmt(s.S,0)} lei ținuți fără dobândă cumpără cât ${fmt(raw[yrs],0)} lei azi; cu dobânda netă de ${pct(s.iNet)}, cât ${fmt(netv[yrs],0)} lei. Presupune inflație constantă de ${pct(s.pi)}.`;
+}
+
+// ticker
+let perSec=0, start=performance.now(), lastShown='';
+function tick(){
+  const lost=perSec*(performance.now()-start)/1000;
+  const txt=fmt(lost,4)+' lei';
+  if(txt!==lastShown){$('tk').textContent=txt;lastShown=txt;}
+  setTimeout(tick, 100);
+}
+
+document.querySelectorAll('[data-infl]').forEach(b=>b.addEventListener('click',()=>{$('infl').value=b.dataset.infl;render();}));
+document.querySelectorAll('[data-r]').forEach(b=>b.addEventListener('click',()=>{$('rate').value=b.dataset.r;$('tax').value=b.dataset.t;mode='net';sync();render();}));
+function sync(){$('mRaw').setAttribute('aria-pressed',mode==='raw');$('mNet').setAttribute('aria-pressed',mode==='net');}
+$('mRaw').onclick=()=>{mode='raw';sync();render();};
+$('mNet').onclick=()=>{mode='net';sync();render();};
+$('f').addEventListener('input',render);
+$('f').addEventListener('submit',e=>e.preventDefault());
+render(); tick();
+</script>

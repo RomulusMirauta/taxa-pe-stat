@@ -5,7 +5,7 @@ import { readFile, mkdtemp, rm, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { build } from '../build.mjs';
+import { build, SITE_URL } from '../build.mjs';
 
 describe('build pentru cloud', () => {
   let out;
@@ -28,6 +28,16 @@ describe('build pentru cloud', () => {
   });
   test('căi relative (merge și pe GitHub Pages, sub /taxa-pe-stat/)', () => {
     assert.doesNotMatch(page, /(?:href|src)="\/(?!\/)/);
+  });
+  test('adresa publică vine din package.json: og:url și canonical', () => {
+    assert.equal(SITE_URL, 'https://romulusmirauta.github.io/taxa-pe-stat/');
+    assert.match(page, new RegExp(`<meta property="og:url" content="${SITE_URL}">`));
+    assert.match(page, new RegExp(`<link rel="canonical" href="${SITE_URL}">`));
+  });
+  test('imaginea de previzualizare: adresă absolută, copiată în build', async () => {
+    assert.match(page, new RegExp(`<meta property="og:image" content="${SITE_URL}assets/og.png">`));
+    assert.match(page, /<meta name="twitter:card" content="summary_large_image">/);
+    await access(join(out, 'assets', 'og.png'));
   });
   test('fără meta-ul claude: (e doar pentru artifact)', () => assert.doesNotMatch(page, /name="claude:/));
   test('CSP: fiecare script inline are hash-ul lui, fără unsafe-inline la scripturi', () => {

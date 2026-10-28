@@ -6,6 +6,7 @@
 // Rulare: node build.mjs   (sau npm run build)
 
 import { readFile, writeFile, mkdir, cp, rm, access } from 'node:fs/promises';
+import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -14,7 +15,11 @@ export const ROOT = dirname(fileURLToPath(import.meta.url));
 export const APP = join(ROOT, 'app.html');
 export const DIST = join(ROOT, 'dist');
 // Singurele foldere servite și copiate în build, pe lângă pagină.
-export const STATIC_DIRS = ['fonts', 'data'];
+export const STATIC_DIRS = ['fonts', 'data', 'assets'];
+
+// Adresa publică vine din package.json (homepage); de ea depind og:url, canonical și imaginea de previzualizare.
+export const SITE_URL = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).homepage;
+const OG_IMAGE = 'assets/og.png';
 
 const DESCRIPTION = 'Cât pierd economiile în lei din cauza inflației și a deprecierii față de euro și dolar, pe zi, săptămână, lună și an.';
 
@@ -69,6 +74,13 @@ export function wrap(app, { reloadScript = '' } = {}) {
 <meta property="og:locale" content="ro_RO">
 <meta property="og:title" content="${attr(title)}">
 <meta property="og:description" content="${attr(DESCRIPTION)}">
+<meta property="og:url" content="${attr(SITE_URL)}">
+<link rel="canonical" href="${attr(SITE_URL)}">${existsSync(join(ROOT, OG_IMAGE)) ? `
+<meta property="og:image" content="${attr(SITE_URL + OG_IMAGE)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${attr(title + ': cât pierd leii tăi, zi de zi')}">
+<meta name="twitter:card" content="summary_large_image">` : ''}
 <meta name="theme-color" content="#f3f4f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#12141f" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="${FAVICON}">

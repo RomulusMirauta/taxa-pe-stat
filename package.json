@@ -1,8 +1,18 @@
 {
   "name": "taxa-pe-stat",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Taxa pe stat: cât pierd banii ținuți în lei din cauza inflației și a deprecierii față de euro și dolar.",
+  "homepage": "https://romulusmirauta.github.io/taxa-pe-stat/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RomulusMirauta/taxa-pe-stat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RomulusMirauta/taxa-pe-stat/issues"
+  },
+  "author": "Romulus Mirăuță (https://github.com/RomulusMirauta)",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -12,6 +22,5 @@
     "start": "node serve.mjs",
     "build": "node build.mjs",
     "test": "node --test"
-  },
-  "license": "MIT"
+  }
 }

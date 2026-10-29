@@ -17,10 +17,8 @@ on:
     - cron: '30 15 * * 1-5'   # a doua încercare, dacă prima a întârziat sau a picat
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+# Fiecare job primește doar ce-i trebuie (F-44).
+permissions: {}
 
 concurrency:
   group: publicare
@@ -29,8 +27,15 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # commit-ul cu datele
+      pages: read       # configure-pages citește setările Pages
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Vârful lui main la pornirea jobului, nu commit-ul care a pornit rularea: o rulare care a stat
+          # la coadă după una de date ar republica altfel datele de dinainte (F-43).
+          ref: ${{ github.ref }}
       - uses: actions/setup-node@v6
         with:
           node-version: 24
@@ -52,17 +57,20 @@ jobs:
           git push
       - run: npm test
       - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write      # deploy-pages publică site-ul
+      id-token: write   # tokenul OIDC cerut de deploy-pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

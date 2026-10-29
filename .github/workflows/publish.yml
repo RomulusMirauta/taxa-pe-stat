@@ -42,6 +42,10 @@ jobs:
       - name: Fetch new data (BNR, Eurostat)
         if: github.event_name != 'push'
         run: node scripts/update-data.mjs
+      # The new data must pass the tests before it is committed: a commit that breaks them would block every later deploy (F-52).
+      - name: Test the new data before committing it
+        if: github.event_name != 'push'
+        run: npm test
       - name: Commit the data
         if: github.event_name != 'push'
         run: |
@@ -74,3 +78,20 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # After publishing: fails, so GitHub emails the owner, when the data has stopped updating,
+  # without ever blocking the deploy (scripts/check-fresh.mjs, F-42, F-54).
+  check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Check that the data is still being updated
+        run: node scripts/check-fresh.mjs

@@ -22,12 +22,29 @@ test('the tip of main is published, not the commit that triggered the run (F-43)
 
 test('data is fetched only on scheduled or manual runs; tests pass before publishing', () => {
   const build = job('build');
-  assert.equal(build.match(/if: github\.event_name != 'push'/g)?.length, 2, 'the data steps do not run on push');
+  assert.equal(build.match(/if: github\.event_name != 'push'/g)?.length, 3, 'the data steps do not run on push');
   const at = (s) => build.indexOf(s);
   assert.ok(at('node scripts/update-data.mjs') > 0);
   assert.ok(at('node scripts/update-data.mjs') < at('run: npm test'));
   assert.ok(at('run: npm test') < at('run: npm run build'));
   assert.ok(at('run: npm run build') < at('actions/upload-pages-artifact'));
+});
+
+test('the new data passes the tests before the bot commits it (F-52)', () => {
+  const build = job('build');
+  const gate = build.indexOf('- name: Test the new data before committing it');
+  assert.ok(gate > build.indexOf('node scripts/update-data.mjs'));
+  assert.ok(gate < build.indexOf('- name: Commit the data'));
+  assert.match(build.slice(gate), /^\s+if: github\.event_name != 'push'\n\s+run: npm test\n/m);
+  assert.ok(build.lastIndexOf('run: npm test') > build.indexOf('git push'), 'the tree after git pull --rebase is tested too');
+});
+
+test('after the deploy, a separate job checks that the data is still updating (F-54)', () => {
+  const check = job('check');
+  assert.match(check, /^ {4}needs: deploy$/m, 'it never blocks publishing');
+  assert.deepEqual(permissions(check), { contents: 'read' });
+  assert.match(check, /ref: \$\{\{ github\.ref \}\}/, 'it reads the data the bot has just committed');
+  assert.match(check, /run: node scripts\/check-fresh\.mjs\n/);
 });
 
 test('the Pages actions are on their Node 24 versions (O-13)', () => {

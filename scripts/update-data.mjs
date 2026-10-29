@@ -6,11 +6,13 @@
 //     the yearly files only when the history is missing or has gaps; fallback: the ECB (its data API);
 //   - inflation: Eurostat, HICP (dataset prc_hicp_minr): Romania total and services, the 12-month average, the euro area.
 // If a source does not answer, keeps the previous values and leaves a warning.
-// Fails (exit code 1), so that GitHub sends you an email, if there is no exchange rate at all or it is over 7 days old.
+// Fails (exit code 1), so that GitHub sends you an email, if there is no exchange rate at all or if the page would
+// reject the result. Stale data is reported after publishing, by scripts/check-fresh.mjs.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+import vm from 'node:vm';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = join(ROOT, 'data', 'rates.json');
@@ -155,16 +157,26 @@ export function parseEurostat(json) {
 
 /** The inflation section of rates.json. Missing fields are filled in from the previous data only if it is from the same month. */
 export function buildInflation({ ro, services, avg12, euroArea }, prev) {
-  if (!ro) return prev ?? null;
+  // A month older than the one already published means a partial or stale answer: the previous data stays (F-51).
+  if (!ro || (prev?.month && ro.month < prev.month)) return prev ?? null;
   const sameMonth = (x) => x && x.month === ro.month;
   const out = { source: 'Eurostat (IAPC)', month: ro.month, yoy: ro.value };
   if (sameMonth(services)) out.services = services.value;
   else if (prev?.month === ro.month && prev.services !== undefined) out.services = prev.services;
   if (sameMonth(avg12)) out.avg12 = avg12.value;
   else if (prev?.month === ro.month && prev.avg12 !== undefined) out.avg12 = prev.avg12;
-  if (euroArea) { out.euroArea = euroArea.value; out.euroAreaMonth = euroArea.month; }
+  if (euroArea && !(prev?.euroAreaMonth && euroArea.month < prev.euroAreaMonth)) { out.euroArea = euroArea.value; out.euroAreaMonth = euroArea.month; }
   else if (prev?.euroArea !== undefined) { out.euroArea = prev.euroArea; out.euroAreaMonth = prev.euroAreaMonth; }
   return out;
+}
+
+/** The page's own validator (Calc.normalizeRates, from app.html's <script id="calc">), run in a sandbox. */
+export async function pageValidator(appHtml = join(ROOT, 'app.html')) {
+  const code = (await readFile(appHtml, 'utf8')).match(/<script id="calc">([\s\S]*?)<\/script>/)?.[1];
+  if (!code) throw new Error('app.html has no <script id="calc"> block');
+  const ctx = vm.createContext({});
+  vm.runInContext(code, ctx);
+  return (data) => ctx.Calc.normalizeRates(JSON.parse(JSON.stringify(data)));
 }
 
 /* ---------- network ---------- */
@@ -173,12 +185,18 @@ const inActions = !!process.env.GITHUB_ACTIONS;
 const warn = (msg) => console.log(inActions ? `::warning::${msg}` : `Warning: ${msg}`);
 const error = (msg) => console.log(inActions ? `::error::${msg}` : `Error: ${msg}`);
 
+// fetch says only "fetch failed" (while connecting) or "terminated" (while reading the body); the reason is in e.cause.
+// The code (ECONNRESET, ENOTFOUND, ERR_SSL_…) comes first: an AggregateError has an empty message, TLS errors span lines (F-49).
+const why = (e) => (e?.name === 'TimeoutError' ? 'no answer within 30 s'
+  : String(e?.cause?.code || e?.cause?.message || e?.message).replace(/\s+/g, ' ').trim());
+
 async function get(url) {
-  const res = await fetch(url, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(30000) });
+  const fail = (e) => { throw new Error(`${why(e)} for ${url}`, { cause: e }); };
+  const res = await fetch(url, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(30000) }).catch(fail);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   // BNR sends the requests it does not serve to its home page; without this check, we would parse that page's HTML (F-40).
   if (res.redirected) throw new Error(`redirected to ${res.url} from ${url}`);
-  return res.text();
+  return res.text().catch(fail);
 }
 
 async function fxFromBnr(today, prevFx) {
@@ -188,7 +206,9 @@ async function fxFromBnr(today, prevFx) {
 
   // The saved BNR history is enough if the last 10 days connect to it: BNR asks for no redundant downloads (O-14).
   const saved = prevFx?.source === 'BNR' && Array.isArray(prevFx.series)
-    ? prevFx.series.filter((r) => Array.isArray(r) && r[1] > 0 && r[2] > 0).map(([date, EUR, USD]) => ({ date, EUR, USD }))
+    ? prevFx.series
+      .filter((r) => Array.isArray(r) && /^\d{4}-\d{2}-\d{2}$/.test(r[0]) && r[1] > 0 && r[2] > 0) // a broken row must not stop BNR (F-53)
+      .map(([date, EUR, USD]) => ({ date, EUR, USD }))
     : [];
   if (saved.length && recent.length && recent[0].date <= saved.at(-1).date) {
     const series = mergeSeries(saved, recent);
@@ -217,7 +237,9 @@ async function fxFromEcb(today) {
 
 async function eurostat(geo, coicop, unit, since) {
   const url = `${EUROSTAT}?unit=${unit}&coicop18=${coicop}&geo=${geo}&sinceTimePeriod=${since}`;
-  return parseEurostat(JSON.parse(await get(url)));
+  const r = parseEurostat(JSON.parse(await get(url)));
+  if (!r) throw new Error(`no usable data for ${url}`); // otherwise the series would vanish without a warning (F-50)
+  return r;
 }
 
 /* ---------- main ---------- */
@@ -230,13 +252,14 @@ export async function main({ today = new Date().toISOString().slice(0, 10), out 
   if (!fx) {
     warn('BNR rates unavailable; trying the ECB.');
     fx = await fxFromEcb(today).catch((e) => { warn(`ECB: ${e.message}`); return null; });
+    // The ECB is a fallback only when it brings a newer day: an equally fresh saved BNR rate, and its history, stay (F-48).
+    if (fx && prev?.fx?.d1 && fx.d1 <= prev.fx.d1) { warn('The ECB has no newer rate; keeping the previous rates.'); fx = prev.fx; }
   }
   if (!fx && prev?.fx) { warn('No new rates; keeping the previous ones.'); fx = prev.fx; }
   if (!fx) { error('No exchange rates at all.'); process.exitCode = 1; return null; }
   const age = daysBetween(fx.d1, today);
-  // Beyond 7 days, the threshold of the page's badge (F-24), the job fails: otherwise nobody notices that the data has stopped (F-42).
-  if (age > 7) { error(`Rates are from ${fx.d1}, ${age} days ago: the data is no longer updating.`); process.exitCode = 1; }
-  else if (age > 5) warn(`Rates are from ${fx.d1}, ${age} days ago.`);
+  // Data that has stopped updating fails the check after publishing (scripts/check-fresh.mjs, F-42, F-54).
+  if (age > 5) warn(`Rates are from ${fx.d1}, ${age} days ago.`);
 
   const since = shiftDays(today, -240).slice(0, 7);
   const safe = (p, what) => p.catch((e) => { warn(`Eurostat (${what}): ${e.message}`); return null; });
@@ -246,10 +269,26 @@ export async function main({ today = new Date().toISOString().slice(0, 10), out 
     safe(eurostat('RO', 'TOTAL', 'RCH_MV12MAVR', since), '12-month average'),
     safe(eurostat('EA', 'TOTAL', 'RCH_A', since), 'euro area'),
   ]);
+  const older = (x, than) => x && than && x.month < than;
   if (!ro) warn('Inflation data unavailable; keeping the previous values.');
+  else if (older(ro, prev?.inflation?.month)) warn(`Eurostat (Romania): the newest month is ${ro.month}, older than ${prev.inflation.month}; keeping the previous values.`);
+  else {
+    for (const [x, what] of [[services, 'services'], [avg12, '12-month average']]) {
+      if (x && x.month !== ro.month) warn(`Eurostat (${what}): the newest month is ${x.month}, not ${ro.month}.`);
+    }
+  }
+  if (older(euroArea, prev?.inflation?.euroAreaMonth)) warn(`Eurostat (euro area): the newest month is ${euroArea.month}, older than ${prev.inflation.euroAreaMonth}; keeping the previous value.`);
   const inflation = buildInflation({ ro, services, avg12, euroArea }, prev?.inflation);
 
   const data = { version: 1, fx, inflation };
+  // A file the page would reject must not reach the repo: it would break the page and the next deploys (F-52).
+  const accepted = (await pageValidator())(data);
+  const rejected = ['fx', 'inflation'].filter((k) => data[k] && !accepted?.[k]);
+  if (rejected.length) {
+    error(`The page would reject the ${rejected.join(' and ')} section; data/rates.json is not written.`);
+    process.exitCode = 1;
+    return null;
+  }
   const text = JSON.stringify(data, null, 2) + '\n';
   const before = prev ? JSON.stringify(prev, null, 2) + '\n' : '';
   if (text === before) {

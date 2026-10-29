@@ -296,8 +296,10 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     return daysBetween(typeof iso === 'string' && /^\d{4}-\d{2}$/.test(iso) ? iso + '-01' : iso, today);
   }
   /* After how many days the page flags a value as old: the exchange rate (F-24); the BNR inflation report,
-     which comes out every quarter; the indicative interest rates, which are set by hand. */
-  var STALE_DAYS = { fx: 7, report: 100, savings: 90 };
+     which comes out every quarter; the Tezaur rate, set by hand from the monthly issues; BNR's average deposit
+     rate, which BNR publishes about two months after its month: 150 days from the month's first day is about
+     4 months after its end, when at least one newer month should be out. */
+  var STALE_DAYS = { fx: 7, report: 100, tezaur: 90, deposit: 150 };
   function isStale(kind, iso, today) { return ageDays(iso, today) > STALE_DAYS[kind]; }
   /* Eurostat publishes a month around the 18th of the next one (January only at the end of February), and the
      bot runs on working days: the month after `month` is late only when `month` is more than 90 days old,
@@ -480,7 +482,8 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
        forecast: the BNR inflation forecast for the end of `target`, from the report of the month `report`. */
     forecast: { value: 3.4, target: '2027-12', report: '2026-08' },
     savings: {
-      deposit12: { rate: 5.5, asOf: '2026-07' },
+      /* BNR's average rate on new household term deposits in lei, 6 to 12 months (Buletin lunar, table 10.1.2). */
+      deposit: { rate: 5.51, asOf: '2026-07' },
       tezaur1y: { rate: 6.5, asOf: '2026-10' },
       tax: { rate: 10, asOf: '2026-10' }
     }
@@ -774,8 +777,6 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
       '. Presupune inflație constantă de ' + short(s.infl) + '% pe an.';
   }
 
-  /* The month of the oldest indicative interest rate. */
-  function savingsAsOf() { var Sv = DATA.savings; return Sv.deposit12.asOf < Sv.tezaur1y.asOf ? Sv.deposit12.asOf : Sv.tezaur1y.asOf; }
   /* The forecast is shown until its target month is over. */
   function forecastShown(today) { return !C.monthPassed(DATA.forecast.target, today); }
 
@@ -792,7 +793,10 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
       items.push('<li>Prognoza BNR: raportul din ' + fmtMonth(D.forecast.report) +
         badge(C.isStale('report', D.forecast.report, today), 'a apărut probabil un raport nou') + '</li>');
     }
-    items.push('<li>Dobânzi: orientative, ' + fmtMonth(savingsAsOf()) + badge(C.isStale('savings', savingsAsOf(), today), 'pot fi depășite') + '</li>');
+    var Sv = D.savings;
+    items.push('<li>Dobânzi: media BNR la depozite, ' + fmtMonth(Sv.deposit.asOf) +
+      badge(C.isStale('deposit', Sv.deposit.asOf, today), 'a apărut probabil o lună nouă') + ' · Tezaur, ' + fmtMonth(Sv.tezaur1y.asOf) +
+      badge(C.isStale('tezaur', Sv.tezaur1y.asOf, today), 'poate fi depășită') + '</li>');
     if (D.live) items.push('<li>Curs și inflație actualizate automat</li>');
     $('fresh').innerHTML = items.join('');
 
@@ -876,17 +880,19 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
 
     $('rateChips').innerHTML = [
       [0, Sv.tax.rate, 'Cont curent · 0%'],
-      [Sv.deposit12.rate, Sv.tax.rate, 'Depozit 12 luni, bănci mari · ~' + short(Sv.deposit12.rate) + '%'],
+      [Sv.deposit.rate, Sv.tax.rate, 'Depozit 6–12 luni, media BNR · ' + short(Sv.deposit.rate) + '%'],
       [Sv.tezaur1y.rate, 0, 'Tezaur 1 an · ' + short(Sv.tezaur1y.rate) + '%, fără impozit']
     ].map(function (c) {
       return '<button type="button" class="chip" data-rate="' + c[0] + '" data-tax="' + c[1] + '" aria-pressed="false">' + c[2] + '</button>';
     }).join('');
-    $('rateHint').textContent = 'Dobânzi orientative. Impozitul de ' + short(Sv.tax.rate) + '% se reține automat; peste un prag anual de venituri din investiții se poate adăuga CASS, pe care calculul nu îl include.';
+    $('rateHint').textContent = 'Depozitul: media BNR a dobânzilor la depozitele noi la termen în lei ale populației, cu scadența de 6–12 luni, din ' +
+      fmtMonth(Sv.deposit.asOf) + '. BNR o publică la circa două luni după; ofertele băncilor pot fi mai mari sau mai mici. Impozitul de ' + short(Sv.tax.rate) + '% se reține automat; peste un prag anual de venituri din investiții se poate adăuga CASS, pe care calculul nu îl include.';
 
     $('foot').textContent = 'Surse: curs ' + F.source + ' (de referință, ' + fmtDate(F.d0) + ' și ' + fmtDate(F.d1) + '); inflație ' + I.source +
       ' (' + fmtMonth(I.month) + '), inclusiv zona euro' +
       (forecastShown(todayISO()) ? '; prognoza BNR din raportul asupra inflației, ' + fmtMonth(P.report) : '') +
-      '; dobânzi orientative: depozite ' + fmtMonth(Sv.deposit12.asOf) + ', Tezaur ' + fmtMonth(Sv.tezaur1y.asOf) +
+      '; dobânzi: media BNR la depozitele noi la termen în lei ale populației, 6–12 luni, ' + fmtMonth(Sv.deposit.asOf) +
+      ' (BNR o publică la circa două luni după), Tezaur ' + fmtMonth(Sv.tezaur1y.asOf) +
       '; impozitul pe dobândă: ' + short(Sv.tax.rate) + '% (' + fmtMonth(Sv.tax.asOf) + '). ' +
       'Pierderile pe cauze nu se adună: inflația din România include deja o parte din efectul cursului. Inflația și ritmul leului sunt presupuse constante. ' +
       'Nu este consultanță financiară. Ce introduci rămâne în browserul tău.';

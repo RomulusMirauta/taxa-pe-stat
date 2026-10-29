@@ -202,9 +202,14 @@ describe('dates of the data: when the page flags them as old', () => {
     assert.equal(C.isStale('report', '2026-08', '2026-11-09'), false);
     assert.equal(C.isStale('report', '2026-08', '2026-11-10'), true);
   });
-  test('the indicative interest rates after 90 days', () => {
-    assert.equal(C.isStale('savings', '2026-10', '2026-12-30'), false);
-    assert.equal(C.isStale('savings', '2026-10', '2026-12-31'), true);
+  test('the Tezaur rate after 90 days', () => {
+    assert.equal(C.isStale('tezaur', '2026-10', '2026-12-30'), false);
+    assert.equal(C.isStale('tezaur', '2026-10', '2026-12-31'), true);
+  });
+  test('the BNR deposit rate, published about two months after its month, only after 150 days', () => {
+    assert.equal(C.isStale('deposit', '2026-07', '2026-10-29'), false, 'the latest month BNR has published is not old');
+    assert.equal(C.isStale('deposit', '2026-07', '2026-11-28'), false);
+    assert.equal(C.isStale('deposit', '2026-07', '2026-11-29'), true, 'about 4 months after the end of July');
   });
   test('inflation: the next month is overdue only after 90 days, January (published end of February) included', () => {
     for (const [month, today] of [['2026-09', '2026-11-17'], ['2026-09', '2026-11-19'], ['2026-10', '2026-12-18'], ['2026-11', '2027-01-20'],

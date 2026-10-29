@@ -434,10 +434,14 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
 
     await click('#mRaw');
     await click('#mNet');
-    await click('.chip[data-rate="5.5"]');
+    const deposit = '#rateChips .chip:nth-child(2)';
+    await click(deposit);
     s = await state();
-    assert.equal(s.v.rate, '5,5');
-    assert.equal(await js(`document.querySelector('.chip[data-rate="5.5"]').getAttribute('aria-pressed')`), 'true');
+    assert.equal(C.parseNum(s.v.rate), Number(await js(`document.querySelector('${deposit}').dataset.rate`)));
+    assert.match(await js(`document.querySelector('${deposit}').textContent`), /^Depozit 6–12 luni, media BNR · \d+(,\d+)?%$/);
+    assert.equal(await js(`document.querySelector('${deposit}').getAttribute('aria-pressed')`), 'true');
+    assert.match(await js("document.getElementById('rateHint').textContent"), /BNR o publică la circa două luni după/, 'the lag of the source, under the buttons');
+    assert.match(s.foot, /6–12 luni, [a-z]+ \d{4} \(BNR o publică la circa două luni după\)/, 'and in the sources');
     assert.deepEqual(problems, []);
     assert.deepEqual(s.csp, []);
   });
@@ -570,14 +574,14 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       return state();
     });
     let s = await fresh(json(FIXTURE), NOW);
-    assert.doesNotMatch(s.fresh, /de acum|întârziată|lună nouă|raport nou/, 'nothing is old on 29 Oct 2026');
+    assert.doesNotMatch(s.fresh, /de acum|întârziată|lună nouă|raport nou|depășită/, 'nothing is old on 29 Oct 2026');
+    assert.match(s.fresh, /Dobânzi: media BNR la depozite, [a-z]+ \d{4} · Tezaur, [a-z]+ \d{4}/);
     assert.match(s.fresh, /Prognoza BNR: raportul din august 2026/);
 
     s = await fresh(json(FIXTURE), '2026-12-05T10:00:00Z');
     assert.match(s.fresh, /Curs: BNR, 28 oct\. 2026de acum 38 de zile/);
     assert.match(s.fresh, /septembrie 2026actualizarea pare întârziată/, 'on the site: the daily update has stopped');
     assert.match(s.fresh, /raportul din august 2026a apărut probabil un raport nou/);
-    assert.match(s.fresh, /Dobânzi: orientative, [a-z]+ 2026pot fi depășite/);
 
     s = await fresh([404, 'not found'], '2026-12-05T10:00:00Z');
     assert.match(s.fresh, /septembrie 2026a apărut probabil o lună nouă/, 'with the built-in values: a new month is out');
@@ -586,6 +590,8 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     s = await fresh(json(FIXTURE), '2028-01-03T10:00:00Z');
     assert.doesNotMatch(s.text, /Prognoza BNR/);
     assert.doesNotMatch(s.foot, /prognoza/);
+    // Each interest rate with its own badge, in words that fit its source.
+    assert.match(s.fresh, /Dobânzi: media BNR la depozite, [a-z]+ \d{4}a apărut probabil o lună nouă · Tezaur, [a-z]+ \d{4}poate fi depășită/);
     assert.deepEqual(problems.filter((p) => !/404/.test(p)), []);
   });
 

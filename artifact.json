@@ -4,7 +4,7 @@
   "artifactUrl": "https://claude.ai/artifact/TjBbJYapbxWkrAHmyup8Cx",
   "lastPublishedVersion": 4,
   "lastPublishedAt": "2026-10-29",
-  "note": "v4: link spre codul sursă în subsol",
+  "note": "v4: link to the source code in the footer. No longer synced since 2026-10-29; the site is the reference.",
   "formerName": "Ceasul leului",
   "files": [
     "data/rates.json"

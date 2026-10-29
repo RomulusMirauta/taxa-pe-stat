@@ -1,114 +1,93 @@
 # CLAUDE.md: Taxa pe stat
 
-Instrucțiuni pentru Claude Code. Citește-le la începutul fiecărei sesiuni în acest repo.
+Instructions for Claude Code. Read them at the start of every session in this repo.
 
-## Proiectul, pe scurt
+## The project, briefly
 
-Calculator în română: cât pierd banii ținuți în lei din cauza inflației și a cursului EUR/USD, pe zi, săptămână, lună și an.
-- **Pagina** e un singur fișier (`app.html`), fără dependențe.
-- **Datele** (BNR, Eurostat) se actualizează zilnic prin GitHub Actions.
-- **Site-ul** e pe GitHub Pages.
+A calculator, in Romanian: how much money kept in lei loses to inflation and to the EUR/USD exchange rate, per day, week, month and year.
+- **The page** is a single file (`app.html`), with no dependencies.
+- **The data** (BNR, Eurostat) is updated daily by GitHub Actions.
+- **The site** is on GitHub Pages: https://romulusmirauta.github.io/taxa-pe-stat/
 
-Unde găsești restul:
+Where to find the rest:
 
-| Fișier | Ce conține |
+| File | What it holds |
 |---|---|
-| `README.md` | ce face aplicația și comenzile |
-| `DESIGN.md` | formulele (§5), sursele de date (§2), deciziile, pașii următori (§11) |
-| `FINDINGS.md` | registrul de bug-uri și ce a rămas deschis (O-NN) |
-| `CHANGELOG.md` | versiunile |
-| `docs/DEVELOPMENT.md` | artifact-ul de pe claude.ai și copia locală |
+| `README.md` | for visitors, in Romanian: what the app does, the commands |
+| `DESIGN.md` | the formulas (§5), the data sources (§2), the decisions, the next steps (§11) |
+| `FINDINGS.md` | the bug registry: what is fixed and what is still in the app |
+| `CHANGELOG.md` | the versions |
+| `docs/DEVELOPMENT.md` | how we work: Claude, the local copy, the former claude.ai artifact |
+| `docs/IDEAS.md` | ideas for later, not scheduled |
 
-## Unde am rămas (29 oct. 2026): de făcut, în ordine
+## Where we left off (29 Oct 2026)
 
-Ce urmează a fost lucrat într-o sesiune claude.ai care nu putea face push în repo. Pașii rămași:
+- **Published:** v0.3.1, on GitHub Pages; the repo's "About" is filled in.
+- **The daily data works:** BNR (from `curs.bnr.ro`) and Eurostat answer from GitHub Actions, and the bot commits "data: rates …". If a run's warnings look odd, read F-38…F-44 in `FINDINGS.md` first.
+- **Next:** the "Still in the app" table in `FINDINGS.md`; the ideas in `docs/IDEAS.md` only when the owner asks for them.
 
-1. **Push.** Repo-ul `RomulusMirauta/taxa-pe-stat` e gol.
-   - Dacă lucrezi într-un clone făcut din `taxa-pe-stat.bundle`, `origin` arată spre bundle. Schimbă-l:
-     ```
-     git remote set-url origin https://RomulusMirauta@github.com/RomulusMirauta/taxa-pe-stat.git
-     git push -u origin main --tags
-     ```
-   - Numele contului stă în URL ca Git Credential Manager să ceară datele contului `RomulusMirauta`, chiar dacă git-ul e logat și pe alt cont GitHub.
-2. **GitHub Pages:** Settings → Pages → Source: **GitHub Actions**. Cu `gh` logat pe `RomulusMirauta` se poate și din terminal:
-   `gh api -X POST repos/RomulusMirauta/taxa-pe-stat/pages -f build_type=workflow`
-3. **Prima rulare cu date reale:** `gh workflow run publish.yml -R RomulusMirauta/taxa-pe-stat`, apoi `gh run watch -R RomulusMirauta/taxa-pe-stat`. Verifică în log:
-   - **cursul:** a răspuns BNR, sau scriptul a trecut pe BCE (avertismentul „Cursul BNR nu e disponibil”)? Rezultatul închide O-11 și O-12 din `FINDINGS.md`.
-   - **inflația:** a răspuns Eurostat?
-   - **commit-ul de date:** a apărut „date: curs …” de la `github-actions[bot]`? Apare doar dacă datele s-au schimbat.
-4. **Site-ul:** la https://romulusmirauta.github.io/taxa-pe-stat/ verifică:
-   - pagina se încarcă, fără erori în consolă;
-   - sub titlu apare „actualizate automat”;
-   - `data/rates.json` și `assets/og.png` răspund.
-5. **„About” pe GitHub:**
-   `gh repo edit RomulusMirauta/taxa-pe-stat --description "Cât pierd leii tăi, zi de zi: inflația și cursul leului, cu date BNR și Eurostat actualizate zilnic." --homepage https://romulusmirauta.github.io/taxa-pe-stat/ --add-topic romania,inflation,exchange-rates,bnr,eurostat,github-actions,github-pages,calculator`
-6. **La final:** bifează în `DESIGN.md` §11 ce s-a făcut și scurtează secțiunea asta.
+## Working rules
 
-## Reguli de lucru
+**Language**
+- The app's interface (the text in `app.html`) and `README.md` are in Romanian, with diacritics.
+- Everything else is in English: code, comments, test names, messages, documents, commit messages.
+- File names are always in English.
 
-**Limbă**
-- Interfața, documentele și mesajele de commit sunt în română, cu diacritice.
-- Identificatorii din cod sunt în engleză; comentariile, în română.
+**Tests**
+- They all live in `tests/` and use `node:test`.
+- Run `npm test` before every commit. They must all pass.
+- A test for a fix must fail without the fix: check it with a quick mutation (undo the fix, run the test).
 
-**Teste**
-- Toate stau în `tests/` și folosesc `node:test`.
-- Rulează `npm test` înainte de fiecare commit. Toate trebuie să treacă.
+**Bugs**
+- Every problem found goes into `FINDINGS.md`, with:
+  - a new `F-NN` ID (IDs are never reused);
+  - the severity, the problem and the fix;
+  - the test that covers it, where possible.
+- `FINDINGS.md` has two tables: "Fixed" and "Still in the app". What is not fixed now goes into the second one, as `O-NN` (open) or as an accepted limitation.
 
-**Bug-uri**
-- Orice problemă găsită se trece în `FINDINGS.md`, cu:
-  - un ID nou `F-NN` (ID-urile nu se refolosesc);
-  - severitatea, problema și fix-ul;
-  - testul care o acoperă, unde se poate.
-- Ce nu se repară acum merge în tabelul „Deschise” (`O-NN`).
+**Commits**
+- Small, by theme, with the FINDINGS IDs in the message.
+- Author: `Romulus Mirăuță <181910713+RomulusMirauta@users.noreply.github.com>`. Without this address the commits don't show on the contributions graph.
+- Commits you write carry the line `Co-Authored-By: Claude …`.
 
-**Commit-uri**
-- Mici, pe teme, cu ID-urile din FINDINGS în mesaj.
-- Autor: `Romulus Mirăuță <181910713+RomulusMirauta@users.noreply.github.com>`. Fără adresa asta, commit-urile nu apar pe graficul de contribuții.
-- Commit-urile scrise de tine au linia `Co-Authored-By: Claude`.
+**Versions**
+- A new version means: an entry in `CHANGELOG.md`, `version` updated in `package.json` and an annotated tag `vX.Y.Z`.
 
-**Versiuni**
-- O versiune nouă înseamnă: o intrare în `CHANGELOG.md`, `version` actualizat în `package.json` și un tag adnotat `vX.Y.Z`.
+**Dependencies**
+- Don't add new dependencies without asking. The project has none, and that is a decision, not an accident. A linter was considered on 29 Oct 2026 and not added for this reason; `tests/page.test.mjs` parses every inline script instead.
 
-**Dependențe**
-- Nu adăuga dependențe noi fără să întrebi. Proiectul nu are niciuna, iar asta e o decizie, nu o întâmplare.
+**`app.html`** (checked by `tests/page.test.mjs`):
+- it is a fragment, without `<!doctype>`, `<html>`, `<head>` or `<body>`; `build.mjs` wraps it (it was also published as a claude.ai artifact);
+- it makes no requests to other sites; the data comes from `data/rates.json`, by a relative path;
+- colours are only tokens, between `tokens:start` and `tokens:end`, defined for both themes;
+- the calculations live in `<script id="calc">`, as pure functions tested in `tests/calc.test.mjs`;
+- paths are relative, because the site lives under `/taxa-pe-stat/`.
 
-**`app.html`** (verificat de `tests/page.test.mjs`):
-- e fragment, fără `<!doctype>`, `<html>`, `<head>` sau `<body>`, pentru că e publicat și ca artifact pe claude.ai;
-- nu face cereri către alte site-uri; datele vin din `data/rates.json`, pe cale relativă;
-- culorile sunt doar tokeni, între `tokens:start` și `tokens:end`, definiți pentru ambele teme;
-- calculele stau în `<script id="calc">`, ca funcții pure testate în `tests/calc.test.mjs`;
-- căile sunt relative, pentru că site-ul stă sub `/taxa-pe-stat/`.
+**Data**
+- `data/rates.json` is written only by the bot (`scripts/update-data.mjs`); don't edit it by hand.
+- The BNR forecast and the indicative interest rates live in `DATA`, in `app.html`. When you change them, also update the sources in `DESIGN.md` §2.
+- If you change the formulas, update `DESIGN.md` §5 and the tests.
 
-**Date**
-- `data/rates.json` îl scrie doar botul (`scripts/update-data.mjs`); nu îl edita de mână.
-- Prognoza BNR și dobânzile orientative stau în `DATA`, în `app.html`. Când le schimbi, actualizează și sursele din `DESIGN.md` §2.
-- Dacă schimbi formulele, actualizează `DESIGN.md` §5 și testele.
+**Screenshots:** `docs/screenshot.png` is taken in the dark theme, at 1280×860, when the counter shows „−0,0029 lei”.
 
-**Ce nu intră în repo:** `dist/`, `node_modules/`, `*.bundle`.
+**Not in the repo:** `dist/`, `node_modules/`, `*.bundle`.
 
-## Comenzi
+## Commands
 
 ```
-npm run dev                    # server local cu reîncărcare: http://localhost:5173
-npm test                       # toate testele
+npm run dev                    # local server with reload: http://localhost:5173
+npm test                       # all the tests
 npm run build                  # → dist/
-node scripts/update-data.mjs   # datele de azi (internet)
+node scripts/update-data.mjs   # today's data (needs internet; rewrites data/rates.json)
 ```
 
-## Artifact pe claude.ai
+## The claude.ai artifact
 
-Pagina există și ca artifact privat. URL-ul și ultima versiune stau în `artifact.json`.
+The page was also published as a private artifact on claude.ai; its URL and last version (4) are in `artifact.json`. Since 29 Oct 2026 it is **no longer synced**: don't publish it unless the owner asks.
 
-La cererea „sync TaxaPeStat”:
-1. rulează testele;
-2. publică `app.html` și `data/rates.json` pe același URL;
-3. crește `lastPublishedVersion`.
+## Environment
 
-Dacă sesiunea ta nu poate publica artifact-ul, sincronizarea se face din claude.ai.
-
-## Mediu
-
-- **Windows:** `start.cmd` pornește serverul și deschide browserul.
-- **Folderul local e clone-ul:** copia scrisă din claude.ai a fost transformată în clone git (`docs/DEVELOPMENT.md`). Ce scrie claude.ai apare în `git status`.
-- **Autorul commit-urilor** e setat local, în `.git/config`: git-ul global de pe calculator folosește altă adresă. Într-un clone nou, setează din nou `user.name` și `user.email`.
-- **`gh`** e în `C:\Program Files\GitHub CLI\`, dar poate lipsi din PATH (Git Bash: `"/c/Program Files/GitHub CLI/gh.exe"`). Contul activ trebuie să fie `RomulusMirauta` (`gh auth status`).
+- **Windows:** `start.cmd` starts the server and opens the browser.
+- **The local folder is the clone:** the copy written from claude.ai was turned into a git clone (`docs/DEVELOPMENT.md`). What claude.ai writes shows up in `git status`.
+- **The commit author** is set locally, in `.git/config`: the computer's global git uses another address. In a new clone, set `user.name` and `user.email` again.
+- **`gh`** lives in `C:\Program Files\GitHub CLI\`, but may be missing from PATH (Git Bash: `"/c/Program Files/GitHub CLI/gh.exe"`). The active account must be `RomulusMirauta` (`gh auth status`).

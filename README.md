@@ -26,15 +26,14 @@ Nu este consultanță financiară. Ce introduci rămâne în browserul tău: pag
 ## Cum funcționează
 
 - **Pagina** e un singur fișier, `app.html`, fără framework și fără dependențe. Calculele stau separat, în `<script id="calc">`, ca să poată fi testate.
-- **Datele:** în zilele lucrătoare, după ce BNR publică cursul, GitHub Actions rulează `scripts/update-data.mjs`. Scriptul:
-  - ia cursul BNR (rezervă: BCE) și inflația IAPC de la Eurostat;
-  - scrie `data/rates.json`;
+- **Datele:** în zilele lucrătoare, după ce BNR publică cursul, workflow-ul `publish.yml` din GitHub Actions:
+  - rulează `scripts/update-data.mjs`, care ia cursul BNR (rezervă: BCE) și inflația IAPC de la Eurostat și scrie `data/rates.json`, dacă s-a schimbat ceva;
   - face commit ca `github-actions[bot]`;
   - republică site-ul.
-- **Dacă o sursă cade,** rămân datele anterioare și apare un avertisment. Dacă nu există deloc un curs, jobul eșuează și GitHub trimite email.
+- **Dacă o sursă cade,** rămân datele anterioare și apare un avertisment. Dacă cursul are peste 7 zile sau nu există deloc, jobul eșuează și GitHub trimite email.
 - **Pagina citește `data/rates.json`** de pe același domeniu și îl validează. Fără fișier, folosește valorile din `app.html`.
 
-Formulele, sursele și deciziile sunt în [`DESIGN.md`](DESIGN.md). Problemele găsite și reparate sunt în [`FINDINGS.md`](FINDINGS.md).
+Formulele, sursele și deciziile sunt în [`DESIGN.md`](DESIGN.md). Problemele, cele reparate și cele încă deschise, sunt în [`FINDINGS.md`](FINDINGS.md). Documentația pentru dezvoltare e în engleză.
 
 ## Rulare locală
 
@@ -57,9 +56,10 @@ Testele folosesc `node:test`, fără dependențe, și stau toate în `tests/`:
 |---|---|
 | `calc.test.mjs` | calculele: inflație, curs, dobândă, comisioane, numere scrise ca în română |
 | `data.test.mjs` | datele automate: BNR, BCE, Eurostat, cu rețea simulată, inclusiv când sursele cad |
-| `page.test.mjs` | regulile paginii, legăturile cod ↔ pagină, temele light și dark |
+| `page.test.mjs` | regulile paginii, scripturile ei, legăturile cod ↔ pagină, temele light și dark |
 | `build.test.mjs` | build-ul: CSP, căi relative, fonturi locale, adresa publică |
 | `serve.test.mjs` | serverul local, inclusiv protecția la `../` |
+| `workflow.test.mjs` | workflow-urile GitHub: permisiunile, ce commit se publică, ordinea pașilor |
 
 Rulează în GitHub Actions înainte de fiecare publicare și la fiecare pull request.
 
@@ -80,8 +80,9 @@ Fiecare pas e un commit, iar versiunile au tag-uri. Pe scurt, în [`CHANGELOG.md
 | **v0.1.0** | *Ceasul leului*, prima versiune |
 | **v0.2.0** | review-ul 1: 30 de probleme găsite și reparate, build, teste |
 | **v0.3.0** | *Taxa pe stat*: nume nou, date automate, publicare pe GitHub Pages |
+| **v0.3.1** | datele automate merg cu adevărat: reparațiile de la prima rulare, mai puțin trafic spre BNR, email când datele se opresc |
 
-Cum lucrăm (artifact-ul de pe claude.ai, copia locală, sincronizarea): [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+Cum lucrăm (cu Claude, copia locală): [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). Idei pentru mai târziu: [`docs/IDEAS.md`](docs/IDEAS.md).
 
 ## In English
 
@@ -90,7 +91,7 @@ Cum lucrăm (artifact-ul de pe claude.ai, copia locală, sincronizarea): [`docs/
 - to the leu's slide against the euro and the US dollar;
 - after deposit interest, tax and bank fees.
 
-Exchange rates (BNR, with ECB as fallback) and inflation (Eurostat HICP) are refreshed automatically on weekdays by GitHub Actions and committed to the repo. The page is a single dependency-free HTML file, and the project has 120+ tests built on `node:test`. Its history, starting as *Ceasul leului*, is kept commit by commit, with a findings log in [`FINDINGS.md`](FINDINGS.md).
+Exchange rates (BNR, with ECB as fallback) and inflation (Eurostat HICP) are refreshed automatically on weekdays by GitHub Actions and committed to the repo. The page is a single dependency-free HTML file, and the project has 130+ tests built on `node:test`. Its history, starting as *Ceasul leului*, is kept commit by commit, with a findings log in [`FINDINGS.md`](FINDINGS.md). The developer documentation ([`DESIGN.md`](DESIGN.md), [`FINDINGS.md`](FINDINGS.md), [`CHANGELOG.md`](CHANGELOG.md), [`docs/`](docs/)) is in English.
 
 ## Licență
 

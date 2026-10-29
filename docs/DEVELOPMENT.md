@@ -1,40 +1,35 @@
-# Cum lucrăm
+# How we work
 
-Notițe despre felul în care e construit și întreținut proiectul. Pentru calcule și date vezi [`DESIGN.md`](../DESIGN.md).
+Notes on how the project is built and maintained. For the calculations and the data, see [`DESIGN.md`](../DESIGN.md).
 
-## Cu Claude
+## With Claude
 
-Proiectul e construit cu ajutorul lui Claude (Anthropic), ca asistent:
-- review;
-- cod;
-- teste;
-- documente.
+The project is built with the help of Claude (Anthropic), as an assistant for:
+- reviews;
+- code;
+- tests;
+- documents.
 
-Commit-urile făcute de Claude au linia `Co-Authored-By: Claude`.
+Commits made by Claude carry a `Co-Authored-By: Claude …` line.
 
-Instrucțiunile pentru Claude Code (sesiuni locale, de exemplu din VS Code) sunt în [`CLAUDE.md`](../CLAUDE.md). Claude Code îl citește automat la pornire: proiectul pe scurt, unde am rămas, regulile de lucru.
+The instructions for Claude Code (local sessions, e.g. from VS Code) are in [`CLAUDE.md`](../CLAUDE.md). Claude Code reads it automatically at startup: the project in brief, where we left off, the working rules.
 
-**Convenții:**
-- toate testele stau în `tests/`;
-- orice bug găsit se trece în [`FINDINGS.md`](../FINDINGS.md), cu un ID nou care nu se refolosește, și, unde se poate, primește un test.
+**Conventions:**
+- language: the app's interface and `README.md` are in Romanian; everything else (code, comments, tests, documents, commit messages, file names) is in English;
+- all the tests live in `tests/`;
+- every bug found goes into [`FINDINGS.md`](../FINDINGS.md), with a new ID that is never reused and, where possible, a test.
 
-## Artifact pe claude.ai
+## The claude.ai artifact (no longer synced)
 
-Pe lângă site, aplicația există și ca artifact privat pe claude.ai. Linkul și ultima versiune publicată stau în [`artifact.json`](../artifact.json).
+Besides the site, the app was also published as a private artifact on claude.ai. The link and the last published version (4) are in [`artifact.json`](../artifact.json).
 
-- **De ce merge același fișier în ambele locuri:** artifact-ul primește `app.html` ca fragment (fără `<head>`). De aceea `app.html` nu are `<!doctype>`, iar `build.mjs` îl învelește pentru site.
-- **Diferențe față de site:**
-  - artifact-ul folosește Google Fonts, singura sursă de fonturi permisă acolo;
-  - datele zilnice ajung în artifact doar la fiecare sincronizare.
-- **Sincronizare:** îi spui lui Claude „sync TaxaPeStat”. Claude:
-  1. rulează testele;
-  2. publică `app.html` și `data/rates.json` pe același link;
-  3. actualizează `artifact.json`.
+- **Why the same file worked in both places:** the artifact received `app.html` as a fragment, without `<head>`. That is why `app.html` has no `<!doctype>`, and `build.mjs` wraps it for the site.
+- **No longer synced since 29 October 2026:** the site on GitHub Pages is the reference. The artifact stays at version 4, with the data of that day.
 
-## Copia locală
+## The local copy
 
-Pe calculatorul autorului, folderul în care scrie Claude din claude.ai, prin legătura cu aplicația desktop, e și clone-ul git al repo-ului. A fost transformat pe loc din `taxa-pe-stat.bundle`, cu `origin` pe GitHub.
+On the author's computer, the folder that Claude writes to from claude.ai, through the desktop app, is also the git clone of the repo. It was turned into a clone in place, from a history bundle (`taxa-pe-stat.bundle`, deleted after the first push), with `origin` on GitHub.
 
-- **Ce scrie Claude din claude.ai** apare în `git status`, ca orice modificare locală. Commit-ul și push-ul se fac de aici, din git.
-- **`.github/`:** din claude.ai, Claude nu are voie să scrie acolo pe calculator. Workflow-urile se modifică din Claude Code sau din repo.
-- **`taxa-pe-stat.bundle`** (ignorat de git) a fost copia de siguranță a istoricului până la primul push. Acum istoricul e pe GitHub, deci fișierul se poate șterge.
+- **What Claude writes from claude.ai** shows up in `git status`, like any local change. Commits and pushes are made from here.
+- **`.github/`:** from claude.ai, Claude is not allowed to write there on the computer. The workflows are changed from Claude Code or in the repo.
+- **The commit author** is set in the clone's own config (`.git/config`), because the computer's global git config uses another address (`CLAUDE.md`, "Environment").

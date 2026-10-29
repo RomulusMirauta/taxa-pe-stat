@@ -10,7 +10,8 @@ The first table lists what is fixed; the second, what is still in the app. The d
 - Review 1: 29 October 2026, version 0.1 (artifact v1), fixed in 0.2 (artifact v2): F-01…F-30.
 - Implementing the automatic data: 29 October 2026, F-31…F-33.
 - Before publishing on GitHub: F-34…F-36.
-- Publishing on GitHub and the first run with real data, with two independent reviews and a testing sweep: 29 October 2026, F-37…F-47 (v0.3.1).
+- Publishing on GitHub and the first run with real data, with two independent reviews: 29 October 2026, F-37…F-47 (v0.3.1).
+- A testing sweep (five testers: the page, the data, security, test coverage, "outside the box"; every finding reproduced by a second agent): 29 October 2026, F-48…F-79 (v0.3.1).
 
 **Severity:**
 - **Major:** a wrong result, an unusable page or a risk when publishing.
@@ -24,22 +25,22 @@ The first table lists what is fixed; the second, what is still in the app. The d
 
 | ID | Sev. | Problem | Status | Test |
 |---|---|---|---|---|
-| F-01 | Major | The counter was unreadable in the dark theme | Fixed | `page.test` |
-| F-02 | Major | The decimal comma („6,61”) became 0, without a message | Fixed | `calc.test`, `page.test` |
-| F-03 | Major | A missing date filled the page with „NaN” | Fixed | `calc.test` |
-| F-04 | Major | A current date before the reference date gave an absurd pace | Fixed | `calc.test` |
-| F-05 | Major | Short exchange-rate intervals, extrapolated too far | Fixed | `calc.test` |
+| F-01 | Major | The counter was unreadable in the dark theme | Fixed | `page.test`, `e2e.test` |
+| F-02 | Major | The decimal comma („6,61”) became 0, without a message | Fixed | `calc.test`, `page.test`, `e2e.test` |
+| F-03 | Major | A missing date filled the page with „NaN” | Fixed | `calc.test`, `e2e.test` |
+| F-04 | Major | A current date before the reference date gave an absurd pace | Fixed | `calc.test`, `e2e.test` |
+| F-05 | Major | Short exchange-rate intervals, extrapolated too far | Fixed | `calc.test`, `e2e.test` |
 | F-06 | Minor | The counter rewrote the past when the amount changed | Fixed | — |
 | F-07 | Minor | The counter ignored the interest | Fixed | `calc.test` |
-| F-08 | Cosmetic | „−0,00” for zero | Fixed | — |
-| F-09 | Minor | Absurd values accepted (a 300% tax, −100% inflation) | Fixed | — |
+| F-08 | Cosmetic | „−0,00” for zero | Fixed | `e2e.test` |
+| F-09 | Minor | Absurd values accepted (a 300% tax, −100% inflation) | Fixed | `e2e.test` |
 | F-10 | Minor | The chart: clipped labels, tiny text on phones | Fixed | `calc.test` |
 | F-11 | Minor | Fees computed differently in the table and the chart | Fixed | `calc.test` |
 | F-12 | Minor | Unwanted zoom on iPhone when tapping the fields | Fixed | `page.test` |
 | F-13 | Cosmetic | The formatting was redone 10 times a second | Fixed | — |
 | F-14 | Cosmetic | „Dobânda netă de 0,00%” when there is no interest | Fixed | — |
 | F-15 | Minor | `start.cmd` opened the browser before the server | Fixed | — |
-| F-16 | Minor | A busy port gave a technical error, without an explanation | Fixed | — |
+| F-16 | Minor | A busy port gave a technical error, without an explanation | Fixed | `serve.test` |
 | F-17 | Minor | The local server served neither fonts nor data | Fixed | `serve.test` |
 | F-18 | Major | The design document described the minimum interest rate wrongly, as an approximation | Fixed | `calc.test` |
 | F-19 | Major | „Media 12 luni · 9,2%” was used as a rate for the future | Fixed | — |
@@ -47,13 +48,13 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | F-21 | Minor | Inflation over 12 months, the exchange rate over 289 days | Fixed | `calc.test` |
 | F-22 | Minor | „3.100 lei” vs „6,61% of 50,000 = 3,305 lei” | Fixed | `calc.test` |
 | F-23 | Info | The loss against the euro ≠ what you would have saved holding euros | Fixed (a note) | — |
-| F-24 | Minor | Outdated default data, without a warning | Fixed | — |
+| F-24 | Minor | Outdated default data, without a warning | Fixed | `e2e.test` |
 | F-25 | Cosmetic | Mixed date conventions for the BNR rate | Fixed | — |
 | F-26 | Major | Google Fonts on a public site in the EU (GDPR) | Fixed | `build.test` |
 | F-27 | Major | BNR/INS data cannot be read directly from the browser | Fixed (architecture) | — |
 | F-28 | Minor | `app.html` could not be published on a host | Fixed | `build.test` |
 | F-29 | Minor | No tests | Fixed | `tests/` |
-| F-30 | Minor | No CSP or security headers | Fixed | `build.test` |
+| F-30 | Minor | No CSP or security headers | Fixed | `build.test`, `e2e.test` |
 | F-31 | Major | The planned Eurostat dataset (`prc_hicp_manr`) was discontinued | Fixed | `data.test` |
 | F-32 | Minor | A bot commit would not have republished the site | Fixed (architecture) | — |
 | F-34 | Minor | `vercel.json` left over after choosing GitHub Pages | Fixed | — |
@@ -64,12 +65,44 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | F-39 | Minor | The tests' simulated warnings showed up as GitHub Actions annotations | Fixed | `data.test` |
 | F-40 | Major | BNR serves its XML files only on `curs.bnr.ro`; the old addresses redirect to its home page | Fixed | `data.test` |
 | F-41 | Minor | Early January: the script fell back to the ECB although BNR answered | Fixed | `data.test` |
-| F-42 | Minor | Stale data passed silently: no email when the data stops updating | Fixed | `data.test` |
+| F-42 | Minor | Stale data passed silently: no email when the data stops updating | Fixed | `fresh.test` |
 | F-43 | Minor | A run queued behind a data run republished the previous data | Fixed | `workflow.test` |
 | F-44 | Minor | The workflow's permissions were granted to both jobs | Fixed | `workflow.test` |
 | F-45 | Minor | Outdated statements in `DESIGN.md` and `README.md` | Fixed | `calc.test` (the §6 example) |
 | F-46 | Minor | No test parsed the page's main script | Fixed | `page.test` |
 | F-47 | Cosmetic | The busy-port hint gave a Bash command, which does not work in cmd | Fixed | `serve.test` |
+| F-48 | Minor | The ECB fallback replaced an equally fresh BNR rate, and the BNR history | Fixed | `data.test` |
+| F-49 | Minor | Network errors were logged as a bare „fetch failed” | Fixed | `data.test` |
+| F-50 | Minor | A Eurostat series without usable data vanished silently | Fixed | `data.test` |
+| F-51 | Minor | The inflation month could move back | Fixed | `data.test` |
+| F-52 | Minor | The bot could commit data that the page rejects | Fixed | `data.test`, `workflow.test` |
+| F-53 | Info | A broken row in the saved history stopped the BNR branch | Fixed | `data.test` |
+| F-54 | Major | Stale data could last for weeks with a green pipeline | Fixed | `fresh.test`, `workflow.test` |
+| F-55 | Major | No test ran the page script | Fixed | `e2e.test` |
+| F-56 | Minor | The daily 10-day path (O-14) was never tested with a new day | Fixed | `data.test` |
+| F-57 | Major | The simulated network answered any address, so the tests did not pin F-31 and F-40 | Fixed | `data.test` |
+| F-58 | Minor | Four data tests depended on a file written by an earlier test | Fixed | `data.test` |
+| F-59 | Minor | The CSP hashes were computed on the raw file, CRLF included | Fixed | `build.test` |
+| F-60 | Minor | The static rules for `app.html` had holes | Fixed | `page.test` |
+| F-61 | Minor | Documented formulas and branches had no assertions | Fixed | `calc.test` |
+| F-62 | Major | Changing a date kept the rates of the old date: false history | Fixed | `calc.test`, `e2e.test` |
+| F-63 | Minor | Data arriving after an edit left stale values in the form | Fixed | `calc.test`, `e2e.test` |
+| F-64 | Minor | With deflation, „Pe scurt” contradicted itself | Fixed | `calc.test`, `e2e.test` |
+| F-65 | Minor | Implausible exchange rates gave „~-∞%/an” | Fixed | `calc.test`, `e2e.test` |
+| F-66 | Minor | Without JavaScript the page said nothing | Fixed | `page.test` |
+| F-67 | Minor | „0,500” was read as 500 | Fixed | `calc.test` |
+| F-68 | Cosmetic | „-0” was accepted and shown | Fixed | `calc.test` |
+| F-69 | Minor | The counter said „fără dobândă și comisioane” when fees were charged | Fixed | `calc.test`, `e2e.test` |
+| F-70 | Minor | The HICP badge appeared before Eurostat published | Fixed | `calc.test`, `e2e.test` |
+| F-71 | Minor | Hand-set values went stale without a warning | Fixed | `calc.test`, `page.test`, `e2e.test` |
+| F-72 | Minor | No 404 page: GitHub's English one, with no way back | Fixed | `build.test` |
+| F-73 | Minor | The CSP was not pinned by tests, `script-src` allowed `'self'`, no referrer policy | Fixed | `build.test`, `e2e.test` |
+| F-74 | Minor | The Source Sans 3 licence named the wrong copyright holder | Fixed | `build.test` |
+| F-75 | Info | Node 20, past its end of life, was still the minimum | Fixed | `build.test` |
+| F-76 | Minor | The preview image showed a figure and a month that the data would contradict | Fixed | `build.test` |
+| F-77 | Minor | `esc()`, the guard against markup in `rates.json`, was untested | Fixed | `e2e.test` |
+| F-78 | Cosmetic | Chart labels were cut („+10 an”, „.000 mil.”) | Fixed | `e2e.test` |
+| F-79 | Cosmetic | The date fields cut off the year | Fixed | `e2e.test` |
 | O-07 | — | The license for the open-source version | Resolved: MIT | — |
 | O-09 | — | BNR publishes only on working days, around 13:00 | Resolved: the script uses the last published day | `data.test` |
 | O-10 | — | `start.cmd` had not been tested on a real Windows machine | Resolved: tested on Windows 11 | — |
@@ -89,8 +122,11 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | O-04 | Open | A full comparison of lei vs euros | Euro interest rates, euro-area inflation and the spread decide whether euros were better. |
 | O-05 | Open | Inflation and the leu's pace are assumed constant | The 10-year projections are illustrative. |
 | O-06 | Open | Deposits pay the interest at maturity | Under a year the calculation compounds; the difference is negligible. |
-| O-08 | Open | GitHub disables scheduled workflows after 60 days without activity in public repos | Probably covered by the bot's near-daily data commits, though GitHub does not define "activity". If the data stops changing, F-42 sends an email within 7 days. To turn the schedule back on: `gh workflow enable publish.yml -R RomulusMirauta/taxa-pe-stat`. |
-| O-15 | Accepted | GitHub Pages does not let us set HTTP security headers (`frame-ancestors`, `nosniff`, `no-referrer`) | The consequence accepted in F-34. The in-page CSP covers scripts, fonts and connections. |
+| O-08 | Open | GitHub disables scheduled workflows after 60 days without activity in public repos | Probably covered by the bot's near-daily data commits, though GitHub does not define "activity". If the data stops changing, the check after publishing (F-54) emails within 8 days. To turn the schedule back on: `gh workflow enable publish.yml -R RomulusMirauta/taxa-pe-stat`. |
+| O-15 | Accepted | GitHub Pages cannot send HTTP headers, and two of them have no `<meta>` form: CSP `frame-ancestors` (no framing by other sites) and `X-Content-Type-Options: nosniff` | A static calculator without accounts has little to lose to framing. The in-page CSP covers scripts, fonts and connections, and the referrer policy is set from a `<meta>` (F-73). Another host (Cloudflare Pages, Netlify) could send them. |
+| O-16 | Open (owner's decision) | The repo has no rules protecting `main` and the `v*` tags, any marketplace action may run, and Dependabot does not watch the actions | A ruleset would block force-pushes and deleting `main`, and moving or deleting release tags; Dependabot would open a pull request when an action has a new version (it would have raised O-13 by itself). These change the repo's settings, so they are left to the owner. |
+| O-17 | Open | `prefers-reduced-motion` is read only when the page loads | Turning it on later keeps the counter at 10 updates a second until a reload. |
+| O-18 | Open | On a phone, the loss table shows only the „Zi” column at first | The other periods are a horizontal scroll away inside the table; nothing is cut. |
 
 ---
 
@@ -244,7 +280,8 @@ The first table lists what is fixed; the second, what is still in the app. The d
 - **Fix:**
   - the values are updated;
   - under the title, the date of each source appears;
-  - a warning appears when the exchange rate is more than 7 days old, or inflation more than 35 days after publication.
+  - a badge appears when the exchange rate is more than 7 days old, or when the inflation month is more than 90 days past its first day (75 days until F-70; this document wrongly said "35 days after publication").
+- **Test:** `e2e.test` → "the date list flags old data, with words that depend on whether the daily data arrived".
 
 ### F-25 · Cosmetic · Mixed date conventions
 - **Problem:** the source website sometimes shows the validity date, not the publication date.
@@ -311,7 +348,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 - **Found by:** Romulus, in the review before publishing.
 - **Problem:** the file had been prepared while the host was not chosen yet. After the decision for GitHub Pages it was only noise, and it suggested a host that is not used.
 - **Fix:** deleted, and the documents updated.
-- **Accepted consequence:** the security headers it set (`frame-ancestors`, `nosniff`, `no-referrer`) cannot be set on GitHub Pages (O-15). The in-page CSP remains, and it covers scripts, fonts and connections.
+- **Accepted consequence:** GitHub Pages cannot send HTTP headers, and two of the ones `vercel.json` set have no `<meta>` form: CSP `frame-ancestors` and `nosniff` (O-15). The in-page CSP remains, and it covers scripts, fonts and connections. The referrer policy does have a `<meta>` form; this entry used to say otherwise, and it is set since F-73.
 
 ### F-35 · Major · A provisional author, local paths and provisional links
 - **Problem:**
@@ -320,14 +357,14 @@ The first table lists what is fixed; the second, what is still in the app. The d
   - the page had no link to the code.
 - **Fix:**
   - the author is the personal account, with GitHub's "noreply" address (the email is not public);
-  - the addresses are the real ones, and the local path is gone;
+  - the addresses are the real ones, and the local path is gone from the files (in `a0c6006`). It stays in the history: `BAZA.md` had the line „Locație: `C:\Users\R\Desktop\ClaudeZone\…`” from `ff5c0bf` to `4d62ef5`. It shows only the Windows user name and folder names; removing it would mean rewriting the history (every hash and tag would change, and a force-push), so it stays;
   - the page links to the repo, with `og:url` and `canonical`.
 - **Test:** `build.test` → "the public address comes from package.json: og:url and canonical".
 
 ### F-36 · Minor · No preview image when sharing
 - **Problem:** WhatsApp, Facebook and Discord show a card with an image for links that have an `og:image`. Without it, the link sent to friends showed as plain text. The README did not show what the app looks like either.
 - **Fix:**
-  - `assets/og.png` (1200×630), with `og:image`, `og:image:alt` and `twitter:card` in the build, at the absolute address from `package.json`;
+  - `assets/og.png` (1200×630), with `og:image`, `og:image:alt` and `twitter:card` in the build, at the absolute address from `package.json` (replaced by `assets/og-card.png` in F-76);
   - `docs/screenshot.png` in the README.
 - **Note:** messaging apps remember the preview. A link sent before publishing may stay without an image.
 - **Test:** `build.test` → "the preview image: an absolute address, copied into the build".
@@ -372,8 +409,8 @@ The first table lists what is fixed; the second, what is still in the app. The d
 
 ### F-42 · Minor · Stale data passed silently
 - **Problem:** when every source failed but old data existed, the job ended in success and no email came. That is how F-38 could have stayed hidden: it was found only because the log was read. The page's badge (F-24) warns visitors after 7 days, but nobody warned the maintainer.
-- **Fix:** when the exchange rate is more than 7 days old (the badge's threshold), the job fails and GitHub sends an email. At 6–7 days it is only a warning; the longest normal gap between BNR rates, around holidays, is 4–5 days.
-- **Test:** `data.test` → "the rates are over 7 days old: the job fails, so that GitHub sends an email (F-42)" (7 days: a warning; 8 days: a failure).
+- **Fix:** when the exchange rate is more than 7 days old (the badge's threshold), the run fails and GitHub sends an email. At first the data step itself failed; since F-54, a separate check after the deploy does it, so publishing is never blocked. The longest normal gap between BNR rates, around holidays, is 4–5 days.
+- **Test:** `fresh.test` → "the exchange rates: 7 days old is fine, 8 days fails (the threshold of the page badge)".
 
 ### F-43 · Minor · A run queued behind a data run republished the previous data
 - **Where:** `.github/workflows/publish.yml`.
@@ -414,3 +451,179 @@ The first table lists what is fixed; the second, what is still in the app. The d
   - a normal start: the server answers and the browser opens, after the server is listening (F-15);
   - without Node.js on PATH: the message to install it, and exit code 1;
   - a busy port: the hint with the right commands (F-16, F-47).
+
+## Found in the testing sweep (v0.3.1)
+
+Five testers looked for what the reviews had missed, each from another angle; every finding below was reproduced by a second, independent agent. Each fix was then checked by mutation: undo it, and a test fails.
+
+### Data and alerts
+
+### F-48 · Minor · The ECB fallback replaced an equally fresh BNR rate, and the BNR history
+- **Problem:** when BNR failed once (say a 403 at the 11:30 run), the script switched to the ECB even when the ECB had nothing newer than the rate already saved: the ECB publishes after 16:00 CET. The file became „BCE (rezervă)”, the 400-day BNR history was replaced by the ECB's, and the next BNR run had to download the yearly files again.
+- **Fix:** the ECB is used only when it brings a newer day than the saved rate; otherwise the saved BNR rates and their history stay.
+- **Test:** `data.test` → "the ECB has no newer day: the saved BNR rates and their history stay (F-48)" (one day behind, the same day, and a newer day that is still used).
+
+### F-49 · Minor · Network errors were logged as a bare „fetch failed”
+- **Problem:** Node's `fetch` reports a refused or reset connection only as „fetch failed”, with the reason hidden in `cause`; a timeout said only that the operation was aborted. Neither named the address.
+- **Fix:** every network error is logged with its code (`ECONNRESET`, `ENOTFOUND`…) or „no answer within 30 s”, and with the address; errors while reading the body too.
+- **Test:** `data.test` → "network errors name the cause and the address (F-49)".
+
+### F-50 · Minor · A Eurostat series without usable data vanished silently
+- **Problem:** when the services, 12-month-average or euro-area series came back empty, or in an unexpected shape, it was dropped without a warning; so was a series lagging behind Romania total.
+- **Fix:** such an answer is an error that names the address, so it is reported; a series whose newest month differs from Romania total is reported too.
+- **Test:** `data.test` → "a Eurostat series without usable data is reported, not dropped silently (F-50)" and "a Eurostat series that lags behind Romania total is reported (F-50)".
+
+### F-51 · Minor · The inflation month could move back
+- **Problem:** a partial or stale Eurostat answer (the last two months without values, for example) replaced September with July and dropped services and the average. The exchange rate was protected against this; inflation was not.
+- **Fix:** an older month never replaces a newer one, separately for Romania and for the euro area, and a warning says so.
+- **Test:** `data.test` → "an older month never replaces a newer one (F-51)" and "Eurostat answers with an older month: the published values stay (F-51)".
+
+### F-52 · Minor · The bot could commit data that the page rejects
+- **Problem:** nothing checked the new data before the commit. A file the page rejects (a month written as „2026M10”, for example) would have reached `main`, and the tests that run after the commit would have blocked this deploy and every later one.
+- **Fix:** the script checks its result with the page's own validator (`Calc.normalizeRates`) and writes nothing, failing the job, if a section would be rejected; the workflow also runs the tests on the new data before committing it.
+- **Test:** `data.test` → "a result the page would reject is not written, and the job fails (F-52)"; `workflow.test` → "the new data passes the tests before the bot commits it (F-52)".
+
+### F-53 · Info · A broken row in the saved history stopped the BNR branch
+- **Problem:** a malformed date in one saved row made the BNR code throw, so the yearly files were never tried and the file switched to the ECB with a cryptic warning.
+- **Fix:** only rows with a valid date and positive rates are used.
+- **Test:** `data.test` → "broken rows in the saved history do not stop BNR (F-53)".
+
+### F-54 · Major · Stale data could last for weeks with a green pipeline
+- **Problem:** F-42 made the data step fail when the rate was over 7 days old, but that also stopped a fresh inflation month from being committed and published. Stale inflation, and rates that kept coming from the ECB, raised no alarm at all.
+- **Fix:** `scripts/check-fresh.mjs` runs in a separate job after the deploy and fails, so GitHub emails the owner, when the rates are more than 7 days old or come from the ECB instead of BNR, or when the newest inflation month is more than 95 days past its first day (the January index comes out at the end of February, 86 days after 1 December). It never blocks publishing; the data script only warns.
+- **Test:** `fresh.test` (the limits, and the exit code with a `::error::` annotation); `workflow.test` → "after the deploy, a separate job checks that the data is still updating (F-54)".
+
+### Tests
+
+### F-55 · Major · No test ran the page script
+- **Found by:** the coverage tester: of 43 realistic one-line regressions, the suite caught 6.
+- **Problem:** the page script (~400 lines: the form, the table, the counter, loading `data/rates.json`) was never executed by a test, so a runtime error, a CSP the browser rejects or a broken data load passed every test.
+- **Fix:** `tests/e2e.test.mjs` builds the site, serves it under `/taxa-pe-stat/` as GitHub Pages does, and drives headless Chrome over the DevTools protocol with Node's own WebSocket, without any dependency. It skips locally when Chrome is missing, and fails in GitHub Actions in that case.
+- **Test:** `e2e.test`: 8 tests, about 2 seconds.
+
+### F-56 · Minor · The daily 10-day path (O-14) was never tested with a new day
+- **Problem:** the only test of the 10-day path ran again with identical data, so leaving the 10 days out of the merge, or letting the saved history win over them, passed every test.
+- **Fix:** tests with yesterday's history plus a new day, and with a correction inside the 10 days.
+- **Test:** `data.test` → "a new day after yesterday's history: only the last 10 days, and today's rate gets in (O-14)" and "a correction within the last 10 days replaces the saved value (O-14)".
+
+### F-57 · Major · The simulated network answered any address
+- **Problem:** the simulated sources answered any URL on the right host, so the tests credited for F-31 and F-40 did not pin those fixes: a wrong path on `curs.bnr.ro`, the discontinued Eurostat dataset or a too short ECB period all passed. The User-Agent and the timeout were not checked either.
+- **Fix:** BNR, the ECB and Eurostat answer only at their exact addresses, and Eurostat rejects unknown parameters as the real API does; every request is checked for the User-Agent and a timeout.
+- **Test:** `data.test` → "first run: the BNR rates and inflation, from the exact addresses", "BNR refuses: switches to the ECB, at its exact address" and "every request carried the User-Agent and a timeout (F-38)". 18 mutations of the script, all caught.
+
+### F-58 · Minor · Four data tests depended on a file written by an earlier test
+- **Problem:** they failed when run alone or in another order.
+- **Fix:** a baseline run in `before()`; every test starts from its own copy of it.
+- **Test:** `data.test`, the simulated-network block.
+
+### F-59 · Minor · The CSP hashes were computed on the raw file, CRLF included
+- **Problem:** the browser hashes the script text after turning CRLF into LF; `build.mjs` hashed the raw file, so an `app.html` with Windows line endings would have passed every test while Chrome blocked both scripts.
+- **Fix:** `wrap()` and `inlineScriptHashes()` turn CRLF and CR into LF first.
+- **Test:** `build.test` → the "wrap() and the CSP hashes" tests.
+
+### F-60 · Minor · The static rules for `app.html` had holes
+- **Problem:** an absolute fetch path (which breaks under `/taxa-pe-stat/`), inline event handlers (which the CSP blocks), the exact F-01 regression and broken theme CSS all passed.
+- **Fix:** `page.test` checks them, including the counter's contrast in both themes.
+- **Test:** `page.test`.
+
+### F-61 · Minor · Documented formulas and branches had no assertions
+- **Problem:** the fees term of the counter (§5.6), most `niceStep` steps and the 180-day hint were not asserted.
+- **Fix:** `calc.test` asserts them; the 180-day rule moved into `Calc.isShortInterval`.
+- **Test:** `calc.test`.
+
+### The page
+
+### F-62 · Major · Changing a date kept the rates of the old date: false history
+- **Found by:** two testers, independently.
+- **Problem:** the rate fields did not follow the date fields. With the reference date moved a year back, the page kept the rates of 28 Oct 2025, so it stated false history („valorau 9.834,00 € pe 28 oct. 2024”) and projected EUR/USD losses about 10 times too large.
+- **Fix:**
+  - the page keeps BNR's daily history from `data/rates.json`, after checking it;
+  - when a date changes, that side's rates come from it (`Calc.rateOn`: the last BNR day at most 10 days before), and the hint says which BNR day is used;
+  - without such a day, or without a history, the fields are marked, the error asks for the rate, and the currency rows and facts show „—”;
+  - rates the user typed stay theirs; a current date in the future is an error; "today" is the visitor's local date; the date list shows the data's own date.
+- **Test:** `calc.test` → "the BNR rate on a date (rateOn)" and "the BNR history from data/rates.json (normalizeRates)"; `e2e.test` → "a date change takes the BNR rate of that day; without one, the page says so and computes nothing".
+
+### F-63 · Minor · Data arriving after an edit left stale values in the form
+- **Problem:** one flag for the whole form: after any edit, even of the sum, no field was filled when `data/rates.json` arrived, while the header and the footer already showed the new dates.
+- **Fix:** `Calc.mergeInputs` writes the fields the user has not changed; the dates and rates are written together or not at all, and the focused field never.
+- **Test:** `calc.test` → "data that arrives late (mergeInputs)"; `e2e.test` → "data that arrives after the user typed in Suma still fills the fields the user did not touch".
+
+### F-64 · Minor · With deflation, „Pe scurt” contradicted itself
+- **Problem:** with negative inflation, a green „+” was described as purchasing power lost, „cu -500,00 lei mai mult”, and the minimum interest rate was negative.
+- **Fix:** the words follow the sign (pierdută / câștigată, mai mult / mai puțin); the minimum rate is never below 0, with a short explanation when any rate keeps up.
+- **Test:** `calc.test` (`breakEvenRate`); `e2e.test`.
+
+### F-65 · Minor · Implausible exchange rates gave „~-∞%/an”
+- **Problem:** a misplaced comma (53,495 instead of 5,3495) over a short interval gave „~-∞%/an” or numbers 50 digits long.
+- **Fix:** `Calc.fxPairOk`: both rates under 1000 and at most 4 times apart (the largest real ratio since 2005 is about 2.15), in the form and in the data; no extrapolation beyond 1000% a year.
+- **Test:** `calc.test`; `e2e.test`.
+
+### F-66 · Minor · Without JavaScript the page said nothing
+- **Fix:** a `<noscript>` message; the counter starts at „—” instead of a fake zero; the counter and the form are hidden when scripts do not run.
+- **Test:** `page.test` → "a <noscript> message explains why the page is empty" and the two tests after it.
+
+### F-67 · Minor · „0,500” was read as 500
+- **Problem:** the thousands rule accepted a first group starting with 0, so „0,500” (half a leu) became 500 and „0.050” became 50.
+- **Fix:** a group of thousands cannot start with 0.
+- **Test:** `calc.test` → "parseNum: …".
+
+### F-68 · Cosmetic · „-0” was accepted and shown
+- **Problem:** „-0” showed as „Pentru -0 lei”, „-0,00 €”, „-0%”.
+- **Fix:** `parseNum` returns 0, and the formatters never put a sign on zero.
+- **Test:** `calc.test`.
+
+### F-69 · Minor · The counter said „fără dobândă și comisioane” when fees were charged
+- **Fix:** `Calc.accountNote`, e.g. „fără dobândă, dar cu 240 lei comisioane pe an”, for the counter and the chart.
+- **Test:** `calc.test`; `e2e.test`.
+
+### F-70 · Minor · The HICP badge appeared before Eurostat published
+- **Problem:** „a apărut probabil o lună nouă” appeared 75 days after the first day of the data's month, but the next month comes out around day 78–81 (the January index at the end of February), so it showed every month for nothing.
+- **Fix:** `Calc.inflationOverdue`: 90 days; with the daily data loaded, the badge says that the update looks late.
+- **Test:** `calc.test` → "dates of the data: when the page flags them as old" (fixed dates); `e2e.test`.
+
+### F-71 · Minor · Hand-set values went stale without a warning
+- **Problem:** the BNR forecast, the deposit and Tezaur rates and the interest tax are set by hand in `DATA`; their labels („Prognoza BNR, dec. 2027”, „august 2026”, „Impozitul de 10%”) were written into the script, and nothing warned when they got old.
+- **Fix:** every hand-set value has the month it is from; the labels are built from `DATA`; the date list shows a badge when the BNR report is more than 100 days old or a rate more than 90 days; the forecast button disappears after its target month.
+- **Note:** on 29 Oct 2026 the deposit rate, from July 2026, already shows the badge: no newer source was found.
+- **Test:** `calc.test`; `page.test` → "their labels come from DATA: no month, year or tax rate written in the page script"; `e2e.test`.
+
+### F-78 · Cosmetic · Chart labels were cut („+10 an”, „.000 mil.”)
+- **Problem:** the last label of the time axis read „+10 an” at every width, and the value labels from „1.000 mil.” up lost their first digits.
+- **Fix:** more room on the right, and a left margin that grows with the longest label.
+- **Test:** `e2e.test` → "the chart labels and the date fields fit, with large sums too, at 1280 and 320 px (F-78, F-79)".
+
+### F-79 · Cosmetic · The date fields cut off the year
+- **Problem:** at 320–360 px, and at 1280 px with a common Windows date format, the year was cut („28.10.2(”).
+- **Fix:** the two dates sit side by side only when both fit, at least 170 px each; otherwise they stack.
+- **Test:** `e2e.test`, the same test as F-78.
+
+### The site and security
+
+### F-72 · Minor · No 404 page
+- **Problem:** a mistyped link landed on GitHub's English 404 page, with no way back to the calculator.
+- **Fix:** `build.mjs` writes a self-contained `404.html`, in Romanian, with the site's colours, its own CSP and one link to the calculator; no scripts, no timed redirect.
+- **Test:** `build.test` → the "404.html" tests.
+
+### F-73 · Minor · The CSP was not pinned by tests, `script-src` allowed `'self'`, no referrer policy
+- **Problem:** a weakened CSP plus an external image passed every test; `script-src 'self'` allowed any script on the shared `github.io` address; visitors' browsers sent the page's address to the sites it links to.
+- **Fix:** `script-src` lists only the hashes of the two inline scripts; the tests pin the exact CSP and check that nothing loads from another site; `<meta name="referrer" content="no-referrer">`.
+- **Test:** `build.test` → "CSP: exactly these directives…", "no referrer…", "nothing loads from another site…"; `e2e.test` (no CSP violations, no requests to other sites).
+
+### F-74 · Minor · The Source Sans 3 licence named the wrong copyright holder
+- **Problem:** `fonts/OFL-source-sans-3.txt` named „Google Inc.”; the font and its upstream name Adobe, with the Reserved Font Name 'Source'.
+- **Fix:** the copyright line from upstream (`adobe-fonts/source-sans`).
+- **Test:** `build.test` → "every font comes with its OFL licence, which names the copyright holder and Reserved Font Name written in the font" (it reads the notice inside each WOFF2).
+
+### F-75 · Info · Node 20, past its end of life, was still the minimum
+- **Fix:** `package.json` and the README require Node 22: Node 20 reached its end of life on 30 April 2026, and the end-to-end test needs Node's WebSocket.
+- **Test:** `build.test`.
+
+### F-76 · Minor · The preview image showed a figure and a month that the data would contradict
+- **Problem:** `assets/og.png` showed „−8,63 lei pe zi” and „sept. 2026”.
+- **Fix:** `assets/og-card.png`, the same design without figures or dates, under a new name so that messaging apps fetch it again; the old file is no longer published. Its template is `docs/og-card.html`.
+- **Test:** `build.test` → "the preview image: an absolute address, copied into the build".
+
+### F-77 · Minor · `esc()`, the guard against markup in `rates.json`, was untested
+- **Problem:** `esc()` is the only guard against markup in the source labels that come from `data/rates.json`; removing it passed every test.
+- **Fix:** the end-to-end test serves a `rates.json` with markup in its labels and checks that it shows as text.
+- **Test:** `e2e.test` → "without data, or with broken data: the built-in values stay, without errors; the text from the data is not HTML".

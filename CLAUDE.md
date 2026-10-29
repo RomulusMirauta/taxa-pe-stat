@@ -23,7 +23,8 @@ Where to find the rest:
 ## Where we left off (29 Oct 2026)
 
 - **Published:** v0.3.1, on GitHub Pages; the repo's "About" is filled in.
-- **The daily data works:** BNR (from `curs.bnr.ro`) and Eurostat answer from GitHub Actions, and the bot commits "data: rates …". If a run's warnings look odd, read F-38…F-44 in `FINDINGS.md` first.
+- **The daily data works:** BNR (from `curs.bnr.ro`) and Eurostat answer from GitHub Actions, and the bot commits "data: rates …". After every deploy, the `check` job fails (with an email) if the data has stopped updating. If a run's warnings look odd, read F-38…F-54 in `FINDINGS.md` first.
+- **Waiting for the owner:** O-16 (protecting `main` and the tags, Dependabot for the actions); a current source for the deposit rates (the page flags the July 2026 ones).
 - **Next:** the "Still in the app" table in `FINDINGS.md`; the ideas in `docs/IDEAS.md` only when the owner asks for them.
 
 ## Working rules
@@ -37,6 +38,8 @@ Where to find the rest:
 - They all live in `tests/` and use `node:test`.
 - Run `npm test` before every commit. They must all pass.
 - A test for a fix must fail without the fix: check it with a quick mutation (undo the fix, run the test).
+- `tests/e2e.test.mjs` drives the built page in headless Chrome (Node 22+, no dependency). It skips locally when Chrome is missing and fails in GitHub Actions in that case. Behaviour of the page belongs there; pure logic belongs in `<script id="calc">` and `calc.test`.
+- Tests never read the real clock or today's data values; pass `today` explicitly.
 
 **Bugs**
 - Every problem found goes into `FINDINGS.md`, with:
@@ -65,7 +68,7 @@ Where to find the rest:
 
 **Data**
 - `data/rates.json` is written only by the bot (`scripts/update-data.mjs`); don't edit it by hand.
-- The BNR forecast and the indicative interest rates live in `DATA`, in `app.html`. When you change them, also update the sources in `DESIGN.md` §2.
+- The BNR forecast and the indicative interest rates live in `DATA`, in `app.html`, each with the month it is from (`asOf`, `report`). When you change them, update that month and the sources in `DESIGN.md` §2; the page flags them when they get old.
 - If you change the formulas, update `DESIGN.md` §5 and the tests.
 
 **Screenshots:** `docs/screenshot.png` is taken in the dark theme, at 1280×860, when the counter shows „−0,0029 lei”.
@@ -79,6 +82,7 @@ npm run dev                    # local server with reload: http://localhost:5173
 npm test                       # all the tests
 npm run build                  # → dist/
 node scripts/update-data.mjs   # today's data (needs internet; rewrites data/rates.json)
+node scripts/check-fresh.mjs   # is the data still updating? (exit code 1 if not)
 ```
 
 ## The claude.ai artifact

@@ -13,6 +13,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 - Publishing on GitHub and the first run with real data, with two independent reviews: 29 October 2026, F-37…F-47 (v0.3.1).
 - A testing sweep (five testers: the page, the data, security, test coverage, "outside the box"; every finding reproduced by a second agent): 29 October 2026, F-48…F-79 (v0.3.1).
 - The open items that could be fixed in the page: 29 October 2026, O-17 and O-18 (v0.3.2).
+- A mobile sweep (nine phone and tablet sizes, portrait and landscape, touch emulated): 29 October 2026, F-80…F-82 (v0.3.3).
 
 **Severity:**
 - **Major:** a wrong result, an unusable page or a risk when publishing.
@@ -104,6 +105,9 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | F-77 | Minor | `esc()`, the guard against markup in `rates.json`, was untested | Fixed | `e2e.test` |
 | F-78 | Cosmetic | Chart labels were cut („+10 an”, „.000 mil.”) | Fixed | `e2e.test` |
 | F-79 | Cosmetic | The date fields cut off the year | Fixed | `e2e.test` |
+| F-80 | Minor | On a phone, long values in the loss table ran into the next column (from v0.3.2) | Fixed | `e2e.test` |
+| F-81 | Minor | On phones under ~380 px the chart was scaled down, its labels to ~8.5 px | Fixed | `e2e.test` |
+| F-82 | Minor | On touch screens the buttons and fields were 30–42 px tall, under the 44 px a finger needs | Fixed | `e2e.test` |
 | O-07 | — | The license for the open-source version | Resolved: MIT | — |
 | O-09 | — | BNR publishes only on working days, around 13:00 | Resolved: the script uses the last published day | `data.test` |
 | O-10 | — | `start.cmd` had not been tested on a real Windows machine | Resolved: tested on Windows 11 | — |
@@ -112,7 +116,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | O-13 | — | The Pages actions targeted Node 20 | Resolved: on their Node 24 versions | `workflow.test` |
 | O-14 | — | Every run downloaded both of BNR's yearly files | Resolved: the last 10 days are enough | `data.test` |
 | O-17 | — | `prefers-reduced-motion` was read only when the page loaded: turned on later, the counter kept 10 updates a second | Resolved: read at every step of the counter | `e2e.test` |
-| O-18 | — | On a phone, the loss table showed only the „Zi” column; the other periods were a sideways scroll away | Resolved: below 640 px each cause is a block, its four periods two by two, each under its name; screen readers still get a table | `e2e.test` |
+| O-18 | — | On a phone, the loss table showed only the „Zi” column; the other periods were a sideways scroll away | Resolved: below 640 px each cause is a block, one line per period (F-80); screen readers still get a table | `e2e.test` |
 
 ## Still in the app
 
@@ -628,3 +632,22 @@ Five testers looked for what the reviews had missed, each from another angle; ev
 - **Problem:** `esc()` is the only guard against markup in the source labels that come from `data/rates.json`; removing it passed every test.
 - **Fix:** the end-to-end test serves a `rates.json` with markup in its labels and checks that it shows as text.
 - **Test:** `e2e.test` → "without data, or with broken data: the built-in values stay, without errors; the text from the data is not HTML".
+
+## Found in the mobile sweep (v0.3.3)
+
+Headless Chrome at 320×568, 360×740, 375×667, 390×844, 430×932, 568×320, 740×360, 844×390 and 768×1024, with touch emulated, at 50.000 and 5.000.000.000 lei: sideways overflow, cells narrower than their content, touch targets, font sizes in the form, small text, the chart's scale.
+
+### F-80 · Minor · On a phone, long values in the loss table ran into the next column
+- **Problem:** the phone layout of v0.3.2 (O-18) put the values two by two. At 320 px even „−3.051,64 lei” was wider than its column (125 > 117 px) and the table scrolled sideways by 8 px; with large sums the values overlapped („−862.594,07 lei−6.035.034,27”). Letting them wrap broke numbers in the middle („−6.035.034,2” / „7 lei”).
+- **Fix:** one line per period, the name on the left and the value on the right; a value that does not fit beside the name moves, whole, to the next line, still on the right.
+- **Test:** `e2e.test` → "on a phone the loss table shows every period, one per line, without sideways scrolling or broken numbers…" (320 and 400 px, 50.000 and 5.000.000.000 lei; it fails with either earlier layout).
+
+### F-81 · Minor · On phones under ~380 px the chart was scaled down, its labels with it
+- **Problem:** the drawing was never narrower than 320 units, so in a 246 px container (a 320 px phone) it was scaled to 0.77, and its 11 px labels to about 8.5 px.
+- **Fix:** the drawing is as wide as its container, down to 200 px.
+- **Test:** `e2e.test` → "on a phone the chart is not scaled down: its labels keep their size" (320, 360, 375 px).
+
+### F-82 · Minor · Touch targets under 44 px
+- **Problem:** on a phone the scenario buttons were 30 px tall, the mode toggle 33 px and the fields 42 px. They meet WCAG's 24 px minimum, but 44 px is what a finger needs (Apple's guideline, WCAG 2.5.5).
+- **Fix:** on touch screens (`pointer: coarse`), fields, scenario buttons and the toggle are at least 44 px tall; with a mouse nothing changes.
+- **Test:** `e2e.test` → "on a touch screen every field and button is at least 44 px tall".

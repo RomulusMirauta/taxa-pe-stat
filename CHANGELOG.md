@@ -2,6 +2,16 @@
 
 The project's versions, briefly. The details of each problem are in [`FINDINGS.md`](FINDINGS.md), by ID.
 
+## [0.3.3] - 2026-10-29 - Phones
+
+### Fixed
+- **The loss table on a phone:** long values ran into the next column, and at 320 px the table scrolled sideways (from 0.3.2). Now one line per period, the name on the left and the value on the right; a long value moves whole to the next line (F-80).
+- **The chart on small phones** is no longer scaled down: its labels keep their size (F-81).
+- **Touch screens:** fields and buttons are at least 44 px tall (F-82).
+
+### Added
+- **Tests:** from 239 to 241, from a mobile sweep at nine phone and tablet sizes. Every fix fails its test when undone.
+
 ## [0.3.2] - 2026-10-29 - The table on a phone
 
 ### Fixed
@@ -94,6 +104,7 @@ The project's versions, briefly. The details of each problem are in [`FINDINGS.m
 - **Publishing and running:** an artifact on claude.ai, a local server, `start.cmd`.
 - **`BAZA.md`** (now `DESIGN.md`): the data, the causes, the formulas and the worked example.
 
+[0.3.3]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.2.0...v0.3.0

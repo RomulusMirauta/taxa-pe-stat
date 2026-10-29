@@ -30,7 +30,7 @@ Besides the table, the page has:
 
 The fields accept numbers written the Romanian way („6,61”, „50.000”) or the English way. Invalid fields are marked and explained. When you change a date, the exchange rates of that day come from BNR's history in `data/rates.json` (§5.3).
 
-On a phone (below 640 px) the table does not fit: each cause becomes a block, with its four periods two by two, each under its name (FINDINGS O-18).
+On a phone (below 640 px) the table does not fit: each cause becomes a block, one line per period (FINDINGS O-18, F-80). On touch screens, fields and buttons are at least 44 px tall (F-82).
 
 The exchange rates and inflation update themselves on every working day (§5.10).
 
@@ -457,8 +457,9 @@ One-time steps (done on 29 October 2026):
 - [x] The Pages actions on the versions for Node 24 (O-13) and less traffic to BNR (O-14), in v0.3.1.
 - [x] A testing sweep with five testers found F-48…F-79, all fixed in v0.3.1, among them the rates that did not follow the dates (F-62), stale data with a green pipeline (F-54) and a page script no test ran (F-55, now `tests/e2e.test.mjs`).
 - [x] The open items that could be fixed in the page, in v0.3.2: the table on a phone (O-18) and reduced motion turned on later (O-17).
+- [x] Tests and fixes for phones, in v0.3.3: a sweep at nine sizes found F-80…F-82.
 - [ ] The owner's decision on protecting `main` and the tags, and on Dependabot for the actions (O-16).
-- [ ] A current source for the deposit rates (the page flags the July 2026 ones).
+- [ ] A current source for the deposit rates (the page flags the July 2026 ones). Found: BNR's official statistic, Buletin lunar table 10.1.2 (households, new term deposits in lei, 6–12 months: 5.51% in July 2026), published about two months later.
 - [ ] What is still in the app: the second table in [`FINDINGS.md`](FINDINGS.md).
 
 Ideas for later (a EUR/RON chart, CASS, the FX spread, personal inflation, lei vs euros) are in [`docs/IDEAS.md`](docs/IDEAS.md); they are not scheduled.

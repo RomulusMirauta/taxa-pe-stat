@@ -72,6 +72,8 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline
 .toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--bg)}
 .toggle button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--muted);padding:6px 14px;border-radius:999px;cursor:pointer}
 .toggle button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+/* On touch screens every control is at least 44px tall, the size a finger needs (F-82). */
+@media (pointer:coarse){input,.chip,.toggle button{min-height:44px}}
 .head{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
 
 .tablewrap,.chartwrap{overflow-x:auto}
@@ -81,16 +83,19 @@ th:first-child,td:first-child{text-align:left;white-space:normal;min-width:150px
 thead th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
 td .sub{display:block;font-size:12px;color:var(--muted);font-family:var(--body)}
 .loss{color:var(--loss)} .gain{color:var(--gain)}
-/* Below 640px the four periods do not fit beside the first column: each cause becomes a block, with its values
-   two by two, each under the name of its period (O-18). The header row stays, hidden, for screen readers. */
+/* Below 640px the four periods do not fit beside the first column: each cause becomes a block, with one line per
+   period, its name on the left and the value on the right (O-18). A value that does not fit beside the name moves,
+   whole, to the next line, instead of running into the next value or breaking inside the number (F-80).
+   The header row stays, hidden, for screen readers. */
 @media (max-width:640px){
   table{min-width:0}
   table,tbody,td{display:block}
   thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-  tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+  tr{display:grid;gap:2px;padding:10px 0;border-bottom:1px solid var(--line)}
   td,td:first-child{border:0;padding:0;text-align:left;min-width:0}
-  td:first-child{grid-column:1/-1;padding-bottom:4px}
-  td[data-period]::before{content:attr(data-period);display:block;font-family:var(--body);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  td:first-child{padding-bottom:4px}
+  td[data-period]{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:baseline;gap:0 12px}
+  td[data-period]::before{content:attr(data-period);margin-right:auto;font-family:var(--body);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
 }
 
 .facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
@@ -726,9 +731,10 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
 
   function renderChart(s) {
     var svg = $('ch'), hint = $('chHint');
-    /* The drawing's width follows the container, so the text stays readable on phones too. */
+    /* The drawing's width follows the container, so the text keeps its size on phones too: a drawing wider than
+       the container would be scaled down, its 11px labels with it (F-81). */
     /* R leaves room for „+10 ani” centred on the last year; L grows with the longest axis label (F-78). */
-    var W = Math.round(Math.max(320, Math.min(640, svg.parentNode.clientWidth || 640))), H = 260, L = 64, R = 30, T = 14, B = 30, yrs = 10;
+    var W = Math.round(Math.max(200, Math.min(640, svg.parentNode.clientWidth || 640))), H = 260, L = 64, R = 30, T = 14, B = 30, yrs = 10;
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     if (!(s.S > 0) || !isFinite(s.infl)) {
       svg.innerHTML = '<text x="' + W / 2 + '" y="130" text-anchor="middle">Introdu suma și inflația ca să vezi graficul.</text>';

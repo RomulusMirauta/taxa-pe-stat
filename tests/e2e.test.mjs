@@ -617,7 +617,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.deepEqual(problems, []);
   });
 
-  test('on a phone the loss table shows every period without sideways scrolling, and stays a table for screen readers (O-18)', async () => {
+  test('on a phone the loss table shows every period, one per line, without sideways scrolling or broken numbers, and stays a table for screen readers (O-18, F-80)', async () => {
     const layout = () => js(`(() => {
       const wrap = document.querySelector('.tablewrap'), box = wrap.getBoundingClientRect();
       const tds = [...document.querySelectorAll('#tb td')];
@@ -625,15 +625,32 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
         sw: wrap.scrollWidth, cw: wrap.clientWidth,
         out: tds.filter((td) => { const r = td.getBoundingClientRect(); return r.left < box.left - 0.5 || r.right > box.right + 0.5; }).map((td) => td.textContent),
         labels: tds.slice(1, 5).map((td) => getComputedStyle(td, '::before').content),
+        // Content wider than its cell runs into the next one.
+        overflowing: tds.filter((td) => td.scrollWidth > td.clientWidth + 0.5).map((td) => td.textContent),
+        // A value split over two lines: „−6.035.034,2” / „7 lei”.
+        broken: tds.filter((td) => td.dataset.period).filter((td) => {
+          const range = document.createRange();
+          range.selectNodeContents(td);
+          return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size > 1;
+        }).map((td) => td.textContent),
         display: getComputedStyle(tds[1]).display,
       };
     })()`);
-    await open({ width: 400 });
-    await type('sum', '5.000.000');
-    let m = await layout();
-    assert.ok(m.sw <= m.cw, `the table scrolls sideways: ${m.sw} > ${m.cw}`);
-    assert.deepEqual(m.out, [], 'values outside the table');
-    assert.deepEqual(m.labels, [...C.PERIODS].map((q) => `"${q.label}"`), 'each value under its period');
+    let m;
+    // 320 px is the narrowest phone; 5 billion lei gives the longest values („−305.164.319,25 lei”).
+    for (const width of [320, 400]) {
+      await open({ width });
+      for (const sum of ['50.000', '5.000.000.000']) {
+        await type('sum', sum);
+        m = await layout();
+        const at = `at ${width} px, sum ${sum}`;
+        assert.ok(m.sw <= m.cw, `the table scrolls sideways ${at}: ${m.sw} > ${m.cw}`);
+        assert.deepEqual(m.out, [], `values outside the table ${at}`);
+        assert.deepEqual(m.overflowing, [], `values wider than their cell ${at}`);
+        assert.deepEqual(m.broken, [], `values split over two lines ${at}`);
+        assert.deepEqual(m.labels, [...C.PERIODS].map((q) => `"${q.label}"`), 'each value with its period');
+      }
+    }
     await cdp.send('Accessibility.enable');
     try {
       const { nodes } = await cdp.send('Accessibility.getFullAXTree');
@@ -650,6 +667,29 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     m = await layout();
     assert.equal(m.display, 'table-cell');
     assert.deepEqual(m.labels, [...C.PERIODS].map(() => 'none'));
+    assert.deepEqual(problems, []);
+  });
+
+  test('on a phone the chart is not scaled down: its labels keep their size (F-81)', async () => {
+    for (const width of [320, 360, 375]) {
+      await open({ width });
+      const scale = await js("(() => { const svg = document.getElementById('ch'); return svg.getBoundingClientRect().width / Number(svg.getAttribute('viewBox').split(' ')[2]); })()");
+      assert.ok(scale > 0.999, `at ${width} px the chart is drawn at ${scale.toFixed(3)} of its size`);
+    }
+    assert.deepEqual(problems, []);
+  });
+
+  test('on a touch screen every field and button is at least 44 px tall (F-82)', async () => {
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    try {
+      await open({ width: 375 });
+      assert.equal(await js("matchMedia('(pointer: coarse)').matches"), true, 'the touch screen is emulated');
+      const small = await js(`[...document.querySelectorAll('input, .chip, .toggle button')]
+        .map((el) => [el.id || el.textContent.trim(), el.getBoundingClientRect().height]).filter(([, h]) => h < 44)`);
+      assert.deepEqual(small, []);
+    } finally {
+      await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+    }
     assert.deepEqual(problems, []);
   });
 

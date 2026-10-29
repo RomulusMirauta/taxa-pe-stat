@@ -12,6 +12,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 - Before publishing on GitHub: F-34…F-36.
 - Publishing on GitHub and the first run with real data, with two independent reviews: 29 October 2026, F-37…F-47 (v0.3.1).
 - A testing sweep (five testers: the page, the data, security, test coverage, "outside the box"; every finding reproduced by a second agent): 29 October 2026, F-48…F-79 (v0.3.1).
+- The open items that could be fixed in the page: 29 October 2026, O-17 and O-18 (v0.3.2).
 
 **Severity:**
 - **Major:** a wrong result, an unusable page or a risk when publishing.
@@ -110,6 +111,8 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | O-12 | — | BNR might refuse automated requests from GitHub's servers | Resolved: it does not | — |
 | O-13 | — | The Pages actions targeted Node 20 | Resolved: on their Node 24 versions | `workflow.test` |
 | O-14 | — | Every run downloaded both of BNR's yearly files | Resolved: the last 10 days are enough | `data.test` |
+| O-17 | — | `prefers-reduced-motion` was read only when the page loaded: turned on later, the counter kept 10 updates a second | Resolved: read at every step of the counter | `e2e.test` |
+| O-18 | — | On a phone, the loss table showed only the „Zi” column; the other periods were a sideways scroll away | Resolved: below 640 px each cause is a block, its four periods two by two, each under its name; screen readers still get a table | `e2e.test` |
 
 ## Still in the app
 
@@ -125,8 +128,6 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | O-08 | Open | GitHub disables scheduled workflows after 60 days without activity in public repos | Probably covered by the bot's near-daily data commits, though GitHub does not define "activity". If the data stops changing, the check after publishing (F-54) emails within 8 days. To turn the schedule back on: `gh workflow enable publish.yml -R RomulusMirauta/taxa-pe-stat`. |
 | O-15 | Accepted | GitHub Pages cannot send HTTP headers, and two of them have no `<meta>` form: CSP `frame-ancestors` (no framing by other sites) and `X-Content-Type-Options: nosniff` | A static calculator without accounts has little to lose to framing. The in-page CSP covers scripts, fonts and connections, and the referrer policy is set from a `<meta>` (F-73). Another host (Cloudflare Pages, Netlify) could send them. |
 | O-16 | Open (owner's decision) | The repo has no rules protecting `main` and the `v*` tags, any marketplace action may run, and Dependabot does not watch the actions | A ruleset would block force-pushes and deleting `main`, and moving or deleting release tags; Dependabot would open a pull request when an action has a new version (it would have raised O-13 by itself). These change the repo's settings, so they are left to the owner. |
-| O-17 | Open | `prefers-reduced-motion` is read only when the page loads | Turning it on later keeps the counter at 10 updates a second until a reload. |
-| O-18 | Open | On a phone, the loss table shows only the „Zi” column at first | The other periods are a horizontal scroll away inside the table; nothing is cut. |
 
 ---
 

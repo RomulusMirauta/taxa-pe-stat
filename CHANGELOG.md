@@ -2,6 +2,15 @@
 
 The project's versions, briefly. The details of each problem are in [`FINDINGS.md`](FINDINGS.md), by ID.
 
+## [0.3.2] - 2026-10-29 - The table on a phone
+
+### Fixed
+- **On a phone, the loss table** showed only the „Zi” column; the other periods were a sideways scroll away. Below 640 px each cause is now a block, with its four periods two by two, each under its name. Screen readers still get a table, with its header row (O-18).
+- **„Reduce motion”** turned on while the page is open now slows the counter at once, not after a reload (O-17).
+
+### Added
+- **Tests:** from 237 to 239. Two end-to-end tests: the table at 400 px, with the accessibility tree, and the counter's pace when reduced motion is turned on and off. Both fail with their fix undone.
+
 ## [0.3.1] - 2026-10-29 - The first run with real data
 
 ### Fixed
@@ -85,6 +94,7 @@ The project's versions, briefly. The details of each problem are in [`FINDINGS.m
 - **Publishing and running:** an artifact on claude.ai, a local server, `start.cmd`.
 - **`BAZA.md`** (now `DESIGN.md`): the data, the causes, the formulas and the worked example.
 
+[0.3.2]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.1.0...v0.2.0

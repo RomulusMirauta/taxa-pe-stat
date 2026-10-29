@@ -84,6 +84,7 @@ Fiecare pas e un commit, iar versiunile au tag-uri. Pe scurt, în [`CHANGELOG.md
 | **v0.2.0** | review-ul 1: 30 de probleme găsite și reparate, build, teste |
 | **v0.3.0** | *Taxa pe stat*: nume nou, date automate, publicare pe GitHub Pages |
 | **v0.3.1** | datele automate merg cu adevărat; cursul urmează datele alese; 43 de probleme găsite de două review-uri și o rundă de testare, reparate; test în browser; documentația în engleză |
+| **v0.3.2** | tabelul de pierderi se vede întreg pe telefon; contorul încetinește imediat când pornești „mișcare redusă” |
 
 Cum lucrăm (cu Claude, copia locală): [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). Idei pentru mai târziu: [`docs/IDEAS.md`](docs/IDEAS.md).
 

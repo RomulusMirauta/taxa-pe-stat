@@ -30,6 +30,8 @@ Besides the table, the page has:
 
 The fields accept numbers written the Romanian way („6,61”, „50.000”) or the English way. Invalid fields are marked and explained. When you change a date, the exchange rates of that day come from BNR's history in `data/rates.json` (§5.3).
 
+On a phone (below 640 px) the table does not fit: each cause becomes a block, with its four periods two by two, each under its name (FINDINGS O-18).
+
 The exchange rates and inflation update themselves on every working day (§5.10).
 
 ---
@@ -247,7 +249,7 @@ lei_pe_an = S · (ln(1+π) − ln g) + F       // without interest: S · ln(1+π
 lei_pe_secundă = lei_pe_an / (365 · 86.400)
 ```
 
-The counter adds up at every step (100 ms, or 1 s with "reduced motion"), at the rate of that moment. If you change the amount, the past is not recomputed (FINDINGS F-06).
+The counter adds up at every step (100 ms, or 1 s with "reduced motion", read at every step: FINDINGS O-17), at the rate of that moment. If you change the amount, the past is not recomputed (FINDINGS F-06).
 
 ### 5.7 The 10-year chart
 
@@ -454,6 +456,7 @@ One-time steps (done on 29 October 2026):
 - [x] "About" on GitHub: description, site address, topics.
 - [x] The Pages actions on the versions for Node 24 (O-13) and less traffic to BNR (O-14), in v0.3.1.
 - [x] A testing sweep with five testers found F-48…F-79, all fixed in v0.3.1, among them the rates that did not follow the dates (F-62), stale data with a green pipeline (F-54) and a page script no test ran (F-55, now `tests/e2e.test.mjs`).
+- [x] The open items that could be fixed in the page, in v0.3.2: the table on a phone (O-18) and reduced motion turned on later (O-17).
 - [ ] The owner's decision on protecting `main` and the tags, and on Dependabot for the actions (O-16).
 - [ ] A current source for the deposit rates (the page flags the July 2026 ones).
 - [ ] What is still in the app: the second table in [`FINDINGS.md`](FINDINGS.md).

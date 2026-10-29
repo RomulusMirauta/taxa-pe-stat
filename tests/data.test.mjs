@@ -150,15 +150,32 @@ describe('validarea din pagină (normalizeRates)', () => {
   });
 });
 
+test('User-Agent doar ASCII: altfel fetch refuză orice cerere (F-38)', () => {
+  assert.match(UA, /^[\x20-\x7e]+$/);
+});
+
 describe('scriptul zilnic, cu rețea simulată', () => {
   let dir;
-  let out;
+  let baseline;
   const realFetch = globalThis.fetch;
   const today = '2026-10-29';
-  const files = {
-    'nbrfxrates2025.xml': bnrXml([['2025-10-27', 5.0848, 4.3684], ['2025-10-28', 5.0844, 4.3591]]),
-    'nbrfxrates2026.xml': bnrXml([['2026-10-27', 5.3487, 4.7977]]),
-    'nbrfxrates.xml': bnrXml([['2026-10-28', 5.3495, 4.8088]]),
+
+  // Zile lucrătoare, ca în fișierele reale; cursurile cunoscute sunt cele din BAZA §2.
+  const KNOWN = { '2025-10-27': [5.0848, 4.3684], '2025-10-28': [5.0844, 4.3591], '2026-10-27': [5.3487, 4.7977], '2026-10-28': [5.3495, 4.8088] };
+  const cubes = (from, to, skip = []) => {
+    const out = [];
+    for (let d = from; d <= to; d = shiftDays(d, 1)) {
+      if (![0, 6].includes(new Date(d + 'T00:00:00Z').getUTCDay()) && !skip.includes(d)) out.push([d, ...(KNOWN[d] ?? [5.2, 4.6])]);
+    }
+    return out;
+  };
+  const YEAR = (y) => `https://curs.bnr.ro/files/xml/years/nbrfxrates${y}.xml`;
+  const TEN = 'https://curs.bnr.ro/nbrfxrates10days.xml';
+  // Fișierele BNR, după adresa completă; orice altă adresă BNR dă 404 (F-40). null = fișier care nu există încă (502).
+  const october = {
+    [YEAR(2025)]: bnrXml(cubes('2025-09-01', '2025-12-31')),
+    [YEAR(2026)]: bnrXml(cubes('2026-01-05', '2026-10-27')),
+    [TEN]: bnrXml(cubes('2026-10-15', '2026-10-28')),
   };
   const eurostat = (url) => {
     const q = new URL(url).searchParams;
@@ -170,26 +187,44 @@ describe('scriptul zilnic, cu rețea simulată', () => {
   const respond = (body, status = 200) => ({ ok: status < 400, status, text: async () => body });
   const homepage = { ok: true, status: 200, redirected: true, url: 'https://www.bnr.ro/', text: async () => '<html>BNR</html>' };
   const requested = [];
-  const mock = ({ bnr = true, ecb = true, stat = true } = {}) => async (url, init) => {
+  const mock = ({ bnr = true, ecb = true, stat = true, files = october } = {}) => async (url, init) => {
     new Request(url, init);
     url = String(url);
     requested.push(url);
     if (url.includes('bnr.ro')) {
       if (bnr === 'redirect') return homepage;
-      return bnr ? respond(files[url.split('/').pop()]) : respond('Access denied', 403);
+      if (!bnr) return respond('Access denied', 403);
+      if (!(url in files)) return respond('<html>404</html>', 404);
+      return files[url] === null ? respond('<html>502 Bad Gateway</html>', 502) : respond(files[url]);
     }
     if (url.includes('data-api.ecb')) return ecb ? respond(ECB_CSV) : respond('', 503);
     if (url.includes('eurostat')) { if (!stat) throw new Error('timeout'); return respond(JSON.stringify(eurostat(url))); }
     throw new Error('URL neașteptat: ' + url);
   };
+  const bnrAsked = () => requested.filter((u) => u.includes('bnr.ro'));
+  const askedYears = () => bnrAsked().some((u) => /nbrfxrates\d{4}\.xml$/.test(u));
+
   // Mesajele scriptului sunt captate: în Actions, avertismentele simulate ar apărea ca adnotări ale rulării (F-39).
   const realLog = console.log;
   const logs = [];
-  const logged = (re) => logs.some((l) => re.test(l));
+  const assertLogged = (re) => assert.ok(logs.some((l) => re.test(l)), `lipsește ${re} din mesajele scriptului:\n${logs.join('\n')}`);
+  const warnings = () => logs.filter((l) => /Avertisment|Eroare|::warning::|::error::/.test(l));
+
+  // O rulare reușită, de la zero: punctul de plecare al testelor cu istoric salvat, ca ele să nu depindă unul de altul.
+  const withSaved = async (name, edit = (s) => s) => {
+    const file = join(dir, name);
+    await writeFile(file, JSON.stringify(edit(JSON.parse(baseline)), null, 2) + '\n');
+    return file;
+  };
   before(async () => {
     dir = await mkdtemp(join(tmpdir(), 'taxa-pe-stat-date-'));
-    out = join(dir, 'rates.json');
     console.log = (...args) => logs.push(args.join(' '));
+    globalThis.fetch = mock();
+    if (!(await main({ today, out: join(dir, 'baseline.json') }))) {
+      throw new Error(`rularea de bază n-a adus date; mesajele scriptului:\n${logs.join('\n')}`);
+    }
+    baseline = await readFile(join(dir, 'baseline.json'), 'utf8');
+    process.exitCode = 0;
   });
   beforeEach(() => { logs.length = 0; requested.length = 0; });
   after(async () => {
@@ -199,33 +234,57 @@ describe('scriptul zilnic, cu rețea simulată', () => {
     await rm(dir, { recursive: true, force: true });
   });
 
-  test('User-Agent doar ASCII: altfel fetch refuză orice cerere (F-38)', () => {
-    assert.match(UA, /^[\x20-\x7e]+$/);
-  });
-  test('BNR și Eurostat răspund: scrie cursul BNR și inflația', async () => {
+  test('prima rulare: cursul BNR și inflația, de la adresele exacte', async () => {
     globalThis.fetch = mock();
+    const out = join(dir, 'prima.json');
     const d = await main({ today, out });
-    assert.deepEqual(logs.filter((l) => /Avertisment|::warning::/.test(l)), [], 'fără avertismente');
-    const bnr = requested.filter((u) => u.includes('bnr.ro'));
-    assert.equal(bnr.length, 3);
-    assert.ok(bnr.every((u) => u.startsWith('https://curs.bnr.ro/')), 'fișierele XML sunt doar pe curs.bnr.ro (F-40)');
+    assert.deepEqual(warnings(), [], 'fără avertismente');
+    assert.deepEqual(bnrAsked().sort(), [YEAR(2025), YEAR(2026), TEN].sort(), 'fișierele XML de pe curs.bnr.ro (F-40)');
     assert.equal(d.fx.source, 'BNR');
     assert.equal(d.fx.d0, '2025-10-28');
     assert.equal(d.fx.d1, '2026-10-28');
     assert.equal(d.fx.eur1, 5.3495);
+    assert.equal(d.fx.series[0][0], '2025-09-23', 'istoricul acoperă 400 de zile');
     assert.deepEqual(d.inflation, { source: 'Eurostat (IAPC)', month: '2026-09', yoy: 6.5, services: 9.3, avg12: 8.4, euroArea: 3.8, euroAreaMonth: '2026-09' });
     assert.deepEqual(JSON.parse(await readFile(out, 'utf8')), d);
     assert.ok(C.normalizeRates(d), 'pagina acceptă fișierul scris');
   });
-  test('a doua rulare cu aceleași date nu schimbă fișierul (deci nici commit)', async () => {
-    const before = await readFile(out, 'utf8');
+  test('a doua rulare cu aceleași date: doar ultimele 10 zile și fișierul neschimbat (deci nici commit) (O-14)', async () => {
+    globalThis.fetch = mock();
+    const out = await withSaved('a-doua.json');
     await main({ today, out });
-    assert.equal(await readFile(out, 'utf8'), before);
+    assert.equal(await readFile(out, 'utf8'), baseline);
+    assert.deepEqual(bnrAsked(), [TEN]);
+    assert.deepEqual(warnings(), []);
+  });
+  test('istoricul nu se leagă de ultimele 10 zile (botul n-a rulat): ia și fișierele anuale (O-14)', async () => {
+    globalThis.fetch = mock();
+    const out = await withSaved('gol.json', (s) => ({ ...s, fx: { ...s.fx, series: s.fx.series.filter(([date]) => date <= '2026-10-09') } }));
+    const d = await main({ today, out });
+    assert.ok(askedYears());
+    assert.ok(d.fx.series.some(([date]) => date === '2026-10-12'), 'zilele lipsă sunt recuperate');
+  });
+  test('istoric incomplet sau de la BCE: ia și fișierele anuale (O-14)', async () => {
+    globalThis.fetch = mock();
+    const cuts = {
+      'două zile nu sunt un istoric': (s) => [s[0], s.at(-1)],
+      'o gaură de o lună': (s) => s.filter(([date]) => date < '2026-03-01' || date > '2026-03-31'),
+      'începe după fereastra de 400 de zile': (s) => s.filter(([date]) => date >= '2025-10-20'),
+    };
+    for (const [what, cut] of Object.entries(cuts)) {
+      requested.length = 0;
+      await main({ today, out: await withSaved('incomplet.json', (s) => ({ ...s, fx: { ...s.fx, series: cut(s.fx.series) } })) });
+      assert.ok(askedYears(), what);
+    }
+    requested.length = 0;
+    const d = await main({ today, out: await withSaved('bce-istoric.json', (s) => ({ ...s, fx: { ...s.fx, source: 'BCE (rezervă)' } })) });
+    assert.ok(askedYears(), 'istoricul BCE nu se amestecă în cel BNR');
+    assert.equal(d.fx.source, 'BNR');
   });
   test('BNR refuză: trece pe BCE', async () => {
     globalThis.fetch = mock({ bnr: false });
     const d = await main({ today, out: join(dir, 'bce.json') });
-    assert.ok(logged(/Cursul BNR nu e disponibil; încerc BCE/));
+    assertLogged(/Cursul BNR nu e disponibil; încerc BCE/);
     assert.equal(d.fx.source, 'BCE (rezervă)');
     assert.equal(d.fx.d1, '2026-10-28');
     assert.equal(d.fx.d0, '2025-10-28');
@@ -233,23 +292,61 @@ describe('scriptul zilnic, cu rețea simulată', () => {
   test('BNR trimite spre prima pagină: avertisment clar, apoi BCE (F-40)', async () => {
     globalThis.fetch = mock({ bnr: 'redirect' });
     const d = await main({ today, out: join(dir, 'redirect.json') });
-    assert.ok(logged(/BNR: redirecționat spre https:\/\/www\.bnr\.ro\//));
+    assertLogged(/BNR: redirecționat spre https:\/\/www\.bnr\.ro\//);
     assert.equal(d.fx.source, 'BCE (rezervă)');
   });
+  test('început de ianuarie: tot BNR, cu anul de dinainte și fără fișierul anului nou (F-41)', async () => {
+    const january = (to, skip) => ({
+      [YEAR(2025)]: bnrXml(cubes('2025-09-01', '2025-12-31')),
+      [YEAR(2026)]: bnrXml(cubes('2026-01-05', '2026-12-31', ['2026-12-25'])),
+      [YEAR(2027)]: null,
+      [TEN]: bnrXml(cubes('2026-12-14', to, skip).slice(-10)),
+    });
+    // 1 ianuarie: BNR n-a publicat încă în 2027; cursul de acum un an e din 31 dec. 2025.
+    globalThis.fetch = mock({ files: january('2026-12-31', ['2026-12-25']) });
+    let d = await main({ today: '2027-01-01', out: join(dir, 'ian-1.json') });
+    assert.deepEqual(warnings(), [], 'fără „HTTP 502” pentru fișierul anului 2027');
+    assert.equal(d.fx.source, 'BNR');
+    assert.equal(d.fx.d1, '2026-12-31');
+    assert.equal(d.fx.d0, '2025-12-31');
+    assert.ok(!bnrAsked().includes(YEAR(2027)));
+    // 4 ianuarie: prima zi BNR din 2027; ținta de acum un an (4 ian. 2026) e înaintea primei zile din fișierul 2026.
+    logs.length = 0;
+    requested.length = 0;
+    globalThis.fetch = mock({ files: january('2027-01-04', ['2026-12-25', '2027-01-01']) });
+    d = await main({ today: '2027-01-04', out: join(dir, 'ian-4.json') });
+    assert.deepEqual(warnings(), []);
+    assert.equal(d.fx.source, 'BNR');
+    assert.equal(d.fx.d1, '2027-01-04');
+    assert.equal(d.fx.d0, '2025-12-31');
+    assert.ok(bnrAsked().includes(YEAR(2025)), 'anul de dinainte, pentru fereastra de 400 de zile');
+  });
   test('toate sursele cad: păstrează datele de ieri', async () => {
-    const before = await readFile(out, 'utf8');
     globalThis.fetch = mock({ bnr: false, ecb: false, stat: false });
+    const out = await withSaved('ieri.json');
     const d = await main({ today, out });
-    assert.ok(logged(/Niciun curs nou; păstrez cursul anterior/));
-    assert.ok(logged(/Inflația nu e disponibilă/));
+    assertLogged(/Niciun curs nou; păstrez cursul anterior/);
+    assertLogged(/Inflația nu e disponibilă/);
     assert.equal(d.fx.d1, '2026-10-28');
     assert.equal(d.inflation.yoy, 6.5);
-    assert.equal(await readFile(out, 'utf8'), before);
+    assert.equal(await readFile(out, 'utf8'), baseline);
+    assert.equal(process.exitCode ?? 0, 0, 'o zi fără date noi nu e o eroare');
+  });
+  test('cursul are peste 7 zile: jobul eșuează, ca GitHub să trimită email (F-42)', async () => {
+    globalThis.fetch = mock({ bnr: false, ecb: false, stat: false });
+    await main({ today: '2026-11-04', out: await withSaved('7-zile.json') });
+    assertLogged(/de acum 7 zile/);
+    assert.equal(process.exitCode ?? 0, 0, '7 zile: doar avertisment (pragul insignei din pagină)');
+    logs.length = 0;
+    await main({ today: '2026-11-05', out: await withSaved('8-zile.json') });
+    assertLogged(/de acum 8 zile: datele nu se mai actualizează/);
+    assert.equal(process.exitCode, 1);
+    process.exitCode = 0;
   });
   test('toate sursele cad și nu există date vechi: eșuează (GitHub trimite email)', async () => {
     globalThis.fetch = mock({ bnr: false, ecb: false, stat: false });
     const d = await main({ today, out: join(dir, 'nimic.json') });
-    assert.ok(logged(/nu există niciun curs/i));
+    assertLogged(/nu există niciun curs/i);
     assert.equal(d, null);
     assert.equal(process.exitCode, 1);
     process.exitCode = 0;

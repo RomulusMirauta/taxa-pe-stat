@@ -2,10 +2,11 @@
 // Rulează în GitHub Actions (vezi .github/workflows/publish.yml); merge și local: node scripts/update-data.mjs
 //
 // Surse:
-//   - curs: BNR, cursurile de referință (XML anual + zilnic, de pe curs.bnr.ro); rezervă: BCE (API-ul de date);
+//   - curs: BNR, cursurile de referință de pe curs.bnr.ro: ultimele 10 zile, legate de istoricul deja salvat;
+//     fișierele anuale doar când istoricul lipsește sau are goluri; rezervă: BCE (API-ul de date);
 //   - inflație: Eurostat, IAPC (setul prc_hicp_minr): România total și servicii, media pe 12 luni, zona euro.
 // Dacă o sursă nu răspunde, păstrează valorile anterioare și lasă un avertisment.
-// Eșuează (cod 1) doar dacă nu există deloc un curs, ca să primești email de la GitHub.
+// Eșuează (cod 1), ca să primești email de la GitHub, dacă nu există deloc un curs sau dacă are peste 7 zile.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -130,6 +131,14 @@ export function fxFromSeries(series, source) {
   };
 }
 
+/** Seria acoperă ultimele SERIES_DAYS zile, fără goluri de peste 10 zile (sărbătorile BNR țin cel mult ~5). */
+export function isContinuous(series) {
+  if (!series.length) return false;
+  const from = shiftDays(series.at(-1).date, -SERIES_DAYS);
+  return daysBetween(from, series[0].date) <= 10 &&
+    series.every((r, i) => i === 0 || daysBetween(series[i - 1].date, r.date) <= 10);
+}
+
 /** Răspuns JSON-stat de la Eurostat, pentru o singură serie → { month, value } (ultima lună cu date). */
 export function parseEurostat(json) {
   const index = json?.dimension?.time?.category?.index;
@@ -162,6 +171,7 @@ export function buildInflation({ ro, services, avg12, euroArea }, prev) {
 
 const inActions = !!process.env.GITHUB_ACTIONS;
 const warn = (msg) => console.log(inActions ? `::warning::${msg}` : `Avertisment: ${msg}`);
+const error = (msg) => console.log(inActions ? `::error::${msg}` : `Eroare: ${msg}`);
 
 async function get(url) {
   const res = await fetch(url, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(30000) });
@@ -171,16 +181,32 @@ async function get(url) {
   return res.text();
 }
 
-async function fxFromBnr(today) {
-  const y = Number(today.slice(0, 4));
-  // Din august 2026, fișierele XML sunt doar pe curs.bnr.ro (F-40).
-  const urls = [
-    `https://curs.bnr.ro/files/xml/years/nbrfxrates${y - 1}.xml`,
-    `https://curs.bnr.ro/files/xml/years/nbrfxrates${y}.xml`,
-    'https://curs.bnr.ro/nbrfxrates.xml',
-  ];
-  const texts = await Promise.all(urls.map((u) => get(u).catch((e) => { warn(`BNR: ${e.message}`); return ''; })));
-  return fxFromSeries(mergeSeries(...texts.map(parseBnrXml)), 'BNR');
+async function fxFromBnr(today, prevFx) {
+  // Fișierele XML sunt doar pe curs.bnr.ro; adresele de pe www.bnr.ro trimit spre prima pagină (F-40).
+  const bnr = (url) => get(url).then(parseBnrXml).catch((e) => { warn(`BNR: ${e.message}`); return []; });
+  const recent = await bnr('https://curs.bnr.ro/nbrfxrates10days.xml');
+
+  // Istoricul BNR salvat ajunge dacă ultimele 10 zile se leagă de el: BNR cere să nu descărcăm redundant (O-14).
+  const saved = prevFx?.source === 'BNR' && Array.isArray(prevFx.series)
+    ? prevFx.series.filter((r) => Array.isArray(r) && r[1] > 0 && r[2] > 0).map(([date, EUR, USD]) => ({ date, EUR, USD }))
+    : [];
+  if (saved.length && recent.length && recent[0].date <= saved.at(-1).date) {
+    const series = mergeSeries(saved, recent);
+    const fx = isContinuous(series) && fxFromSeries(series, 'BNR');
+    if (fx) return fx;
+  }
+
+  // Anii vin din ultima zi publicată, ca fereastra de 400 de zile: la început de ianuarie trebuie și anul
+  // de dinainte, iar un an acoperit deja de ultimele 10 zile nu se cere (fișierul lui poate să nu existe încă) (F-41).
+  const last = recent.at(-1)?.date ?? today;
+  const from = shiftDays(last, -SERIES_DAYS);
+  const years = [];
+  for (let year = Number(from.slice(0, 4)); year <= Number(last.slice(0, 4)); year++) {
+    const start = `${year}-01-01` > from ? `${year}-01-01` : from;
+    if (!recent.length || recent[0].date > start) years.push(year);
+  }
+  const lists = await Promise.all(years.map((year) => bnr(`https://curs.bnr.ro/files/xml/years/nbrfxrates${year}.xml`)));
+  return fxFromSeries(mergeSeries(...lists, recent), 'BNR');
 }
 
 async function fxFromEcb(today) {
@@ -200,14 +226,17 @@ export async function main({ today = new Date().toISOString().slice(0, 10), out 
   let prev = null;
   try { prev = JSON.parse(await readFile(out, 'utf8')); } catch { /* prima rulare */ }
 
-  let fx = await fxFromBnr(today).catch((e) => { warn(`BNR: ${e.message}`); return null; });
+  let fx = await fxFromBnr(today, prev?.fx).catch((e) => { warn(`BNR: ${e.message}`); return null; });
   if (!fx) {
     warn('Cursul BNR nu e disponibil; încerc BCE.');
     fx = await fxFromEcb(today).catch((e) => { warn(`BCE: ${e.message}`); return null; });
   }
   if (!fx && prev?.fx) { warn('Niciun curs nou; păstrez cursul anterior.'); fx = prev.fx; }
-  if (!fx) { console.log(inActions ? '::error::Nu există niciun curs.' : 'Eroare: nu există niciun curs.'); process.exitCode = 1; return null; }
-  if (daysBetween(fx.d1, today) > 5) warn(`Cursul e din ${fx.d1}, de acum ${daysBetween(fx.d1, today)} zile.`);
+  if (!fx) { error('Nu există niciun curs.'); process.exitCode = 1; return null; }
+  const age = daysBetween(fx.d1, today);
+  // Peste 7 zile, pragul insignei din pagină (F-24), jobul eșuează: altfel nimeni nu află că datele s-au oprit (F-42).
+  if (age > 7) { error(`Cursul e din ${fx.d1}, de acum ${age} zile: datele nu se mai actualizează.`); process.exitCode = 1; }
+  else if (age > 5) warn(`Cursul e din ${fx.d1}, de acum ${age} zile.`);
 
   const since = shiftDays(today, -240).slice(0, 7);
   const safe = (p, what) => p.catch((e) => { warn(`Eurostat (${what}): ${e.message}`); return null; });

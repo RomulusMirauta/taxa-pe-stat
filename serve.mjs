@@ -1,10 +1,10 @@
-// Server local pentru dezvoltare. Fără dependențe, doar Node 20 sau mai nou.
-// Servește aceeași pagină ca build-ul de cloud (fonturi locale, CSP) și o reîncarcă singur când salvezi app.html.
+// Local development server. No dependencies, only Node 20 or newer.
+// Serves the same page as the site build (local fonts, CSP) and reloads it by itself when you save app.html.
 //
 //   node serve.mjs              → http://localhost:5173
-//   node serve.mjs --open       → pornește și deschide browserul (start.cmd face asta)
-//   PORT=8080 node serve.mjs    → alt port   (PowerShell: $env:PORT=8080; node serve.mjs)
-//   HOST=0.0.0.0 node serve.mjs → accesibil și de pe telefon, din rețeaua de acasă
+//   node serve.mjs --open       → starts and opens the browser (start.cmd does this)
+//   PORT=8080 node serve.mjs    → another port   (PowerShell: $env:PORT=8080; node serve.mjs)
+//   HOST=0.0.0.0 node serve.mjs → reachable from a phone too, on the home network
 
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -23,7 +23,7 @@ const TYPES = {
   '.png': 'image/png',
 };
 
-// Întreabă serverul la fiecare secundă dacă app.html s-a schimbat.
+// Asks the server every second whether app.html has changed.
 const RELOAD = "(()=>{let v=null;setInterval(async()=>{try{const r=await fetch('/__v',{cache:'no-store'});const t=await r.text();if(v&&t!==v)location.reload();v=t}catch{}},1000)})();";
 
 function send(res, code, type, body) {
@@ -32,12 +32,12 @@ function send(res, code, type, body) {
 }
 
 async function handle(req, res) {
-  if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'text/plain; charset=utf-8', 'Metodă nepermisă');
+  if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'text/plain; charset=utf-8', 'Method not allowed');
   let pathname;
   try {
     pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
   } catch {
-    return send(res, 400, 'text/plain; charset=utf-8', 'Adresă invalidă');
+    return send(res, 400, 'text/plain; charset=utf-8', 'Invalid address');
   }
 
   if (pathname === '/' || pathname === '/index.html') {
@@ -48,7 +48,7 @@ async function handle(req, res) {
     return send(res, 200, 'text/plain; charset=utf-8', String((await stat(APP)).mtimeMs));
   }
 
-  // Doar fișiere din folderele permise; nimic din afara lor (protecție la ../).
+  // Only files from the allowed folders; nothing outside them (protection against ../).
   const dir = pathname.split('/')[1];
   if (STATIC_DIRS.includes(dir)) {
     const base = join(ROOT, dir);
@@ -57,16 +57,16 @@ async function handle(req, res) {
       try {
         const data = await readFile(file);
         return send(res, 200, TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream', data);
-      } catch { /* inexistent sau folder: 404 mai jos */ }
+      } catch { /* missing, or a folder: 404 below */ }
     }
   }
-  send(res, 404, 'text/plain; charset=utf-8', 'Nu există. Deschide /');
+  send(res, 404, 'text/plain; charset=utf-8', 'Not found. Open /');
 }
 
 export function startServer({ port = Number(process.env.PORT) || 5173, host = process.env.HOST || '127.0.0.1' } = {}) {
   return new Promise((ok, fail) => {
     const server = createServer((req, res) => {
-      handle(req, res).catch((e) => send(res, 500, 'text/plain; charset=utf-8', 'Eroare: ' + e.message));
+      handle(req, res).catch((e) => send(res, 500, 'text/plain; charset=utf-8', 'Error: ' + e.message));
     });
     server.once('error', fail);
     server.listen(port, host, () => ok(server));
@@ -79,7 +79,7 @@ function openBrowser(url) {
     : ['xdg-open', [url]];
   try {
     spawn(cmd, args, { stdio: 'ignore', detached: true, windowsHide: true }).on('error', () => {}).unref();
-  } catch { /* fără browser: adresa e afișată în consolă */ }
+  } catch { /* no browser: the address is printed in the console */ }
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
@@ -88,19 +88,19 @@ if (isMain) {
     .then((server) => {
       const { port, address } = server.address();
       const url = `http://localhost:${port}`;
-      console.log(`Taxa pe stat rulează pe ${url}  (Ctrl+C ca să oprești)`);
+      console.log(`Taxa pe stat is running at ${url}  (Ctrl+C to stop)`);
       if (address === '0.0.0.0' || address === '::') {
         for (const list of Object.values(networkInterfaces())) {
-          for (const n of list ?? []) if (n.family === 'IPv4' && !n.internal) console.log(`  din rețeaua de acasă: http://${n.address}:${port}`);
+          for (const n of list ?? []) if (n.family === 'IPv4' && !n.internal) console.log(`  from the home network: http://${n.address}:${port}`);
         }
       }
       if (process.argv.includes('--open')) openBrowser(url);
     })
     .catch((e) => {
       if (e.code === 'EADDRINUSE') {
-        console.error(`Portul ${e.port} e ocupat. Oprește cealaltă instanță sau alege alt port: PORT=5174 node serve.mjs (PowerShell: $env:PORT=5174; node serve.mjs)`);
+        console.error(`Port ${e.port} is busy. Stop the other instance or choose another port: PORT=5174 node serve.mjs (PowerShell: $env:PORT=5174; node serve.mjs)`);
       } else {
-        console.error('Serverul nu a pornit:', e.message);
+        console.error('The server did not start:', e.message);
       }
       process.exit(1);
     });

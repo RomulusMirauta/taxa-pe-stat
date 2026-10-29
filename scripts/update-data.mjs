@@ -1,12 +1,12 @@
-// Aduce datele zilnice și scrie data/rates.json.
-// Rulează în GitHub Actions (vezi .github/workflows/publish.yml); merge și local: node scripts/update-data.mjs
+// Fetches the daily data and writes data/rates.json.
+// Runs in GitHub Actions (see .github/workflows/publish.yml); also works locally: node scripts/update-data.mjs
 //
-// Surse:
-//   - curs: BNR, cursurile de referință de pe curs.bnr.ro: ultimele 10 zile, legate de istoricul deja salvat;
-//     fișierele anuale doar când istoricul lipsește sau are goluri; rezervă: BCE (API-ul de date);
-//   - inflație: Eurostat, IAPC (setul prc_hicp_minr): România total și servicii, media pe 12 luni, zona euro.
-// Dacă o sursă nu răspunde, păstrează valorile anterioare și lasă un avertisment.
-// Eșuează (cod 1), ca să primești email de la GitHub, dacă nu există deloc un curs sau dacă are peste 7 zile.
+// Sources:
+//   - exchange rates: BNR, the reference rates from curs.bnr.ro: the last 10 days, joined to the history already saved;
+//     the yearly files only when the history is missing or has gaps; fallback: the ECB (its data API);
+//   - inflation: Eurostat, HICP (dataset prc_hicp_minr): Romania total and services, the 12-month average, the euro area.
+// If a source does not answer, keeps the previous values and leaves a warning.
+// Fails (exit code 1), so that GitHub sends you an email, if there is no exchange rate at all or it is over 7 days old.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -15,11 +15,11 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = join(ROOT, 'data', 'rates.json');
 const SERIES_DAYS = 400;
-// Doar ASCII: fetch refuză antetele cu caractere peste 255, ca „ș” (FINDINGS F-38).
+// ASCII only: fetch rejects headers with characters above 255, such as "ș" (FINDINGS F-38).
 export const UA = 'taxa-pe-stat (calculator open-source; +https://github.com/RomulusMirauta/taxa-pe-stat)';
 const EUROSTAT = 'https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_minr';
 
-/* ---------- date calendaristice ---------- */
+/* ---------- calendar dates ---------- */
 
 export function shiftDays(iso, n) {
   const t = new Date(iso + 'T00:00:00Z');
@@ -27,7 +27,7 @@ export function shiftDays(iso, n) {
   return t.toISOString().slice(0, 10);
 }
 
-/** Aceeași zi, cu `n` ani mai devreme sau mai târziu; 29 februarie devine 28. */
+/** The same day, `n` years earlier or later; 29 February becomes the 28th. */
 export function shiftYear(iso, n) {
   const [y, m, d] = iso.split('-').map(Number);
   const t = new Date(Date.UTC(y + n, m - 1, d));
@@ -38,9 +38,9 @@ export function shiftYear(iso, n) {
 const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
 const r4 = (v) => Math.round(v * 10000) / 10000;
 
-/* ---------- parsare (funcții pure, testate în tests/data.test.mjs) ---------- */
+/* ---------- parsing (pure functions, tested in tests/data.test.mjs) ---------- */
 
-/** XML-ul BNR → [{ date, EUR, USD }], crescător după dată. Ține cont de atributul multiplier. */
+/** The BNR XML → [{ date, EUR, USD }], ascending by date. Honours the multiplier attribute. */
 export function parseBnrXml(xml) {
   const out = [];
   for (const cube of String(xml).matchAll(/<Cube\s+date="(\d{4}-\d{2}-\d{2})"\s*>([\s\S]*?)<\/Cube>/g)) {
@@ -55,7 +55,7 @@ export function parseBnrXml(xml) {
   return out.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** CSV simplu cu ghilimele (RFC 4180). */
+/** Simple CSV with quotes (RFC 4180). */
 export function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -78,7 +78,7 @@ export function parseCsv(text) {
   return rows.filter((r) => r.some((c) => c !== ''));
 }
 
-/** CSV de la API-ul BCE (format=csvdata, EUR→RON și EUR→USD) → [{ date, EUR, USD }] în lei pentru o unitate. */
+/** CSV from the ECB API (format=csvdata, EUR→RON and EUR→USD) → [{ date, EUR, USD }] in lei per unit. */
 export function parseEcbCsv(csv) {
   const [head = [], ...data] = parseCsv(String(csv));
   const iCur = head.indexOf('CURRENCY');
@@ -98,14 +98,14 @@ export function parseEcbCsv(csv) {
   return out.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** Unește serii (ultima câștigă la aceeași dată). */
+/** Merges series (on the same date, the last one wins). */
 export function mergeSeries(...lists) {
   const map = new Map();
   for (const list of lists) for (const r of list) map.set(r.date, r);
   return [...map.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** Ultima zi cu curs la cel mult un an înaintea lui `date` (fără weekend și sărbători). */
+/** The last day with a rate no later than one year before `date` (no weekends or holidays). */
 export function pickYearAgo(series, date) {
   const target = shiftYear(date, -1);
   let best = null;
@@ -116,7 +116,7 @@ export function pickYearAgo(series, date) {
   return best && daysBetween(best.date, target) <= 10 ? best : null;
 }
 
-/** Seria → secțiunea fx din rates.json: cursul de acum și cel de acum un an, plus istoricul recent. */
+/** Series → the fx section of rates.json: the current rate and the one from a year ago, plus the recent history. */
 export function fxFromSeries(series, source) {
   if (!series.length) return null;
   const last = series.at(-1);
@@ -131,7 +131,7 @@ export function fxFromSeries(series, source) {
   };
 }
 
-/** Seria acoperă ultimele SERIES_DAYS zile, fără goluri de peste 10 zile (sărbătorile BNR țin cel mult ~5). */
+/** The series covers the last SERIES_DAYS days, with no gaps over 10 days (BNR holidays last ~5 at most). */
 export function isContinuous(series) {
   if (!series.length) return false;
   const from = shiftDays(series.at(-1).date, -SERIES_DAYS);
@@ -139,12 +139,12 @@ export function isContinuous(series) {
     series.every((r, i) => i === 0 || daysBetween(series[i - 1].date, r.date) <= 10);
 }
 
-/** Răspuns JSON-stat de la Eurostat, pentru o singură serie → { month, value } (ultima lună cu date). */
+/** A Eurostat JSON-stat response for a single series → { month, value } (the latest month with data). */
 export function parseEurostat(json) {
   const index = json?.dimension?.time?.category?.index;
   if (!index || !json.value || !Array.isArray(json.size)) return null;
   const timeSize = Object.keys(index).length;
-  if (json.size.reduce((a, b) => a * b, 1) !== timeSize) return null; // nu e o singură serie
+  if (json.size.reduce((a, b) => a * b, 1) !== timeSize) return null; // not a single series
   let best = null;
   for (const [month, pos] of Object.entries(index)) {
     const v = json.value[pos] ?? json.value[String(pos)];
@@ -153,7 +153,7 @@ export function parseEurostat(json) {
   return best;
 }
 
-/** Secțiunea inflation din rates.json. Câmpurile lipsă se completează din datele anterioare doar dacă sunt din aceeași lună. */
+/** The inflation section of rates.json. Missing fields are filled in from the previous data only if it is from the same month. */
 export function buildInflation({ ro, services, avg12, euroArea }, prev) {
   if (!ro) return prev ?? null;
   const sameMonth = (x) => x && x.month === ro.month;
@@ -167,26 +167,26 @@ export function buildInflation({ ro, services, avg12, euroArea }, prev) {
   return out;
 }
 
-/* ---------- rețea ---------- */
+/* ---------- network ---------- */
 
 const inActions = !!process.env.GITHUB_ACTIONS;
-const warn = (msg) => console.log(inActions ? `::warning::${msg}` : `Avertisment: ${msg}`);
-const error = (msg) => console.log(inActions ? `::error::${msg}` : `Eroare: ${msg}`);
+const warn = (msg) => console.log(inActions ? `::warning::${msg}` : `Warning: ${msg}`);
+const error = (msg) => console.log(inActions ? `::error::${msg}` : `Error: ${msg}`);
 
 async function get(url) {
   const res = await fetch(url, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(30000) });
-  if (!res.ok) throw new Error(`HTTP ${res.status} la ${url}`);
-  // BNR trimite spre prima pagină cererile pe care nu le servește; fără verificare, am parsa HTML-ul ei (F-40).
-  if (res.redirected) throw new Error(`redirecționat spre ${res.url} la ${url}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  // BNR sends the requests it does not serve to its home page; without this check, we would parse that page's HTML (F-40).
+  if (res.redirected) throw new Error(`redirected to ${res.url} from ${url}`);
   return res.text();
 }
 
 async function fxFromBnr(today, prevFx) {
-  // Fișierele XML sunt doar pe curs.bnr.ro; adresele de pe www.bnr.ro trimit spre prima pagină (F-40).
+  // The XML files are only on curs.bnr.ro; the addresses on www.bnr.ro redirect to the home page (F-40).
   const bnr = (url) => get(url).then(parseBnrXml).catch((e) => { warn(`BNR: ${e.message}`); return []; });
   const recent = await bnr('https://curs.bnr.ro/nbrfxrates10days.xml');
 
-  // Istoricul BNR salvat ajunge dacă ultimele 10 zile se leagă de el: BNR cere să nu descărcăm redundant (O-14).
+  // The saved BNR history is enough if the last 10 days connect to it: BNR asks for no redundant downloads (O-14).
   const saved = prevFx?.source === 'BNR' && Array.isArray(prevFx.series)
     ? prevFx.series.filter((r) => Array.isArray(r) && r[1] > 0 && r[2] > 0).map(([date, EUR, USD]) => ({ date, EUR, USD }))
     : [];
@@ -196,8 +196,8 @@ async function fxFromBnr(today, prevFx) {
     if (fx) return fx;
   }
 
-  // Anii vin din ultima zi publicată, ca fereastra de 400 de zile: la început de ianuarie trebuie și anul
-  // de dinainte, iar un an acoperit deja de ultimele 10 zile nu se cere (fișierul lui poate să nu existe încă) (F-41).
+  // The years follow from the last published day, like the 400-day window: in early January the year before
+  // is needed too, and a year already covered by the last 10 days is not requested (its file may not exist yet) (F-41).
   const last = recent.at(-1)?.date ?? today;
   const from = shiftDays(last, -SERIES_DAYS);
   const years = [];
@@ -224,45 +224,45 @@ async function eurostat(geo, coicop, unit, since) {
 
 export async function main({ today = new Date().toISOString().slice(0, 10), out = OUT } = {}) {
   let prev = null;
-  try { prev = JSON.parse(await readFile(out, 'utf8')); } catch { /* prima rulare */ }
+  try { prev = JSON.parse(await readFile(out, 'utf8')); } catch { /* first run */ }
 
   let fx = await fxFromBnr(today, prev?.fx).catch((e) => { warn(`BNR: ${e.message}`); return null; });
   if (!fx) {
-    warn('Cursul BNR nu e disponibil; încerc BCE.');
-    fx = await fxFromEcb(today).catch((e) => { warn(`BCE: ${e.message}`); return null; });
+    warn('BNR rates unavailable; trying the ECB.');
+    fx = await fxFromEcb(today).catch((e) => { warn(`ECB: ${e.message}`); return null; });
   }
-  if (!fx && prev?.fx) { warn('Niciun curs nou; păstrez cursul anterior.'); fx = prev.fx; }
-  if (!fx) { error('Nu există niciun curs.'); process.exitCode = 1; return null; }
+  if (!fx && prev?.fx) { warn('No new rates; keeping the previous ones.'); fx = prev.fx; }
+  if (!fx) { error('No exchange rates at all.'); process.exitCode = 1; return null; }
   const age = daysBetween(fx.d1, today);
-  // Peste 7 zile, pragul insignei din pagină (F-24), jobul eșuează: altfel nimeni nu află că datele s-au oprit (F-42).
-  if (age > 7) { error(`Cursul e din ${fx.d1}, de acum ${age} zile: datele nu se mai actualizează.`); process.exitCode = 1; }
-  else if (age > 5) warn(`Cursul e din ${fx.d1}, de acum ${age} zile.`);
+  // Beyond 7 days, the threshold of the page's badge (F-24), the job fails: otherwise nobody notices that the data has stopped (F-42).
+  if (age > 7) { error(`Rates are from ${fx.d1}, ${age} days ago: the data is no longer updating.`); process.exitCode = 1; }
+  else if (age > 5) warn(`Rates are from ${fx.d1}, ${age} days ago.`);
 
   const since = shiftDays(today, -240).slice(0, 7);
   const safe = (p, what) => p.catch((e) => { warn(`Eurostat (${what}): ${e.message}`); return null; });
   const [ro, services, avg12, euroArea] = await Promise.all([
-    safe(eurostat('RO', 'TOTAL', 'RCH_A', since), 'România'),
-    safe(eurostat('RO', 'SERV', 'RCH_A', since), 'servicii'),
-    safe(eurostat('RO', 'TOTAL', 'RCH_MV12MAVR', since), 'media pe 12 luni'),
-    safe(eurostat('EA', 'TOTAL', 'RCH_A', since), 'zona euro'),
+    safe(eurostat('RO', 'TOTAL', 'RCH_A', since), 'Romania'),
+    safe(eurostat('RO', 'SERV', 'RCH_A', since), 'services'),
+    safe(eurostat('RO', 'TOTAL', 'RCH_MV12MAVR', since), '12-month average'),
+    safe(eurostat('EA', 'TOTAL', 'RCH_A', since), 'euro area'),
   ]);
-  if (!ro) warn('Inflația nu e disponibilă; păstrez valorile anterioare.');
+  if (!ro) warn('Inflation data unavailable; keeping the previous values.');
   const inflation = buildInflation({ ro, services, avg12, euroArea }, prev?.inflation);
 
   const data = { version: 1, fx, inflation };
   const text = JSON.stringify(data, null, 2) + '\n';
   const before = prev ? JSON.stringify(prev, null, 2) + '\n' : '';
   if (text === before) {
-    console.log(`Neschimbat: curs ${fx.source} din ${fx.d1}, inflație ${inflation?.month ?? '—'}.`);
+    console.log(`Unchanged: ${fx.source} rates from ${fx.d1}, inflation ${inflation?.month ?? '—'}.`);
   } else {
     await mkdir(dirname(out), { recursive: true });
     await writeFile(out, text);
-    console.log(`Scris data/rates.json: curs ${fx.source} din ${fx.d1} (EUR ${fx.eur1}, USD ${fx.usd1}), inflație ${inflation?.yoy ?? '—'}% în ${inflation?.month ?? '—'}.`);
+    console.log(`Wrote data/rates.json: ${fx.source} rates from ${fx.d1} (EUR ${fx.eur1}, USD ${fx.usd1}), inflation ${inflation?.yoy ?? '—'}% in ${inflation?.month ?? '—'}.`);
   }
   return data;
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
-  main().catch((e) => { console.error('Eșuat:', e.message); process.exit(1); });
+  main().catch((e) => { console.error('Failed:', e.message); process.exit(1); });
 }

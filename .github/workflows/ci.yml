@@ -1,4 +1,4 @@
-# Testele și build-ul pentru fiecare pull request (publicarea are workflow-ul ei: publish.yml).
+# Tests and build for every pull request (publishing has its own workflow: publish.yml).
 name: CI
 
 on:

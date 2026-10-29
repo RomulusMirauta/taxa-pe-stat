@@ -1,4 +1,4 @@
-// Build-ul pentru cloud: document complet, fonturi locale, CSP corect, căi relative.
+// The site build: a complete document, local fonts, a correct CSP, relative paths.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, mkdtemp, rm, access } from 'node:fs/promises';
@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { build, SITE_URL } from '../build.mjs';
 
-describe('build pentru cloud', () => {
+describe('the site build', () => {
   let out;
   let page;
   before(async () => {
@@ -17,30 +17,30 @@ describe('build pentru cloud', () => {
   });
   after(() => rm(out, { recursive: true, force: true }));
 
-  test('document complet, în română, cu un singur <title> în <head>', () => {
+  test('a complete document, in Romanian, with a single <title> in <head>', () => {
     assert.match(page, /^<!doctype html>\n<html lang="ro">/);
     assert.match(page, /<head>[\s\S]*<title>Taxa pe stat<\/title>[\s\S]*<\/head>/);
     assert.equal(page.match(/<title>/g).length, 1);
   });
-  test('fără Google Fonts: fonturile sunt servite local', () => {
+  test('no Google Fonts: the fonts are served locally', () => {
     assert.doesNotMatch(page, /fonts\.googleapis\.com|fonts\.gstatic\.com/);
     assert.match(page, /<link rel="stylesheet" href="fonts\/fonts\.css">/);
   });
-  test('căi relative (merge și pe GitHub Pages, sub /taxa-pe-stat/)', () => {
+  test('relative paths (they also work on GitHub Pages, under /taxa-pe-stat/)', () => {
     assert.doesNotMatch(page, /(?:href|src)="\/(?!\/)/);
   });
-  test('adresa publică vine din package.json: og:url și canonical', () => {
+  test('the public address comes from package.json: og:url and canonical', () => {
     assert.equal(SITE_URL, 'https://romulusmirauta.github.io/taxa-pe-stat/');
     assert.match(page, new RegExp(`<meta property="og:url" content="${SITE_URL}">`));
     assert.match(page, new RegExp(`<link rel="canonical" href="${SITE_URL}">`));
   });
-  test('imaginea de previzualizare: adresă absolută, copiată în build', async () => {
+  test('the preview image: an absolute address, copied into the build', async () => {
     assert.match(page, new RegExp(`<meta property="og:image" content="${SITE_URL}assets/og.png">`));
     assert.match(page, /<meta name="twitter:card" content="summary_large_image">/);
     await access(join(out, 'assets', 'og.png'));
   });
-  test('fără meta-ul claude: (e doar pentru artifact)', () => assert.doesNotMatch(page, /name="claude:/));
-  test('CSP: fiecare script inline are hash-ul lui, fără unsafe-inline la scripturi', () => {
+  test('no claude: meta (it was only for the artifact)', () => assert.doesNotMatch(page, /name="claude:/));
+  test('CSP: every inline script has its hash, no unsafe-inline for scripts', () => {
     const csp = page.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1].replace(/&#39;|&apos;/g, "'");
     const scriptSrc = csp.split(';').map((d) => d.trim()).find((d) => d.startsWith('script-src'));
     assert.doesNotMatch(scriptSrc, /unsafe-inline/);
@@ -48,16 +48,16 @@ describe('build pentru cloud', () => {
     assert.equal(inline.length, 2);
     for (const code of inline) {
       const h = createHash('sha256').update(code, 'utf8').digest('base64');
-      assert.ok(scriptSrc.includes(`'sha256-${h}'`), 'lipsește hash-ul unui script');
+      assert.ok(scriptSrc.includes(`'sha256-${h}'`), 'an inline script has no hash in the CSP');
     }
     assert.match(csp, /connect-src 'self'/);
     assert.match(csp, /font-src 'self'/);
   });
-  test('datele zilnice sunt copiate lângă pagină', async () => {
+  test('the daily data is copied next to the page', async () => {
     const data = JSON.parse(await readFile(join(out, 'data', 'rates.json'), 'utf8'));
     assert.ok(data.fx && data.inflation);
   });
-  test('fonts.css și toate fișierele lui sunt copiate', async () => {
+  test('fonts.css and all its files are copied', async () => {
     const css = await readFile(join(out, 'fonts', 'fonts.css'), 'utf8');
     const files = [...css.matchAll(/url\(\.\/([^)]+)\)/g)].map((m) => m[1]);
     assert.equal(files.length, 6);

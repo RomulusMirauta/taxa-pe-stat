@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" data-fonts href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: antet + contor, apoi formular | rezultate; sub 860px totul într-o singură coloană */
+/* Layout: header + counter, then form | results; below 860px everything in one column */
 /* tokens:start */
 :root{
   --bg:#f3f4f8; --surface:#ffffff; --ink:#1b2036; --muted:#5d6380; --line:#dfe2ec;
@@ -201,8 +201,8 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
 </div>
 
 <script id="calc">
-/* Calcul pur, fără DOM. Testat în tests/calc.test.mjs.
-   Ratele sunt fracții: 0.0661 înseamnă 6,61%. Sumele sunt în lei nominali. */
+/* Pure calculations, no DOM. Tested in tests/calc.test.mjs.
+   Rates are fractions: 0.0661 means 6.61%. Amounts are in nominal lei. */
 (function (root) {
   'use strict';
   var YEAR_DAYS = 365;
@@ -213,8 +213,8 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     { key: 'an', label: 'An', days: 365 }
   ];
 
-  /* Citește numere scrise ca în română sau engleză: "6,61", "6.61", "50.000", "50 000", "1.234,56", "6,61%".
-     opts.money: la sume, "50.000" și "50,000" înseamnă cincizeci de mii. */
+  /* Reads numbers written the Romanian or English way: "6,61", "6.61", "50.000", "50 000", "1.234,56", "6,61%".
+     opts.money: for amounts, "50.000" and "50,000" mean fifty thousand. */
   function parseNum(input, opts) {
     var money = !!(opts && opts.money);
     if (typeof input === 'number') return Number.isFinite(input) ? input : NaN;
@@ -252,7 +252,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     return neg ? -v : v;
   }
 
-  /* "AAAA-LL-ZZ" -> milisecunde UTC; NaN pentru date inexistente (ex. 2026-02-30). */
+  /* "YYYY-MM-DD" -> UTC milliseconds; NaN for nonexistent dates (e.g. 2026-02-30). */
   function parseISODate(s) {
     if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return NaN;
     var t = Date.parse(s + 'T00:00:00Z');
@@ -266,59 +266,59 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     return Math.round((tb - ta) / 864e5);
   }
 
-  /* Cât din valoarea în valută a păstrat leul între două cursuri (lei pentru 1 unitate),
-     și ritmul anual echivalent. Fără interval valid nu există ritm. */
+  /* How much of its foreign-currency value the leu kept between two rates (lei per 1 unit),
+     and the equivalent annual pace. Without a valid interval there is no pace. */
   function fxTrend(c0, c1, days) {
     if (!(c0 > 0 && c1 > 0 && days > 0)) return null;
     var kept = c0 / c1;
     return { kept: kept, lost: 1 - kept, annual: 1 - Math.pow(kept, YEAR_DAYS / days), days: days };
   }
 
-  /* p = { S, pi, rate, tax, fees, net }. Fără dobândă (net=false) dobânda și comisioanele nu contează. */
+  /* p = { S, pi, rate, tax, fees, net }. In no-interest mode (net=false), interest and fees don't count. */
   function netRate(p) { return p.rate * (1 - p.tax); }
   function growth(p) { return p.net ? 1 + netRate(p) : 1; }
   function feesOf(p) { return p.net ? p.fees : 0; }
 
-  /* Soldul nominal după `years` ani: dobândă compusă, comisioane plătite pe parcurs. */
+  /* Nominal balance after `years` years: compound interest, fees paid along the way. */
   function nominalBalance(p, years) { return p.S * Math.pow(growth(p), years) - feesOf(p) * years; }
 
-  /* Pierderea de putere de cumpărare după `days` zile, în lei de azi. Negativ = câștig real. */
+  /* Loss of purchasing power after `days` days, in today's lei. Negative = real gain. */
   function realLoss(p, days) {
     var y = days / YEAR_DAYS;
     return p.S - nominalBalance(p, y) / Math.pow(1 + p.pi, y);
   }
 
-  /* Pierderea măsurată în valută după `days` zile, dacă leul pierde `annualDep` pe an față de ea. */
+  /* Loss measured in the foreign currency after `days` days, if the leu loses `annualDep` a year against it. */
   function fxLoss(p, annualDep, rateNow, days) {
     var y = days / YEAR_DAYS;
     return (p.S - nominalBalance(p, y) * Math.pow(1 - annualDep, y)) / rateNow;
   }
 
-  /* Valoarea reală (lei de azi) după `years` ani. */
+  /* Real value (today's lei) after `years` years. */
   function realValue(p, years) { return Math.max(0, nominalBalance(p, years)) / Math.pow(1 + p.pi, years); }
 
-  /* Ritmul instantaneu al pierderii reale, în lei pe an (pentru contorul live). */
+  /* Instantaneous rate of real loss, in lei per year (for the live counter). */
   function lossRatePerYear(p) { return p.S * (Math.log(1 + p.pi) - Math.log(growth(p))) + feesOf(p); }
 
-  /* Dobânda brută la care valoarea reală rămâne neschimbată după un an. Exact, nu aproximativ:
-     (S(1+i) - F) / (1+π) = S  <=>  i = π + F/S, iar i = r(1-τ). */
+  /* Gross interest rate at which the real value stays unchanged after one year. Exact, not approximate:
+     (S(1+i) - F) / (1+π) = S  <=>  i = π + F/S, where i = r(1-τ). */
   function breakEvenRate(pi, tax, feesPerYear, S) {
     if (!(tax >= 0 && tax < 1)) return NaN;
     var need = pi + (S > 0 && feesPerYear > 0 ? feesPerYear / S : 0);
     return need / (1 - tax);
   }
 
-  /* Câți lei în plus îți trebuie peste `years` ani pentru același coș. */
+  /* How many extra lei you need in `years` years for the same basket. */
   function extraNeeded(S, pi, years) { return S * (Math.pow(1 + pi, years) - 1); }
 
-  /* Pas „rotund” pentru axa graficului: 1, 2, 2,5, 5 sau 10 × 10^n. */
+  /* "Round" step for the chart axis: 1, 2, 2.5, 5 or 10 × 10^n. */
   function niceStep(max, ticks) {
     if (!(max > 0) || !(ticks > 0)) return 1;
     var raw = max / ticks, pow = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / pow;
     return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * pow;
   }
 
-  /* Validează data/rates.json înainte să fie folosit în pagină. Întoarce doar ce e valid, sau null. */
+  /* Validates data/rates.json before the page uses it. Returns only what is valid, or null. */
   function normalizeRates(j) {
     if (!j || typeof j !== 'object') return null;
     var out = {};
@@ -358,8 +358,8 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   'use strict';
   var C = window.Calc;
 
-  /* Valorile din pagină. Sunt folosite până se încarcă data/rates.json (actualizat zilnic de GitHub Actions)
-     sau când fișierul lipsește. Prognoza BNR și dobânzile se actualizează manual. */
+  /* Built-in values. Used until data/rates.json loads (updated daily by GitHub Actions)
+     or when the file is missing. The BNR forecast and the interest rates are updated by hand. */
   var DATA = {
     sum: 50000,
     live: false,
@@ -372,7 +372,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   var $ = function (id) { return document.getElementById(id); };
   function esc(v) { return String(v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-  /* ---------- formatare (română) ---------- */
+  /* ---------- formatting (Romanian) ---------- */
   var NF = {};
   function nf(d) { return NF[d] || (NF[d] = new Intl.NumberFormat('ro-RO', { minimumFractionDigits: d, maximumFractionDigits: d })); }
   function fmt(v, d) { return nf(d === undefined ? 2 : d).format(v); }
@@ -396,7 +396,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   var MF = new Intl.DateTimeFormat('ro-RO', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   function fmtDate(iso) { var t = C.parseISODate(iso); return isFinite(t) ? DF.format(t) : '—'; }
   function fmtMonth(ym) { var t = C.parseISODate(ym + '-01'); return isFinite(t) ? MF.format(t) : ym; }
-  /* „1 zi”, „7 zile”, „365 de zile” */
+  /* Romanian day counts: "1 zi", "7 zile", "365 de zile" */
   function daysWord(n) {
     if (n === 1) return '1 zi';
     var r = n % 100;
@@ -408,7 +408,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     return isFinite(t) ? Math.round((today - t) / 864e5) : NaN;
   }
 
-  /* ---------- citirea formularului ---------- */
+  /* ---------- reading the form ---------- */
   var FIELDS = {
     sum:  { money: true, min: 0, err: 'suma (un număr ≥ 0, de ex. 50.000)' },
     infl: { min: -50, max: 500, err: 'inflația (între −50% și 500%)' },
@@ -466,7 +466,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     };
   }
 
-  /* ---------- randare ---------- */
+  /* ---------- rendering ---------- */
   function cell(v, unit) {
     if (!isFinite(v)) return '<td class="num">—</td>';
     var r = Math.round(v * 100) / 100;
@@ -540,7 +540,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
 
   function renderChart(s) {
     var svg = $('ch'), hint = $('chHint');
-    /* Lățimea desenului urmează containerul, ca textul să rămână lizibil și pe telefon. */
+    /* The drawing's width follows the container, so the text stays readable on phones too. */
     var W = Math.round(Math.max(320, Math.min(640, svg.parentNode.clientWidth || 640))), H = 260, L = 64, R = 16, T = 14, B = 30, yrs = 10;
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     if (!(s.S > 0) || !isFinite(s.infl)) {
@@ -612,7 +612,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     });
   }
 
-  /* ---------- contorul live ---------- */
+  /* ---------- live counter ---------- */
   var tick = { rate: 0, total: 0, last: performance.now() };
   var slow = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   function renderTicker(s) {
@@ -647,10 +647,10 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     syncChips();
   }
 
-  /* ---------- pornire ---------- */
+  /* ---------- startup ---------- */
   var edited = false;
 
-  /* Textele care depind de date: butoanele de scenariu, explicațiile, sursele. */
+  /* Texts that depend on the data: scenario buttons, explanations, sources. */
   function renderStatic() {
     var I = DATA.inflation, F = DATA.fx, Sv = DATA.savings;
     var chips = [[I.yoy, 'Ultimele 12 luni · ' + short(I.yoy) + '%']];
@@ -729,8 +729,8 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     render();
   }
 
-  /* Datele zilnice, de pe același domeniu (GitHub Pages, serverul local, artifact-ul dacă fișierul e publicat lângă pagină).
-     Dacă lipsesc sau nu trec validarea, rămân valorile din pagină. Nu suprascrie ce ai modificat deja. */
+  /* Daily data, from the same domain (GitHub Pages, the local server, the artifact if the file is published next to the page).
+     If missing or invalid, the built-in values stay. Does not overwrite what the user has already changed. */
   function loadData() {
     if (!window.fetch) return;
     fetch('data/rates.json', { cache: 'no-cache' })
@@ -745,7 +745,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
         if (!edited) fillInputs();
         render();
       })
-      .catch(function () { /* fără date: rămân valorile din pagină */ });
+      .catch(function () { /* no data: the built-in values stay */ });
   }
 
   setup();

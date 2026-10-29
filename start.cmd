@@ -1,9 +1,9 @@
 @echo off
-rem Porneste Taxa pe stat local si deschide browserul cand serverul e gata.
+rem Starts Taxa pe stat locally and opens the browser once the server is ready.
 cd /d "%~dp0"
 where node >nul 2>nul
 if errorlevel 1 (
-  echo Node.js nu este instalat. Descarca-l de pe https://nodejs.org si ruleaza din nou.
+  echo Node.js is not installed. Download it from https://nodejs.org and run this again.
   pause
   exit /b 1
 )

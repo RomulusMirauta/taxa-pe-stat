@@ -109,5 +109,6 @@ Dacă sesiunea ta nu poate publica artifact-ul, sincronizarea se face din claude
 ## Mediu
 
 - **Windows:** `start.cmd` pornește serverul și deschide browserul.
-- **Copia-oglindă:** pe calculator există și o copie fără git, scrisă din claude.ai. Lucrul cu git se face în clone.
-- **Fișiere învechite în oglindă:** `vercel.json` și `github-workflows/` se pot șterge; în repo nu mai există.
+- **Folderul local e clone-ul:** copia scrisă din claude.ai a fost transformată în clone git (`docs/LUCRU.md`). Ce scrie claude.ai apare în `git status`.
+- **Autorul commit-urilor** e setat local, în `.git/config`: git-ul global de pe calculator folosește altă adresă. Într-un clone nou, setează din nou `user.name` și `user.email`.
+- **`gh`** e în `C:\Program Files\GitHub CLI\`, dar poate lipsi din PATH (Git Bash: `"/c/Program Files/GitHub CLI/gh.exe"`). Contul activ trebuie să fie `RomulusMirauta` (`gh auth status`).

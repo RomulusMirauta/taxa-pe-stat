@@ -33,8 +33,8 @@ Pe lângă site, aplicația există și ca artifact privat pe claude.ai. Linkul 
 
 ## Copia locală
 
-Există și o copie a proiectului pe calculatorul autorului, scrisă de Claude prin legătura cu aplicația desktop.
+Pe calculatorul autorului, folderul în care scrie Claude din claude.ai, prin legătura cu aplicația desktop, e și clone-ul git al repo-ului. A fost transformat pe loc din `taxa-pe-stat.bundle`, cu `origin` pe GitHub.
 
-- **Nu conține `.github/`:** din motive de siguranță, Claude nu are voie să scrie acolo pe calculator.
-- **Copia de siguranță a istoricului:** `taxa-pe-stat.bundle`, ignorat de git. Se clonează cu `git clone taxa-pe-stat.bundle`.
-- **Pentru lucru local** e mai simplu un clone al repo-ului de pe GitHub.
+- **Ce scrie Claude din claude.ai** apare în `git status`, ca orice modificare locală. Commit-ul și push-ul se fac de aici, din git.
+- **`.github/`:** din claude.ai, Claude nu are voie să scrie acolo pe calculator. Workflow-urile se modifică din Claude Code sau din repo.
+- **`taxa-pe-stat.bundle`** (ignorat de git) a fost copia de siguranță a istoricului până la primul push. Acum istoricul e pe GitHub, deci fișierul se poate șterge.

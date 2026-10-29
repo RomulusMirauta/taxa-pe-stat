@@ -263,7 +263,7 @@ Datele se actualizează pe serverele GitHub, fără calculatorul tău.
 
 1. **Când:** în zilele lucrătoare, la 13:30 și 17:30 ora României iarna (o oră mai târziu vara). BNR publică în jur de 13:00, iar a doua rulare e o plasă de siguranță.
 2. **Ce:** `scripts/update-data.mjs` aduce:
-   - **cursul:** XML-urile BNR (anul trecut, anul curent, ziua curentă), din care alege cursul de azi și pe cel de acum un an (ultima zi lucrătoare cel mult până la aceeași dată). Dacă BNR nu răspunde, folosește cursurile BCE;
+   - **cursul:** XML-urile BNR de pe `curs.bnr.ro` (anul trecut, anul curent, ziua curentă), din care alege cursul de azi și pe cel de acum un an (ultima zi lucrătoare cel mult până la aceeași dată). Dacă BNR nu răspunde, folosește cursurile BCE;
    - **inflația:** Eurostat, IAPC (`prc_hicp_minr`): România total, servicii, media pe 12 luni și zona euro.
 3. **Unde:** scrie `data/rates.json` doar dacă s-a schimbat ceva. Workflow-ul face commit ca `github-actions[bot]`, rulează testele, construiește și publică.
 4. **Când ceva cade:**
@@ -271,7 +271,7 @@ Datele se actualizează pe serverele GitHub, fără calculatorul tău.
    - niciun curs, nici măcar unul vechi → jobul eșuează, iar GitHub trimite email.
 5. **În pagină:** `app.html` citește `data/rates.json` de pe același domeniu și îl validează (`Calc.normalizeRates`). Ce nu trece validarea e ignorat și rămân valorile din pagină. Ce ai modificat deja în formular nu e suprascris.
 
-Testat în `tests/data.test.mjs`, cu rețeaua simulată: parsarea fiecărei surse, cursul de acum un an, trecerea pe BCE, păstrarea datelor vechi, eșecul.
+Testat în `tests/data.test.mjs`, cu rețeaua simulată, prin care cererile trec cu aceeași validare ca la `fetch`: parsarea fiecărei surse, cursul de acum un an, trecerea pe BCE (și când BNR redirecționează), păstrarea datelor vechi, eșecul.
 
 ---
 

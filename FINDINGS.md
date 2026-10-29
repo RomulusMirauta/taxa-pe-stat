@@ -6,7 +6,7 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 
 **Implementarea datelor automate:** 29 octombrie 2026, F-31…F-33.
 
-**Publicarea pe GitHub:** 29 octombrie 2026, F-37.
+**Publicarea pe GitHub:** 29 octombrie 2026, F-37…F-40.
 
 **Severitate:**
 - **Major:** rezultat greșit, pagină inutilizabilă sau risc la publicare.
@@ -62,6 +62,9 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 | F-35 | Major | Commit-uri cu autor provizoriu; căi locale și linkuri provizorii în documente | Reparat | `build.test` |
 | F-36 | Minor | Linkul trimis prietenilor nu avea imagine de previzualizare; README fără captură | Reparat | `build.test` |
 | F-37 | Cosmetic | `BAZA.md`: un rând din tabelul §5.9 ajunsese la finalul §5.10 | Reparat | — |
+| F-38 | Major | Nicio cerere de date nu pleca: „ș” în User-Agent | Reparat | `data.test` |
+| F-39 | Minor | Avertismentele simulate din teste apăreau ca adnotări în GitHub Actions | Reparat | `data.test` |
+| F-40 | Major | BNR servește fișierele XML doar pe `curs.bnr.ro`; adresele vechi trimit spre prima pagină | Reparat | `data.test` |
 
 ---
 
@@ -309,6 +312,30 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 - **Unde:** `BAZA.md`, §5.9 („Citirea numerelor”) și §5.10 („Datele automate”).
 - **Problema:** rândul pentru valorile invalide („abc”, „”, „12.34.56”) ajunsese lipit de ultimul paragraf din §5.10. Fără antet, nu era tabel: apărea ca text cu bare verticale la finalul paragrafului, iar tabelul din §5.9 rămăsese fără el.
 - **Fix:** rândul e înapoi în tabelul din §5.9.
+
+### F-38 · Major · Nicio cerere de date nu pleca: „ș” în User-Agent
+- **Unde:** `scripts/update-data.mjs`, antetul `user-agent`.
+- **Găsit:** la prima rulare în GitHub Actions: „Cannot convert argument to a ByteString because the character at index 55 has a value of 537”.
+- **Problema:** User-Agent-ul se termina cu „date publice BNR și Eurostat”. Antetele HTTP acceptă doar caractere până la 255, iar „ș” e 537, așa că `fetch` refuza fiecare cerere înainte să plece: BNR, BCE și toate seriile Eurostat. Scriptul păstra datele vechi și jobul se termina cu succes, deci nu venea niciun email. Testele nu l-au prins, pentru că rețeaua simulată ignora antetele.
+- **Fix:**
+  - User-Agent doar ASCII, cu adresa repo-ului;
+  - în teste, fiecare cerere simulată trece prin `new Request()`, deci prin aceeași validare ca la `fetch`;
+  - când toate sursele răspund, testul cere zero avertismente.
+- **Test:** `data.test` → „User-Agent doar ASCII” și „BNR și Eurostat răspund”. Verificat prin mutație: cu „ș” pus la loc, pică 5 teste.
+
+### F-39 · Minor · Avertismentele simulate apăreau ca adnotări în GitHub Actions
+- **Problema:** în Actions, scriptul scrie avertismentele ca adnotări (`::warning::`, `::error::`). Testele rulează același script cu surse care cad intenționat, așa că pagina fiecărei rulări arăta „BNR: HTTP 403”, „BCE: HTTP 503” și eroarea „Nu există niciun curs”, deși nimic din toate astea nu se întâmplase. Te puteau păcăli exact la verificarea O-11 și O-12.
+- **Fix:** testele captează mesajele scriptului și le verifică, în loc să le lase să ajungă în log.
+- **Test:** `data.test` → testele cu rețea simulată verifică avertismentele așteptate.
+
+### F-40 · Major · BNR servește fișierele XML doar pe `curs.bnr.ro`
+- **Problema:** adresele folosite (`www.bnr.ro/nbrfxrates.xml` și fișierele anuale de sub `www.bnr.ro/files/xml/years/`) răspund acum cu 302 spre prima pagină, chiar și de pe un calculator din România. `fetch` urma redirecționarea și primea HTML-ul primei pagini, fără niciun curs. În log apărea doar „Cursul BNR nu e disponibil”, fără motiv.
+- **Sursa:** pagina BNR „Utilizarea fișierelor XML pentru preluare curs valutar” (https://curs.bnr.ro/) listează fișierele, cu aceleași nume, doar pe `curs.bnr.ro`.
+- **Fix:**
+  - adresele noi, pe `curs.bnr.ro`;
+  - o redirecționare e tratată ca eroare și apare în log cu adresa spre care trimite („redirecționat spre https://www.bnr.ro/”).
+- **Verificat pe date reale,** de pe un calculator din România: 28 oct. 2026, EUR 5,3495 și USD 4,8088, ca în BAZA §2.
+- **Test:** `data.test` → „fișierele XML sunt doar pe curs.bnr.ro” și „BNR trimite spre prima pagină”. Verificat prin mutație: cu adresele vechi sau fără verificarea redirecționării, pică testul respectiv.
 
 ---
 

@@ -1,6 +1,7 @@
 // Datele automate: parsarea surselor (BNR, BCE, Eurostat), alegerea cursului de acum un an,
-// rezervele când o sursă cade, și validarea din pagină. Fără rețea: fetch e simulat.
-import { test, describe, before, after } from 'node:test';
+// rezervele când o sursă cade, și validarea din pagină. Fără rețea: fetch e simulat,
+// dar fiecare cerere trece prin aceeași validare ca la fetch-ul adevărat (F-38).
+import { test, describe, before, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
@@ -9,7 +10,7 @@ import { join } from 'node:path';
 import vm from 'node:vm';
 import {
   parseBnrXml, parseCsv, parseEcbCsv, mergeSeries, pickYearAgo, fxFromSeries, parseEurostat,
-  buildInflation, shiftYear, shiftDays, main,
+  buildInflation, shiftYear, shiftDays, main, UA,
 } from '../scripts/update-data.mjs';
 
 const html = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
@@ -167,19 +168,47 @@ describe('scriptul zilnic, cu rețea simulată', () => {
     return eurostatJson([9.2, 8.2, 6.3, 6.5]);
   };
   const respond = (body, status = 200) => ({ ok: status < 400, status, text: async () => body });
-  const mock = ({ bnr = true, ecb = true, stat = true } = {}) => async (url) => {
+  const homepage = { ok: true, status: 200, redirected: true, url: 'https://www.bnr.ro/', text: async () => '<html>BNR</html>' };
+  const requested = [];
+  const mock = ({ bnr = true, ecb = true, stat = true } = {}) => async (url, init) => {
+    new Request(url, init);
     url = String(url);
-    if (url.includes('bnr.ro')) return bnr ? respond(files[url.split('/').pop()]) : respond('Access denied', 403);
+    requested.push(url);
+    if (url.includes('bnr.ro')) {
+      if (bnr === 'redirect') return homepage;
+      return bnr ? respond(files[url.split('/').pop()]) : respond('Access denied', 403);
+    }
     if (url.includes('data-api.ecb')) return ecb ? respond(ECB_CSV) : respond('', 503);
     if (url.includes('eurostat')) { if (!stat) throw new Error('timeout'); return respond(JSON.stringify(eurostat(url))); }
     throw new Error('URL neașteptat: ' + url);
   };
-  before(async () => { dir = await mkdtemp(join(tmpdir(), 'taxa-pe-stat-date-')); out = join(dir, 'rates.json'); });
-  after(async () => { globalThis.fetch = realFetch; process.exitCode = 0; await rm(dir, { recursive: true, force: true }); });
+  // Mesajele scriptului sunt captate: în Actions, avertismentele simulate ar apărea ca adnotări ale rulării (F-39).
+  const realLog = console.log;
+  const logs = [];
+  const logged = (re) => logs.some((l) => re.test(l));
+  before(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'taxa-pe-stat-date-'));
+    out = join(dir, 'rates.json');
+    console.log = (...args) => logs.push(args.join(' '));
+  });
+  beforeEach(() => { logs.length = 0; requested.length = 0; });
+  after(async () => {
+    console.log = realLog;
+    globalThis.fetch = realFetch;
+    process.exitCode = 0;
+    await rm(dir, { recursive: true, force: true });
+  });
 
+  test('User-Agent doar ASCII: altfel fetch refuză orice cerere (F-38)', () => {
+    assert.match(UA, /^[\x20-\x7e]+$/);
+  });
   test('BNR și Eurostat răspund: scrie cursul BNR și inflația', async () => {
     globalThis.fetch = mock();
     const d = await main({ today, out });
+    assert.deepEqual(logs.filter((l) => /Avertisment|::warning::/.test(l)), [], 'fără avertismente');
+    const bnr = requested.filter((u) => u.includes('bnr.ro'));
+    assert.equal(bnr.length, 3);
+    assert.ok(bnr.every((u) => u.startsWith('https://curs.bnr.ro/')), 'fișierele XML sunt doar pe curs.bnr.ro (F-40)');
     assert.equal(d.fx.source, 'BNR');
     assert.equal(d.fx.d0, '2025-10-28');
     assert.equal(d.fx.d1, '2026-10-28');
@@ -196,14 +225,23 @@ describe('scriptul zilnic, cu rețea simulată', () => {
   test('BNR refuză: trece pe BCE', async () => {
     globalThis.fetch = mock({ bnr: false });
     const d = await main({ today, out: join(dir, 'bce.json') });
+    assert.ok(logged(/Cursul BNR nu e disponibil; încerc BCE/));
     assert.equal(d.fx.source, 'BCE (rezervă)');
     assert.equal(d.fx.d1, '2026-10-28');
     assert.equal(d.fx.d0, '2025-10-28');
+  });
+  test('BNR trimite spre prima pagină: avertisment clar, apoi BCE (F-40)', async () => {
+    globalThis.fetch = mock({ bnr: 'redirect' });
+    const d = await main({ today, out: join(dir, 'redirect.json') });
+    assert.ok(logged(/BNR: redirecționat spre https:\/\/www\.bnr\.ro\//));
+    assert.equal(d.fx.source, 'BCE (rezervă)');
   });
   test('toate sursele cad: păstrează datele de ieri', async () => {
     const before = await readFile(out, 'utf8');
     globalThis.fetch = mock({ bnr: false, ecb: false, stat: false });
     const d = await main({ today, out });
+    assert.ok(logged(/Niciun curs nou; păstrez cursul anterior/));
+    assert.ok(logged(/Inflația nu e disponibilă/));
     assert.equal(d.fx.d1, '2026-10-28');
     assert.equal(d.inflation.yoy, 6.5);
     assert.equal(await readFile(out, 'utf8'), before);
@@ -211,6 +249,7 @@ describe('scriptul zilnic, cu rețea simulată', () => {
   test('toate sursele cad și nu există date vechi: eșuează (GitHub trimite email)', async () => {
     globalThis.fetch = mock({ bnr: false, ecb: false, stat: false });
     const d = await main({ today, out: join(dir, 'nimic.json') });
+    assert.ok(logged(/nu există niciun curs/i));
     assert.equal(d, null);
     assert.equal(process.exitCode, 1);
     process.exitCode = 0;

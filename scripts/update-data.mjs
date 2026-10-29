@@ -2,7 +2,7 @@
 // Rulează în GitHub Actions (vezi .github/workflows/publish.yml); merge și local: node scripts/update-data.mjs
 //
 // Surse:
-//   - curs: BNR, cursurile de referință (XML anual + zilnic); rezervă: BCE (API-ul de date);
+//   - curs: BNR, cursurile de referință (XML anual + zilnic, de pe curs.bnr.ro); rezervă: BCE (API-ul de date);
 //   - inflație: Eurostat, IAPC (setul prc_hicp_minr): România total și servicii, media pe 12 luni, zona euro.
 // Dacă o sursă nu răspunde, păstrează valorile anterioare și lasă un avertisment.
 // Eșuează (cod 1) doar dacă nu există deloc un curs, ca să primești email de la GitHub.
@@ -14,7 +14,8 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = join(ROOT, 'data', 'rates.json');
 const SERIES_DAYS = 400;
-const UA = 'taxa-pe-stat (calculator open-source; date publice BNR și Eurostat)';
+// Doar ASCII: fetch refuză antetele cu caractere peste 255, ca „ș” (FINDINGS F-38).
+export const UA = 'taxa-pe-stat (calculator open-source; +https://github.com/RomulusMirauta/taxa-pe-stat)';
 const EUROSTAT = 'https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/prc_hicp_minr';
 
 /* ---------- date calendaristice ---------- */
@@ -165,15 +166,18 @@ const warn = (msg) => console.log(inActions ? `::warning::${msg}` : `Avertisment
 async function get(url) {
   const res = await fetch(url, { headers: { 'user-agent': UA }, signal: AbortSignal.timeout(30000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} la ${url}`);
+  // BNR trimite spre prima pagină cererile pe care nu le servește; fără verificare, am parsa HTML-ul ei (F-40).
+  if (res.redirected) throw new Error(`redirecționat spre ${res.url} la ${url}`);
   return res.text();
 }
 
 async function fxFromBnr(today) {
   const y = Number(today.slice(0, 4));
+  // Din august 2026, fișierele XML sunt doar pe curs.bnr.ro (F-40).
   const urls = [
-    `https://www.bnr.ro/files/xml/years/nbrfxrates${y - 1}.xml`,
-    `https://www.bnr.ro/files/xml/years/nbrfxrates${y}.xml`,
-    'https://www.bnr.ro/nbrfxrates.xml',
+    `https://curs.bnr.ro/files/xml/years/nbrfxrates${y - 1}.xml`,
+    `https://curs.bnr.ro/files/xml/years/nbrfxrates${y}.xml`,
+    'https://curs.bnr.ro/nbrfxrates.xml',
   ];
   const texts = await Promise.all(urls.map((u) => get(u).catch((e) => { warn(`BNR: ${e.message}`); return ''; })));
   return fxFromSeries(mergeSeries(...texts.map(parseBnrXml)), 'BNR');

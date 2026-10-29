@@ -255,6 +255,7 @@ Inflația din România include deja o parte din efectul cursului: produsele impo
 | „1.234,56” / „1,234.56” | 1234,56 | |
 | „50.000” / „50,000” / „50 000” | 50000 | la sume și comisioane |
 | „50.000” | 50 | la rate, punctul e zecimal |
+| „abc”, „”, „12.34.56” | invalid | câmpul e marcat; nu devine 0 |
 
 ### 5.10 Datele automate
 
@@ -271,7 +272,6 @@ Datele se actualizează pe serverele GitHub, fără calculatorul tău.
 5. **În pagină:** `app.html` citește `data/rates.json` de pe același domeniu și îl validează (`Calc.normalizeRates`). Ce nu trece validarea e ignorat și rămân valorile din pagină. Ce ai modificat deja în formular nu e suprascris.
 
 Testat în `tests/data.test.mjs`, cu rețeaua simulată: parsarea fiecărei surse, cursul de acum un an, trecerea pe BCE, păstrarea datelor vechi, eșecul.
-| „abc”, „”, „12.34.56” | invalid | câmpul e marcat; nu devine 0 |
 
 ---
 

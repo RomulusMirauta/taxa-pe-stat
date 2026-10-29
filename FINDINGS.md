@@ -6,6 +6,8 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 
 **Implementarea datelor automate:** 29 octombrie 2026, F-31…F-33.
 
+**Publicarea pe GitHub:** 29 octombrie 2026, F-37.
+
 **Severitate:**
 - **Major:** rezultat greșit, pagină inutilizabilă sau risc la publicare.
 - **Minor:** rezultat derutant sau caz-limită.
@@ -59,6 +61,7 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 | F-34 | Minor | `vercel.json` rămas după alegerea GitHub Pages | Reparat | — |
 | F-35 | Major | Commit-uri cu autor provizoriu; căi locale și linkuri provizorii în documente | Reparat | `build.test` |
 | F-36 | Minor | Linkul trimis prietenilor nu avea imagine de previzualizare; README fără captură | Reparat | `build.test` |
+| F-37 | Cosmetic | `BAZA.md`: un rând din tabelul §5.9 ajunsese la finalul §5.10 | Reparat | — |
 
 ---
 
@@ -299,6 +302,13 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
   - `docs/screenshot.png` în README.
 - **Atenție:** aplicațiile de mesagerie țin minte previzualizarea. Primul link trimis înainte de publicare poate rămâne fără imagine.
 - **Test:** `build.test` → „imaginea de previzualizare”.
+
+## Găsite la publicarea pe GitHub
+
+### F-37 · Cosmetic · Un rând din tabelul §5.9 rătăcit în §5.10
+- **Unde:** `BAZA.md`, §5.9 („Citirea numerelor”) și §5.10 („Datele automate”).
+- **Problema:** rândul pentru valorile invalide („abc”, „”, „12.34.56”) ajunsese lipit de ultimul paragraf din §5.10. Fără antet, nu era tabel: apărea ca text cu bare verticale la finalul paragrafului, iar tabelul din §5.9 rămăsese fără el.
+- **Fix:** rândul e înapoi în tabelul din §5.9.
 
 ---
 

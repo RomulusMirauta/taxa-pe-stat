@@ -142,3 +142,43 @@ describe('other results', () => {
     assert.deepEqual(Array.from(C.PERIODS, (p) => p.days), [1, 7, 365 / 12, 365]);
   });
 });
+
+// Every figure of DESIGN §6, so the document cannot drift from the code (F-45).
+describe('the worked example in DESIGN §6 (50,000 lei, 6.61%, BNR 28 Oct 2025 → 28 Oct 2026)', () => {
+  const taxFree = (rate) => ({ S, pi: PI, rate, tax: 0, fees: 0, net: true });
+  const rows = {
+    'current account': [raw, [8.77, 61.34, 265.99, 3100.08]],
+    'deposit 5.5% gross': [dep, [2.15, 15.05, 65.35, 778.54]],
+    'Tezaur 1 year, 6.5% tax-free': [taxFree(0.065), [0.14, 0.99, 4.30, 51.59]],
+    'Fidelis 4 years, 7.15% tax-free': [taxFree(0.0715), [-0.69, -4.85, -21.06, -253.26]],
+  };
+  for (const [name, [p, losses]] of Object.entries(rows)) {
+    test(`the real loss by period: ${name}`, () => {
+      C.PERIODS.forEach((q, i) => close(C.realLoss(p, q.days), losses[i], 0.005, q.label));
+    });
+  }
+  const eur = C.fxTrend(5.0844, 5.3495, 365);
+  const usd = C.fxTrend(4.3591, 4.8088, 365);
+  test('against foreign currency, already realised', () => {
+    close(S / 5.0844, 9834.00, 0.005, 'EUR then');
+    close(S / 5.3495, 9346.67, 0.005, 'EUR now');
+    close(S / 5.3495 - S / 5.0844, -487.33, 0.005, 'EUR difference');
+    close(S / 4.3591, 11470.26, 0.005, 'USD then');
+    close(S / 4.8088, 10397.60, 0.005, 'USD now');
+    close(S / 4.8088 - S / 4.3591, -1072.65, 0.005, 'USD difference');
+    close(usd.lost, 0.0935, 0.00005, 'the leu lost 9.35% against the dollar');
+  });
+  test('against foreign currency, projected over a year', () => {
+    close(C.fxLoss(raw, eur.annual, 5.3495, 365), 463.18, 0.005, 'EUR, current account');
+    close(C.fxLoss(raw, usd.annual, 4.8088, 365), 972.34, 0.005, 'USD, current account');
+    close(C.fxLoss(dep, eur.annual, 5.3495, 365), 23.45, 0.005, 'EUR, deposit');
+    close(C.fxLoss(dep, usd.annual, 4.8088, 365), 505.79, 0.005, 'USD, deposit');
+  });
+  test('in 10 years, the minimum rate and the extra lei', () => {
+    close(C.realValue(raw, 10), 26363, 0.5, 'no interest');
+    close(C.realValue(dep, 10), 42738, 0.5, 'deposit');
+    close(C.breakEvenRate(PI, 0.1, 0, S), 0.0734, 0.00005, 'with a 10% tax');
+    close(C.breakEvenRate(PI, 0, 0, S), 0.0661, 1e-12, 'without tax');
+    close(C.extraNeeded(S, PI, 1), 3305, 1e-9, 'extra lei next year');
+  });
+});

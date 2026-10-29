@@ -2,6 +2,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 
 const html = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
 const style = html.match(/<style>([\s\S]*?)<\/style>/)[1];
@@ -29,6 +30,14 @@ describe('artifact rules', () => {
   });
   test('no alert/confirm/prompt (the artifact does not show them)', () => {
     assert.doesNotMatch(scripts, /\b(alert|confirm|prompt)\(/);
+  });
+});
+
+describe('the page scripts', () => {
+  test('every inline script parses: a syntax error would stop the whole page (F-46)', () => {
+    const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    assert.equal(inline.length, 2);
+    inline.forEach((code, i) => assert.doesNotThrow(() => new vm.Script(code, { filename: `app.html, inline script ${i + 1}` })));
   });
 });
 

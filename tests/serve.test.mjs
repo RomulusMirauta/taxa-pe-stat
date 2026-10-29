@@ -1,6 +1,8 @@
 // The local server: serves the page and the fonts, refuses everything else (including ../).
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { startServer } from '../serve.mjs';
 
 describe('the local server', () => {
@@ -49,5 +51,17 @@ describe('the local server', () => {
     const r = await fetch(base + '/', { method: 'POST' });
     assert.equal(r.status, 405);
     await r.arrayBuffer();
+  });
+  test('a busy port: a clear message, with the command for cmd, PowerShell and Bash (F-16, F-47)', async () => {
+    const serve = fileURLToPath(new URL('../serve.mjs', import.meta.url));
+    const p = spawn(process.execPath, [serve], { env: { ...process.env, PORT: String(server.address().port), HOST: '127.0.0.1' } });
+    let err = '';
+    p.stderr.on('data', (d) => (err += d));
+    const code = await new Promise((done) => p.on('exit', done));
+    assert.equal(code, 1);
+    assert.match(err, /Port \d+ is busy/);
+    assert.match(err, /cmd: +set "PORT=5174" && start\.cmd/);
+    assert.match(err, /PowerShell: +\$env:PORT=5174; node serve\.mjs/);
+    assert.match(err, /PORT=5174 node serve\.mjs/);
   });
 });

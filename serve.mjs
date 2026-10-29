@@ -3,7 +3,7 @@
 //
 //   node serve.mjs              → http://localhost:5173
 //   node serve.mjs --open       → starts and opens the browser (start.cmd does this)
-//   PORT=8080 node serve.mjs    → another port   (PowerShell: $env:PORT=8080; node serve.mjs)
+//   PORT=8080 node serve.mjs    → another port   (PowerShell: $env:PORT=8080; node serve.mjs; cmd: set "PORT=8080" && start.cmd)
 //   HOST=0.0.0.0 node serve.mjs → reachable from a phone too, on the home network
 
 import { createServer } from 'node:http';
@@ -98,7 +98,10 @@ if (isMain) {
     })
     .catch((e) => {
       if (e.code === 'EADDRINUSE') {
-        console.error(`Port ${e.port} is busy. Stop the other instance or choose another port: PORT=5174 node serve.mjs (PowerShell: $env:PORT=5174; node serve.mjs)`);
+        console.error(`Port ${e.port} is busy. Stop the other instance or choose another port:\n` +
+          '  cmd:          set "PORT=5174" && start.cmd\n' +
+          '  PowerShell:   $env:PORT=5174; node serve.mjs\n' +
+          '  macOS, Linux: PORT=5174 node serve.mjs');
       } else {
         console.error('The server did not start:', e.message);
       }

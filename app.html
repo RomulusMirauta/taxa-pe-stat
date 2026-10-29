@@ -56,6 +56,8 @@ fieldset{border:0;padding:0;margin:0;display:grid;gap:10px;min-width:0}
 legend{font-family:var(--display);font-weight:700;font-size:16px;margin-bottom:6px;padding:0}
 label{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* A date needs ~170px at 16px, so the year is not cut; side by side only when both fit (F-79). */
+.dates{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
 input{font:inherit;font-family:var(--mono);font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
 input[aria-invalid="true"]{border-color:var(--loss);background:var(--loss-soft)}
 input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -94,6 +96,8 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
 .src{font-size:13px;color:var(--muted);margin:-12px 0 0}
 .src a{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Without JavaScript the counter and the form would do nothing: only the <noscript> message stays */
+@media (scripting:none){#ticker,.grid{display:none}}
 </style>
 
 <div class="wrap">
@@ -104,9 +108,11 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     <ul class="fresh" id="fresh" aria-label="Cât de noi sunt datele"></ul>
   </header>
 
+  <noscript><p class="formerr">Calculatorul are nevoie de JavaScript. Activează-l și reîncarcă pagina.</p></noscript>
+
   <section class="ticker" id="ticker" aria-label="Contor live">
     <small id="tkLabel"></small>
-    <div class="big" id="tk">0,0000 lei</div>
+    <div class="big" id="tk">—</div>
     <small id="tkNote"></small>
   </section>
 
@@ -142,11 +148,13 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
 
       <fieldset>
         <legend>Cursul BNR (lei pentru 1 unitate)</legend>
-        <div class="row2">
+        <div class="dates">
           <label for="d0">Data de referință
             <input id="d0" type="date"></label>
           <label for="d1">Data curentă
             <input id="d1" type="date"></label>
+        </div>
+        <div class="row2">
           <label for="eur0">EUR atunci
             <input id="eur0" type="text" inputmode="decimal" spellcheck="false"></label>
           <label for="eur1">EUR acum
@@ -214,10 +222,11 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   ];
 
   /* Reads numbers written the Romanian or English way: "6,61", "6.61", "50.000", "50 000", "1.234,56", "6,61%".
-     opts.money: for amounts, "50.000" and "50,000" mean fifty thousand. */
+     opts.money: for amounts, "50.000" and "50,000" mean fifty thousand. A group of thousands never starts
+     with 0, so "0,500" is half a leu, not 500. "-0" is 0: the page never shows a sign on zero. */
   function parseNum(input, opts) {
     var money = !!(opts && opts.money);
-    if (typeof input === 'number') return Number.isFinite(input) ? input : NaN;
+    if (typeof input === 'number') return Number.isFinite(input) ? (input === 0 ? 0 : input) : NaN;
     if (typeof input !== 'string') return NaN;
     var s = input.replace(/[\s  ']/g, '').replace(/%$/, '');
     if (!s) return NaN;
@@ -231,11 +240,11 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
       var cut = s.lastIndexOf(dec);
       intPart = s.slice(0, cut); frac = s.slice(cut + 1);
       if (frac.indexOf(grp) >= 0) return NaN;
-      if (!new RegExp('^\\d{1,3}(\\' + grp + '\\d{3})*$').test(intPart)) return NaN;
+      if (!new RegExp('^[1-9]\\d{0,2}(\\' + grp + '\\d{3})*$').test(intPart)) return NaN;
       intPart = intPart.split(grp).join('');
     } else if (dot >= 0 || comma >= 0) {
       var parts = s.split(dot >= 0 ? '.' : ',');
-      var grouped = /^\d{1,3}$/.test(parts[0]) && parts.slice(1).every(function (p) { return /^\d{3}$/.test(p); });
+      var grouped = /^[1-9]\d{0,2}$/.test(parts[0]) && parts.slice(1).every(function (p) { return /^\d{3}$/.test(p); });
       if (parts.length > 2) {
         if (!grouped) return NaN;
         intPart = parts.join('');
@@ -249,7 +258,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     }
     var v = Number((intPart || '0') + (frac ? '.' + frac : ''));
     if (!Number.isFinite(v)) return NaN;
-    return neg ? -v : v;
+    return neg && v !== 0 ? -v : v;
   }
 
   /* "YYYY-MM-DD" -> UTC milliseconds; NaN for nonexistent dates (e.g. 2026-02-30). */
@@ -266,12 +275,71 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     return Math.round((tb - ta) / 864e5);
   }
 
+  /* Age in days, on `today`, of a date or of a month ("YYYY-MM", counted from its first day). NaN if invalid. */
+  function ageDays(iso, today) {
+    return daysBetween(typeof iso === 'string' && /^\d{4}-\d{2}$/.test(iso) ? iso + '-01' : iso, today);
+  }
+  /* After how many days the page flags a value as old: the exchange rate (F-24); the BNR inflation report,
+     which comes out every quarter; the indicative interest rates, which are set by hand. */
+  var STALE_DAYS = { fx: 7, report: 100, savings: 90 };
+  function isStale(kind, iso, today) { return ageDays(iso, today) > STALE_DAYS[kind]; }
+  /* Eurostat publishes a month around the 18th of the next one (January only at the end of February), and the
+     bot runs on working days: the month after `month` is late only when `month` is more than 90 days old,
+     counted from its first day. */
+  function inflationOverdue(month, today) { return ageDays(month, today) > 90; }
+  /* The month `ym` ("YYYY-MM") is over on `today`. */
+  function monthPassed(ym, today) { return typeof ym === 'string' && typeof today === 'string' && today.slice(0, 7) > ym; }
+
+  /* A pair of exchange rates (lei for 1 unit, then and now) that can be real: each between 0 and 1000, at most
+     4 times apart. A forgotten or misplaced comma changes a rate at least 10 times; the largest real move since
+     2005 is about 2.15 times (USD: 2.2319 in April 2008, 4.8088 in October 2026). */
+  var FX_MAX = 1000, FX_MAX_RATIO = 4;
+  function fxPairOk(c0, c1) {
+    return typeof c0 === 'number' && typeof c1 === 'number' && c0 > 0 && c1 > 0 && c0 < FX_MAX && c1 < FX_MAX &&
+      Math.max(c0 / c1, c1 / c0) <= FX_MAX_RATIO;
+  }
+
   /* How much of its foreign-currency value the leu kept between two rates (lei per 1 unit),
-     and the equivalent annual pace. Without a valid interval there is no pace. */
+     and the equivalent annual pace. Without a valid interval, or when the pace overflows, there is no pace.
+     A pace below −1000% a year (the leu would gain more than ten times its value) is an artefact of a very
+     short interval, not a pace: annual is then NaN, and nothing is projected from it. */
+  var MIN_ANNUAL = -10;
   function fxTrend(c0, c1, days) {
     if (!(c0 > 0 && c1 > 0 && days > 0)) return null;
-    var kept = c0 / c1;
-    return { kept: kept, lost: 1 - kept, annual: 1 - Math.pow(kept, YEAR_DAYS / days), days: days };
+    var kept = c0 / c1, annual = 1 - Math.pow(kept, YEAR_DAYS / days);
+    if (!Number.isFinite(annual)) return null;
+    return { kept: kept, lost: 1 - kept, annual: annual >= MIN_ANNUAL ? annual : NaN, days: days };
+  }
+
+  /* Under 180 days, extrapolating the leu's pace to a whole year exaggerates: the page warns (F-05). */
+  var SHORT_DAYS = 180;
+  function isShortInterval(days) { return days > 0 && days < SHORT_DAYS; }
+
+  /* The BNR rate on the date `iso`, from a series of [date, eur, usd] rows in ascending order (normalizeRates):
+     the last row on or before that date, since weekends and holidays keep the last published rate.
+     null when that row is more than 10 days older than the date (the series does not reach it),
+     when the date is after `today`, or without a series. */
+  function rateOn(series, iso, today) {
+    var t = parseISODate(iso);
+    if (!Array.isArray(series) || !Number.isFinite(t) || !(parseISODate(today) >= t)) return null;
+    var best = null;
+    for (var k = 0; k < series.length && series[k][0] <= iso; k++) best = series[k];
+    return best && daysBetween(best[0], iso) <= 10 ? best : null;
+  }
+
+  /* Data that arrives after the page has started: which fields to write, by id. `current` is what the fields
+     hold, `lastFilled` what was last written into them, `next` the new values. A field the user changed (it
+     differs from what was written) is kept, and so is the field with the focus. The dates and the rates go
+     together: if any of them was changed, or has the focus, none of them is written. */
+  var FX_FIELDS = ['d0', 'd1', 'eur0', 'eur1', 'usd0', 'usd1'];
+  function mergeInputs(current, lastFilled, next, focusedId) {
+    var changed = function (id) { return current[id] !== lastFilled[id]; };
+    var keepFx = FX_FIELDS.some(function (id) { return id === focusedId || changed(id); });
+    var out = {};
+    Object.keys(next).forEach(function (id) {
+      if (id !== focusedId && !changed(id) && !(keepFx && FX_FIELDS.indexOf(id) >= 0)) out[id] = next[id];
+    });
+    return out;
   }
 
   /* p = { S, pi, rate, tax, fees, net }. In no-interest mode (net=false), interest and fees don't count. */
@@ -300,12 +368,22 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   /* Instantaneous rate of real loss, in lei per year (for the live counter). */
   function lossRatePerYear(p) { return p.S * (Math.log(1 + p.pi) - Math.log(growth(p))) + feesOf(p); }
 
+  /* The interest and the fees in words, for the counter note and the chart hint. Fees are never described
+     as absent when they are charged. `pct` and `lei` are the page's formatters. */
+  function accountNote(p, pct, lei) {
+    var i = p.net ? netRate(p) : 0, fees = p.net && p.fees > 0 ? lei(p.fees) + ' comisioane pe an' : '';
+    if (i > 0) return 'cu dobânda netă de ' + pct(i) + (fees ? ' și ' + fees : '');
+    return 'fără dobândă' + (fees ? ', dar cu ' + fees : '');
+  }
+
   /* Gross interest rate at which the real value stays unchanged after one year. Exact, not approximate:
-     (S(1+i) - F) / (1+π) = S  <=>  i = π + F/S, where i = r(1-τ). */
+     (S(1+i) - F) / (1+π) = S  <=>  i = π + F/S, where i = r(1-τ). When prices fall faster than the fees take
+     (π + F/S ≤ 0), any interest keeps up, even 0%: a negative gross rate would assume that the tax is paid
+     back on negative interest, and the form accepts none (F-09). */
   function breakEvenRate(pi, tax, feesPerYear, S) {
     if (!(tax >= 0 && tax < 1)) return NaN;
     var need = pi + (S > 0 && feesPerYear > 0 ? feesPerYear / S : 0);
-    return need / (1 - tax);
+    return need <= 0 ? 0 : need / (1 - tax);
   }
 
   /* How many extra lei you need in `years` years for the same basket. */
@@ -318,6 +396,20 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * pow;
   }
 
+  /* The BNR history from data/rates.json, [date, eur, usd] rows: kept only if every date is valid and later
+     than the one before, every rate is between 0 and 1000, and there are at most 600 rows (the bot keeps
+     400 days, about 280 working days). Otherwise null: the page then works without it. */
+  var SERIES_MAX = 600;
+  function seriesOf(s) {
+    var rate = function (v) { return typeof v === 'number' && v > 0 && v < FX_MAX; };
+    if (!Array.isArray(s) || !s.length || s.length > SERIES_MAX) return null;
+    for (var k = 0; k < s.length; k++) {
+      var r = s[k];
+      if (!Array.isArray(r) || !Number.isFinite(parseISODate(r[0])) || (k > 0 && !(r[0] > s[k - 1][0])) || !rate(r[1]) || !rate(r[2])) return null;
+    }
+    return s.map(function (r) { return [r[0], r[1], r[2]]; });
+  }
+
   /* Validates data/rates.json before the page uses it. Returns only what is valid, or null. */
   function normalizeRates(j) {
     if (!j || typeof j !== 'object') return null;
@@ -326,9 +418,10 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     var month = function (v) { return typeof v === 'string' && /^\d{4}-\d{2}$/.test(v) && Number.isFinite(parseISODate(v + '-01')); };
     var pctOk = function (v) { return typeof v === 'number' && v > -50 && v < 500; };
     var f = j.fx;
-    if (f && daysBetween(f.d0, f.d1) > 0 &&
-        [f.eur0, f.eur1, f.usd0, f.usd1].every(function (v) { return typeof v === 'number' && v > 0 && v < 1000; })) {
+    if (f && daysBetween(f.d0, f.d1) > 0 && fxPairOk(f.eur0, f.eur1) && fxPairOk(f.usd0, f.usd1)) {
       out.fx = { source: label(f.source) || 'BNR', d0: f.d0, d1: f.d1, eur0: f.eur0, eur1: f.eur1, usd0: f.usd0, usd1: f.usd1 };
+      var series = seriesOf(f.series);
+      if (series) out.fx.series = series;
     }
     var i = j.inflation;
     if (i && month(i.month) && pctOk(i.yoy)) {
@@ -345,10 +438,12 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
 
   root.Calc = Object.freeze({
     YEAR_DAYS: YEAR_DAYS, PERIODS: PERIODS, parseNum: parseNum, parseISODate: parseISODate,
-    daysBetween: daysBetween, fxTrend: fxTrend, netRate: netRate, growth: growth,
+    daysBetween: daysBetween, ageDays: ageDays, isStale: isStale, inflationOverdue: inflationOverdue,
+    monthPassed: monthPassed, fxPairOk: fxPairOk, fxTrend: fxTrend, isShortInterval: isShortInterval,
+    rateOn: rateOn, mergeInputs: mergeInputs, netRate: netRate, growth: growth,
     nominalBalance: nominalBalance, realLoss: realLoss, fxLoss: fxLoss, realValue: realValue,
-    lossRatePerYear: lossRatePerYear, breakEvenRate: breakEvenRate, extraNeeded: extraNeeded,
-    niceStep: niceStep, normalizeRates: normalizeRates
+    lossRatePerYear: lossRatePerYear, accountNote: accountNote, breakEvenRate: breakEvenRate,
+    extraNeeded: extraNeeded, niceStep: niceStep, normalizeRates: normalizeRates
   });
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -364,22 +459,35 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     sum: 50000,
     live: false,
     inflation: { source: 'Eurostat (IAPC)', month: '2026-09', yoy: 6.5, services: 9.3, avg12: 8.4, euroArea: 3.8, euroAreaMonth: '2026-09' },
-    forecast: { bnrDec2027: 3.4 },
     fx: { source: 'BNR', d0: '2025-10-28', eur0: 5.0844, usd0: 4.3591, d1: '2026-10-28', eur1: 5.3495, usd1: 4.8088 },
-    savings: { asOf: '2026-10', deposit12: 5.5, tezaur1y: 6.5, tax: 10 }
+    /* Set by hand (DESIGN §2), each value with the month it is from; the page flags them when they get old.
+       forecast: the BNR inflation forecast for the end of `target`, from the report of the month `report`. */
+    forecast: { value: 3.4, target: '2027-12', report: '2026-08' },
+    savings: {
+      deposit12: { rate: 5.5, asOf: '2026-07' },
+      tezaur1y: { rate: 6.5, asOf: '2026-10' },
+      tax: { rate: 10, asOf: '2026-10' }
+    }
   };
 
   var $ = function (id) { return document.getElementById(id); };
   function esc(v) { return String(v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   /* ---------- formatting (Romanian) ---------- */
+  /* Intl writes "-" and keeps it on values that round to zero; the page writes "−" and no sign on zero (F-08). */
+  function minus(s) { return /^-0(,0+)?$/.test(s) ? s.slice(1) : s.replace('-', '−'); }
   var NF = {};
   function nf(d) { return NF[d] || (NF[d] = new Intl.NumberFormat('ro-RO', { minimumFractionDigits: d, maximumFractionDigits: d })); }
-  function fmt(v, d) { return nf(d === undefined ? 2 : d).format(v); }
+  function fmt(v, d) { return minus(nf(d === undefined ? 2 : d).format(v)); }
   var SHORT = new Intl.NumberFormat('ro-RO', { maximumFractionDigits: 2 });
   var RATE4 = new Intl.NumberFormat('ro-RO', { maximumFractionDigits: 4 });
-  function short(v) { return SHORT.format(v); }
-  function pct(fraction) { return fmt(fraction * 100) + '%'; }
+  function short(v) { return minus(SHORT.format(v)); }
+  function pct(fraction) { return isFinite(fraction) ? fmt(fraction * 100) + '%' : '—'; }
+  function lei(v) { return fmt(v, 0) + ' lei'; }
+  /* The sign of a value as the page shows it, rounded to 2 decimals (−1, 0 or 1), and its colour: a loss in
+     red, a gain in green, zero without a colour. */
+  function sign2(v) { var r = Math.round(v * 100) / 100; return r > 0 ? 1 : r < 0 ? -1 : 0; }
+  function tone(v) { return ['loss', '', 'gain'][sign2(v) + 1]; }
   function signed(v, unit, d) {
     d = d === undefined ? 2 : d;
     var k = Math.pow(10, d), r = Math.round(v * k) / k;
@@ -394,18 +502,19 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   }
   var DF = new Intl.DateTimeFormat('ro-RO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   var MF = new Intl.DateTimeFormat('ro-RO', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  var MS = new Intl.DateTimeFormat('ro-RO', { month: 'short', year: 'numeric', timeZone: 'UTC' });
   function fmtDate(iso) { var t = C.parseISODate(iso); return isFinite(t) ? DF.format(t) : '—'; }
-  function fmtMonth(ym) { var t = C.parseISODate(ym + '-01'); return isFinite(t) ? MF.format(t) : ym; }
+  function fmtMonth(ym, brief) { var t = C.parseISODate(ym + '-01'); return isFinite(t) ? (brief ? MS : MF).format(t) : ym; }
   /* Romanian day counts: "1 zi", "7 zile", "365 de zile" */
   function daysWord(n) {
     if (n === 1) return '1 zi';
     var r = n % 100;
     return n + (n >= 20 && (r === 0 || r >= 20) ? ' de zile' : ' zile');
   }
-  function daysSince(iso) {
-    var t = C.parseISODate(iso);
-    var today = C.parseISODate(new Date().toISOString().slice(0, 10));
-    return isFinite(t) ? Math.round((today - t) / 864e5) : NaN;
+  /* Today in the visitor's own time zone, not in UTC: the dates in the form are local dates. */
+  function todayISO() {
+    var n = new Date(), two = function (v) { return (v < 10 ? '0' : '') + v; };
+    return n.getFullYear() + '-' + two(n.getMonth() + 1) + '-' + two(n.getDate());
   }
 
   /* ---------- reading the form ---------- */
@@ -415,15 +524,17 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     rate: { min: 0, max: 100, err: 'dobânda (între 0% și 100%)' },
     tax:  { min: 0, max: 100, err: 'impozitul (între 0% și 100%)' },
     fees: { money: true, min: 0, err: 'comisioanele (un număr ≥ 0)' },
-    eur0: { gt: 0, err: 'cursul EUR de atunci' },
-    eur1: { gt: 0, err: 'cursul EUR de acum' },
-    usd0: { gt: 0, err: 'cursul USD de atunci' },
-    usd1: { gt: 0, err: 'cursul USD de acum' }
+    eur0: { gt: 0, lt: 1000, err: 'cursul EUR de atunci' },
+    eur1: { gt: 0, lt: 1000, err: 'cursul EUR de acum' },
+    usd0: { gt: 0, lt: 1000, err: 'cursul USD de atunci' },
+    usd1: { gt: 0, lt: 1000, err: 'cursul USD de acum' }
   };
+  function invalid(id) { $(id).setAttribute('aria-invalid', 'true'); }
   function readNum(id, errors) {
     var f = FIELDS[id], el = $(id);
     var v = C.parseNum(el.value, { money: !!f.money });
-    var ok = isFinite(v) && (f.min === undefined || v >= f.min) && (f.max === undefined || v <= f.max) && (f.gt === undefined || v > f.gt);
+    var ok = isFinite(v) && (f.min === undefined || v >= f.min) && (f.max === undefined || v <= f.max) &&
+      (f.gt === undefined || v > f.gt) && (f.lt === undefined || v < f.lt);
     el.setAttribute('aria-invalid', String(!ok));
     if (!ok) errors.push(f.err);
     return ok ? v : NaN;
@@ -435,25 +546,77 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     return ok ? el.value : null;
   }
 
+  /* ---------- which BNR day the rates belong to (DESIGN §5.3) ----------
+     Each side of the form, 0 ("atunci": d0, eur0, usd0) and 1 ("acum": d1, eur1, usd1), remembers the day
+     its rates belong to: the data's date after fillInputs, the row's date after a lookup in the BNR history,
+     or 'user' once the user types a rate on that side. */
+  var prov = [null, null];
+  /* A new date on side i: its rates follow it from the history, unless the user typed them or one of them has
+     the focus. Without a row for that date (or without a history) they stay, and readState flags them. */
+  function resolveSide(i) {
+    var row = C.rateOn(DATA.fx.series, $('d' + i).value, todayISO());
+    var focus = document.activeElement && document.activeElement.id;
+    if (prov[i] === 'user' || !row || focus === 'eur' + i || focus === 'usd' + i) return;
+    $('eur' + i).value = RATE4.format(row[1]);
+    $('usd' + i).value = RATE4.format(row[2]);
+    prov[i] = row[0];
+  }
+  /* The day the rates of side i belong to for the date d in the form: a date, 'user', or null when they belong
+     to another date (a date for which there is no BNR rate in the data). */
+  function sideDay(i, d, today) {
+    var p = prov[i];
+    if (p === 'user' || p === d) return p;
+    var row = C.rateOn(DATA.fx.series, d, today);
+    return row && row[0] === p ? p : null;
+  }
+
   var mode = 'net';
 
   function readState() {
-    var errors = [];
+    var errors = [], today = todayISO();
     var S = readNum('sum', errors), infl = readNum('infl', errors);
     var rate = readNum('rate', errors), tax = readNum('tax', errors), fees = readNum('fees', errors);
     var d0 = readDate('d0', errors, 'data de referință'), d1 = readDate('d1', errors, 'data curentă');
+    /* A date after today is a typing error; the data's own dates are not (the visitor's clock may be behind). */
+    var future = function (d, i) { return d > today && d !== DATA.fx['d' + i]; };
+    if (d1 && future(d1, 1)) {
+      errors.push('data curentă nu poate fi în viitor');
+      invalid('d1');
+      d1 = null;
+    }
     var days = d0 && d1 ? C.daysBetween(d0, d1) : NaN;
     if (d0 && d1 && !(days > 0)) {
       errors.push('data curentă trebuie să fie după data de referință');
-      $('d0').setAttribute('aria-invalid', 'true');
-      $('d1').setAttribute('aria-invalid', 'true');
+      invalid('d0');
+      invalid('d1');
       days = NaN;
     }
-    var fx = {};
+    var c = {};
     ['eur', 'usd'].forEach(function (k) {
       var c0 = readNum(k + '0', errors), c1 = readNum(k + '1', errors);
-      var t = C.fxTrend(c0, c1, days);
-      fx[k] = t ? { c0: c0, c1: c1, lost: t.lost, annual: t.annual } : null;
+      if (isFinite(c0) && isFinite(c1) && !C.fxPairOk(c0, c1)) {
+        errors.push('cursurile ' + k.toUpperCase() + ' de atunci și de acum nu par reale (verifică virgula)');
+        invalid(k + '0');
+        invalid(k + '1');
+        c0 = c1 = NaN;
+      }
+      c[k] = [c0, c1];
+    });
+    /* Rates that belong to another date than the one in the form would state false history: no calculation. */
+    var fxDay = [d0, d1].map(function (d, i) { return d && !future(d, i) ? sideDay(i, d, today) || 'missing' : null; });
+    var fxMissing = [];
+    fxDay.forEach(function (day, i) {
+      if (day !== 'missing') return;
+      var d = i ? d1 : d0;
+      fxMissing.push(d);
+      errors.push('cursul BNR din ' + fmtDate(d) + ' (bnr.ro)');
+      invalid('eur' + i);
+      invalid('usd' + i);
+    });
+    var fx = {};
+    ['eur', 'usd'].forEach(function (k) {
+      var t = fxMissing.length ? null : C.fxTrend(c[k][0], c[k][1], days);
+      fx[k] = t ? { c0: c[k][0], c1: c[k][1], lost: t.lost, annual: t.annual } : null;
     });
     var netOk = isFinite(rate) && isFinite(tax) && isFinite(fees);
     var p = { S: S, pi: infl / 100, rate: rate / 100, tax: tax / 100, fees: fees, net: mode === 'net' };
@@ -461,7 +624,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
       p: p,
       pNet: netOk ? { S: S, pi: infl / 100, rate: rate / 100, tax: tax / 100, fees: fees, net: true } : null,
       ok: isFinite(S) && isFinite(infl) && (!p.net || netOk),
-      fx: fx, days: days, d0: d0, d1: d1, errors: errors,
+      fx: fx, days: days, d0: d0, d1: d1, fxDay: fxDay, fxMissing: fxMissing, errors: errors,
       S: S, infl: infl, rate: rate, tax: tax, fees: fees
     };
   }
@@ -485,9 +648,10 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
       var fx = s.fx[c[0]], sub;
       if (fx) {
         sub = 'leul ' + (fx.lost >= 0 ? 'a pierdut ' : 'a câștigat ') + pct(Math.abs(fx.lost)) + ' în ' + daysWord(s.days);
-        if (Math.abs(s.days - 365) > 3) sub += ' (~' + pct(fx.annual) + '/an)';
+        if (!isFinite(fx.annual)) sub += '; ritmul anual nu se poate extrapola';
+        else if (Math.abs(s.days - 365) > 3) sub += ' (~' + pct(fx.annual) + '/an)';
       } else {
-        sub = 'completează datele și cursurile';
+        sub = s.fxMissing.length ? 'lipsește cursul BNR din ' + s.fxMissing.map(fmtDate).join(' și ') : 'completează datele și cursurile';
       }
       html += row('Față de ' + c[1], sub, P.map(function (q) { return s.ok && fx ? C.fxLoss(s.p, fx.annual, fx.c1, q.days) : NaN; }), c[2]);
     });
@@ -515,20 +679,27 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     var h = '';
     [['eur', '€'], ['usd', '$']].forEach(function (c) {
       var fx = s.fx[c[0]];
-      if (!fx || !isFinite(s.S)) { h += fact('—', '', 'Completează suma, datele și cursurile ' + c[0].toUpperCase() + '.'); return; }
+      if (!fx || !isFinite(s.S)) {
+        h += fact('—', '', s.fxMissing.length ? 'Lipsește cursul BNR din ' + s.fxMissing.map(fmtDate).join(' și ') + '.'
+          : 'Completează suma, datele și cursurile ' + c[0].toUpperCase() + '.');
+        return;
+      }
       var a = s.S / fx.c0, b = s.S / fx.c1, d = b - a;
-      h += fact(signed(d, c[1]), d < 0 ? 'loss' : 'gain',
+      h += fact(signed(d, c[1]), tone(d),
         fmt(s.S, 0) + ' lei valorau ' + fmt(a) + ' ' + c[1] + ' pe ' + fmtDate(s.d0) + ' și ' + fmt(b) + ' ' + c[1] + ' pe ' + fmtDate(s.d1) + '.');
     });
     if (isFinite(s.S) && isFinite(s.infl)) {
-      var lostYr = C.realLoss({ S: s.S, pi: s.infl / 100, net: false }, C.YEAR_DAYS);
-      h += fact(signed(-lostYr, 'lei'), lostYr > 0 ? 'loss' : 'gain',
-        'putere de cumpărare pierdută într-un an fără dobândă, în lei de azi. La anul îți trebuie cu ' +
-        fmt(C.extraNeeded(s.S, s.infl / 100, 1)) + ' lei mai mult pentru același coș.');
+      /* Deflation is a gain: the words follow the sign that is shown (F-08), never „pierdută” next to a green „+”. */
+      var lostYr = C.realLoss({ S: s.S, pi: s.infl / 100, net: false }, C.YEAR_DAYS), more = C.extraNeeded(s.S, s.infl / 100, 1);
+      h += fact(signed(-lostYr, 'lei'), tone(-lostYr),
+        'putere de cumpărare ' + ['câștigată', 'neschimbată', 'pierdută'][sign2(lostYr) + 1] +
+        ' într-un an fără dobândă, în lei de azi. La anul îți trebuie ' +
+        ['cu ' + fmt(-more) + ' lei mai puțin', 'aceiași bani', 'cu ' + fmt(more) + ' lei mai mult'][sign2(more) + 1] + ' pentru același coș.');
       if (isFinite(s.tax)) {
         var be = C.breakEvenRate(s.infl / 100, s.tax / 100, isFinite(s.fees) ? s.fees : 0, s.S);
-        h += fact(isFinite(be) ? pct(be) : '—', '',
-          'dobânda brută minimă ca să ții pasul cu inflația (impozit ' + short(s.tax) + '%' + (s.fees > 0 ? ', cu comisioanele incluse' : '') + ').');
+        h += fact(pct(be), '', 'dobânda brută minimă ca să ții pasul cu inflația' + (be === 0
+          ? ': orice dobândă, chiar 0%, ține pasul' + (s.infl < 0 ? ' (prețurile scad).' : '.')
+          : ' (impozit ' + short(s.tax) + '%' + (s.fees > 0 ? ', cu comisioanele incluse' : '') + ').'));
       } else {
         h += fact('—', '', 'Completează impozitul ca să vezi dobânda minimă.');
       }
@@ -541,7 +712,8 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   function renderChart(s) {
     var svg = $('ch'), hint = $('chHint');
     /* The drawing's width follows the container, so the text stays readable on phones too. */
-    var W = Math.round(Math.max(320, Math.min(640, svg.parentNode.clientWidth || 640))), H = 260, L = 64, R = 16, T = 14, B = 30, yrs = 10;
+    /* R leaves room for „+10 ani” centred on the last year; L grows with the longest axis label (F-78). */
+    var W = Math.round(Math.max(320, Math.min(640, svg.parentNode.clientWidth || 640))), H = 260, L = 64, R = 30, T = 14, B = 30, yrs = 10;
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     if (!(s.S > 0) || !isFinite(s.infl)) {
       svg.innerHTML = '<text x="' + W / 2 + '" y="130" text-anchor="middle">Introdu suma și inflația ca să vezi graficul.</text>';
@@ -556,6 +728,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     }
     var maxV = Math.max.apply(null, raw.concat(net));
     var step = C.niceStep(maxV, 4), top = Math.ceil(maxV / step) * step;
+    for (var lv = 0; lv <= top + step / 2; lv += step) L = Math.max(L, Math.ceil(compact(lv).length * 6.8) + 14);
     var x = function (t) { return L + (W - L - R) * t / yrs; };
     var y = function (v) { return T + (H - T - B) * (1 - v / top); };
     var g = '';
@@ -576,30 +749,47 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     g += '<circle cx="' + x(yrs) + '" cy="' + y(raw[yrs]) + '" r="4" fill="var(--loss)"/>';
     svg.innerHTML = g;
     hint.textContent = 'În lei de azi: peste 10 ani, ' + fmt(s.S, 0) + ' lei fără dobândă cumpără cât ' + fmt(raw[yrs], 0) + ' lei azi' +
-      (net.length && (C.netRate(s.pNet) > 0 || s.fees > 0) ? '; cu dobânda netă de ' + pct(C.netRate(s.pNet)) + (s.fees > 0 ? ' și comisioanele' : '') + ', cât ' + fmt(net[yrs], 0) + ' lei' : '') +
+      (net.length && (C.netRate(s.pNet) > 0 || s.fees > 0) ? '; ' + C.accountNote(s.pNet, pct, lei) + ', cât ' + fmt(net[yrs], 0) + ' lei' : '') +
       '. Presupune inflație constantă de ' + short(s.infl) + '% pe an.';
   }
 
+  /* The month of the oldest indicative interest rate. */
+  function savingsAsOf() { var Sv = DATA.savings; return Sv.deposit12.asOf < Sv.tezaur1y.asOf ? Sv.deposit12.asOf : Sv.tezaur1y.asOf; }
+  /* The forecast is shown until its target month is over. */
+  function forecastShown(today) { return !C.monthPassed(DATA.forecast.target, today); }
+
+  /* The date of each source, with a badge when it is old. Always the data's dates, never the form's. */
   function renderFresh(s) {
-    var items = [];
-    var fxAge = s.d1 ? daysSince(s.d1) : NaN;
-    items.push('<li>Curs: ' + esc(DATA.fx.source) + ', ' + (s.d1 ? fmtDate(s.d1) : '—') +
-      (fxAge > 7 ? '<span class="badge">de acum ' + daysWord(fxAge) + '</span>' : '') + '</li>');
-    var infAge = daysSince(DATA.inflation.month + '-01');
-    items.push('<li>Inflație: ' + esc(DATA.inflation.source) + ', ' + fmtMonth(DATA.inflation.month) +
-      (infAge > 75 ? '<span class="badge">a apărut probabil o lună nouă</span>' : '') + '</li>');
-    items.push('<li>Dobânzi: orientative, ' + fmtMonth(DATA.savings.asOf) + '</li>');
-    if (DATA.live) items.push('<li>Curs și inflație actualizate automat</li>');
+    var D = DATA, today = todayISO(), items = [];
+    var badge = function (on, text) { return on ? '<span class="badge">' + text + '</span>' : ''; };
+    items.push('<li>Curs: ' + esc(D.fx.source) + ', ' + fmtDate(D.fx.d1) +
+      badge(C.isStale('fx', D.fx.d1, today), 'de acum ' + daysWord(C.ageDays(D.fx.d1, today))) + '</li>');
+    /* On the site a late month means the daily update has stopped; with the built-in values, that a new one is out. */
+    items.push('<li>Inflație: ' + esc(D.inflation.source) + ', ' + fmtMonth(D.inflation.month) +
+      badge(C.inflationOverdue(D.inflation.month, today), D.live ? 'actualizarea pare întârziată' : 'a apărut probabil o lună nouă') + '</li>');
+    if (forecastShown(today)) {
+      items.push('<li>Prognoza BNR: raportul din ' + fmtMonth(D.forecast.report) +
+        badge(C.isStale('report', D.forecast.report, today), 'a apărut probabil un raport nou') + '</li>');
+    }
+    items.push('<li>Dobânzi: orientative, ' + fmtMonth(savingsAsOf()) + badge(C.isStale('savings', savingsAsOf(), today), 'pot fi depășite') + '</li>');
+    if (D.live) items.push('<li>Curs și inflație actualizate automat</li>');
     $('fresh').innerHTML = items.join('');
 
-    var fxHint = $('fxHint');
-    if (s.days > 0 && s.days < 180) {
-      fxHint.className = 'hint warn';
-      fxHint.textContent = 'Interval scurt (' + daysWord(s.days) + '): ritmul anual extrapolat poate exagera mult. Pentru o comparație cinstită cu inflația anuală, folosește 12 luni.';
-    } else {
-      fxHint.className = 'hint';
-      fxHint.textContent = 'Implicit: ultimele 12 luni, același interval ca inflația anuală. Cursul zilei îl găsești pe bnr.ro (publicat în zilele lucrătoare, în jur de ora 13).';
+    /* Under the rates: the interval, then the BNR day each side's rates come from. */
+    var fxHint = $('fxHint'), text = [], warn = C.isShortInterval(s.days) || s.fxMissing.length > 0;
+    if (C.isShortInterval(s.days)) {
+      text.push('Interval scurt (' + daysWord(s.days) + '): ritmul anual extrapolat poate exagera mult. Pentru o comparație cinstită cu inflația anuală, folosește 12 luni.');
+    } else if (s.d0 === D.fx.d0 && s.d1 === D.fx.d1) {
+      text.push('Implicit: ultimele 12 luni, același interval ca inflația anuală.');
     }
+    s.fxDay.forEach(function (day, i) {
+      var d = i ? s.d1 : s.d0, side = i ? 'Acum: ' : 'Atunci: ';
+      if (day === 'user') text.push(side + 'cursul introdus de tine.');
+      else if (day === 'missing') text.push(side + 'nu avem cursul BNR din ' + fmtDate(d) + '; îl găsești pe bnr.ro (publicat în zilele lucrătoare, în jur de ora 13).');
+      else if (day) text.push(side + 'cursul ' + D.fx.source + ' din ' + fmtDate(day) + (day !== d ? ', ultima zi cu curs până la ' + fmtDate(d) : '') + '.');
+    });
+    fxHint.className = warn ? 'hint warn' : 'hint';
+    fxHint.textContent = text.join(' ');
   }
 
   function syncChips() {
@@ -621,9 +811,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     var perYear = C.lossRatePerYear(s.p);
     tick.rate = -perYear / (C.YEAR_DAYS * 86400);
     $('tkNote').textContent = 'Ritm actual: ' + signed(-perYear / (C.YEAR_DAYS * 24), 'lei', 4) + ' pe oră · ' +
-      signed(-perYear / C.YEAR_DAYS, 'lei') + ' pe zi (inflație ' + short(s.infl) + '%/an, ' +
-      (s.p.net && C.netRate(s.p) > 0 ? 'cu dobânda netă de ' + pct(C.netRate(s.p)) : 'fără dobândă') +
-      (s.p.net && s.fees > 0 ? ' și comisioane' : '') + ').';
+      signed(-perYear / C.YEAR_DAYS, 'lei') + ' pe zi (inflație ' + short(s.infl) + '%/an, ' + C.accountNote(s.p, pct, lei) + ').';
   }
   function loop() {
     var now = performance.now();
@@ -648,14 +836,13 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   }
 
   /* ---------- startup ---------- */
-  var edited = false;
 
   /* Texts that depend on the data: scenario buttons, explanations, sources. */
   function renderStatic() {
-    var I = DATA.inflation, F = DATA.fx, Sv = DATA.savings;
+    var I = DATA.inflation, F = DATA.fx, P = DATA.forecast, Sv = DATA.savings;
     var chips = [[I.yoy, 'Ultimele 12 luni · ' + short(I.yoy) + '%']];
     if (I.services !== undefined) chips.push([I.services, 'Doar servicii · ' + short(I.services) + '%']);
-    chips.push([DATA.forecast.bnrDec2027, 'Prognoza BNR, dec. 2027 · ' + short(DATA.forecast.bnrDec2027) + '%']);
+    if (forecastShown(todayISO())) chips.push([P.value, 'Prognoza BNR, ' + fmtMonth(P.target, true) + ' · ' + short(P.value) + '%']);
     $('inflChips').innerHTML = chips.map(function (c) {
       return '<button type="button" class="chip" data-infl="' + c[0] + '" aria-pressed="false">' + c[1] + '</button>';
     }).join('');
@@ -666,33 +853,47 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     $('inflHint').textContent = hint;
 
     $('rateChips').innerHTML = [
-      [0, Sv.tax, 'Cont curent · 0%'],
-      [Sv.deposit12, Sv.tax, 'Depozit 12 luni, bănci mari · ~' + short(Sv.deposit12) + '%'],
-      [Sv.tezaur1y, 0, 'Tezaur 1 an · ' + short(Sv.tezaur1y) + '%, fără impozit']
+      [0, Sv.tax.rate, 'Cont curent · 0%'],
+      [Sv.deposit12.rate, Sv.tax.rate, 'Depozit 12 luni, bănci mari · ~' + short(Sv.deposit12.rate) + '%'],
+      [Sv.tezaur1y.rate, 0, 'Tezaur 1 an · ' + short(Sv.tezaur1y.rate) + '%, fără impozit']
     ].map(function (c) {
       return '<button type="button" class="chip" data-rate="' + c[0] + '" data-tax="' + c[1] + '" aria-pressed="false">' + c[2] + '</button>';
     }).join('');
-    $('rateHint').textContent = 'Dobânzi orientative. Impozitul de 10% se reține automat; peste un prag anual de venituri din investiții se poate adăuga CASS, pe care calculul nu îl include.';
+    $('rateHint').textContent = 'Dobânzi orientative. Impozitul de ' + short(Sv.tax.rate) + '% se reține automat; peste un prag anual de venituri din investiții se poate adăuga CASS, pe care calculul nu îl include.';
 
     $('foot').textContent = 'Surse: curs ' + F.source + ' (de referință, ' + fmtDate(F.d0) + ' și ' + fmtDate(F.d1) + '); inflație ' + I.source +
-      ' (' + fmtMonth(I.month) + '), inclusiv zona euro; prognoza BNR din raportul asupra inflației, august 2026; dobânzi orientative din ' + fmtMonth(Sv.asOf) + '. ' +
+      ' (' + fmtMonth(I.month) + '), inclusiv zona euro' +
+      (forecastShown(todayISO()) ? '; prognoza BNR din raportul asupra inflației, ' + fmtMonth(P.report) : '') +
+      '; dobânzi orientative: depozite ' + fmtMonth(Sv.deposit12.asOf) + ', Tezaur ' + fmtMonth(Sv.tezaur1y.asOf) +
+      '; impozitul pe dobândă: ' + short(Sv.tax.rate) + '% (' + fmtMonth(Sv.tax.asOf) + '). ' +
       'Pierderile pe cauze nu se adună: inflația din România include deja o parte din efectul cursului. Inflația și ritmul leului sunt presupuse constante. ' +
       'Nu este consultanță financiară. Ce introduci rămâne în browserul tău.';
   }
 
-  function fillInputs() {
-    var I = DATA.inflation, F = DATA.fx, Sv = DATA.savings;
-    $('sum').value = short(DATA.sum);
-    $('infl').value = short(I.yoy);
-    $('rate').value = '0';
-    $('tax').value = short(Sv.tax);
-    $('fees').value = '0';
-    $('d0').value = F.d0;
-    $('d1').value = F.d1;
-    $('eur0').value = RATE4.format(F.eur0);
-    $('eur1').value = RATE4.format(F.eur1);
-    $('usd0').value = RATE4.format(F.usd0);
-    $('usd1').value = RATE4.format(F.usd1);
+  /* The values the form starts with, as the strings written into the fields. */
+  function startValues() {
+    var F = DATA.fx;
+    return {
+      sum: short(DATA.sum), infl: short(DATA.inflation.yoy), rate: '0', tax: short(DATA.savings.tax.rate), fees: '0',
+      d0: F.d0, d1: F.d1, eur0: RATE4.format(F.eur0), eur1: RATE4.format(F.eur1), usd0: RATE4.format(F.usd0), usd1: RATE4.format(F.usd1)
+    };
+  }
+  var filled = {};
+  /* Writes DATA into the form: every field at startup; when the daily data arrives later, only the fields the
+     user has not changed (Calc.mergeInputs). Dates the user changed then follow the new BNR history. */
+  function fillInputs(late) {
+    var next = startValues(), write = next, current = {};
+    if (late) {
+      for (var id in next) current[id] = $(id).value;
+      write = C.mergeInputs(current, filled, next, document.activeElement && document.activeElement.id);
+    }
+    for (var k in write) { $(k).value = write[k]; filled[k] = write[k]; }
+    if ('d0' in write) {
+      prov = [DATA.fx.d0, DATA.fx.d1];
+    } else {
+      resolveSide(0);
+      resolveSide(1);
+    }
   }
 
   function setup() {
@@ -700,7 +901,6 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     document.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('.chip');
       if (!b) return;
-      edited = true;
       if (b.dataset.infl !== undefined) {
         $('infl').value = short(Number(b.dataset.infl));
       } else if (b.dataset.rate !== undefined) {
@@ -713,7 +913,12 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     });
     $('mRaw').addEventListener('click', function () { setMode('raw'); });
     $('mNet').addEventListener('click', function () { setMode('net'); });
-    $('f').addEventListener('input', function () { edited = true; render(); });
+    $('f').addEventListener('input', function (e) {
+      var id = e.target.id;
+      if (/^(eur|usd)[01]$/.test(id)) prov[Number(id.slice(-1))] = 'user';
+      else if (/^d[01]$/.test(id)) resolveSide(Number(id.slice(-1)));
+      render();
+    });
     $('f').addEventListener('submit', function (e) { e.preventDefault(); });
     var pending = false;
     window.addEventListener('resize', function () {
@@ -730,7 +935,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   }
 
   /* Daily data, from the same domain (GitHub Pages, the local server, the artifact if the file is published next to the page).
-     If missing or invalid, the built-in values stay. Does not overwrite what the user has already changed. */
+     If missing or invalid, the built-in values stay. Does not overwrite the fields the user has already changed. */
   function loadData() {
     if (!window.fetch) return;
     fetch('data/rates.json', { cache: 'no-cache' })
@@ -742,7 +947,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
         if (d.inflation) DATA.inflation = d.inflation;
         DATA.live = true;
         renderStatic();
-        if (!edited) fillInputs();
+        fillInputs(true);
         render();
       })
       .catch(function () { /* no data: the built-in values stay */ });

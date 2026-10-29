@@ -37,3 +37,10 @@ Features discussed but not scheduled. None of them is a promise: each one is dec
 - **Why separate:** Taxa pe stat answers one question (what idle lei lose); this would answer another (how all my money changes). Two small apps that link to each other keep each one simple.
 - **Already in Taxa pe stat:** in the „Cu dobânda netă” mode, a deposit or government bonds that beat inflation already turn the counter green, with „+” (FINDINGS F-07).
 - **Notes:** income is a flow (lei per month), not a rate on a balance, so it needs a different model and other inputs; the same stack (one HTML file, no dependencies, GitHub Pages) would work.
+
+## The data
+
+### 7. The deposit rates from BNR's interactive database, automatically
+- **What:** the bot would read BNR's average rate on new household term deposits in lei (6–12 months) every month, like the exchange rates, instead of it being set by hand in `DATA`.
+- **Why:** the hand-set rate gets old; BNR's statistic is official and monthly.
+- **Notes:** BNR's interactive database is loaded by the site's script from internal addresses (`idb`, `idbs`, `searchidb`, seen in `bnr.ro/assets/js/main.js` on 29 Oct 2026). They are not documented, so they may change without notice: the bot would need the same guards as for the exchange rates (a failed fetch keeps the last value and warns). The monthly bulletin (PDF, table 10.1.2) has the same figures, but its address changes every month. Not scheduled (owner, 29 Oct 2026).

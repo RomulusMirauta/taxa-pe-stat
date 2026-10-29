@@ -616,4 +616,65 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.doesNotMatch(m.ch, /\+2 ani/);
     assert.deepEqual(problems, []);
   });
+
+  test('on a phone the loss table shows every period without sideways scrolling, and stays a table for screen readers (O-18)', async () => {
+    const layout = () => js(`(() => {
+      const wrap = document.querySelector('.tablewrap'), box = wrap.getBoundingClientRect();
+      const tds = [...document.querySelectorAll('#tb td')];
+      return {
+        sw: wrap.scrollWidth, cw: wrap.clientWidth,
+        out: tds.filter((td) => { const r = td.getBoundingClientRect(); return r.left < box.left - 0.5 || r.right > box.right + 0.5; }).map((td) => td.textContent),
+        labels: tds.slice(1, 5).map((td) => getComputedStyle(td, '::before').content),
+        display: getComputedStyle(tds[1]).display,
+      };
+    })()`);
+    await open({ width: 400 });
+    await type('sum', '5.000.000');
+    let m = await layout();
+    assert.ok(m.sw <= m.cw, `the table scrolls sideways: ${m.sw} > ${m.cw}`);
+    assert.deepEqual(m.out, [], 'values outside the table');
+    assert.deepEqual(m.labels, [...C.PERIODS].map((q) => `"${q.label}"`), 'each value under its period');
+    await cdp.send('Accessibility.enable');
+    try {
+      const { nodes } = await cdp.send('Accessibility.getFullAXTree');
+      const named = (role) => nodes.filter((n) => n.role?.value === role && !n.ignored).map((n) => n.name?.value);
+      assert.equal(named('table').length, 1, 'the table role survives the phone layout');
+      const lower = (a) => a.map((s) => s.toLowerCase());
+      assert.deepEqual(lower(named('columnheader')), lower(['Cauza', ...C.PERIODS.map((q) => q.label)]), 'the hidden header row is still read (in capitals: text-transform)');
+      assert.equal(named('row').length, 4);
+    } finally {
+      await cdp.send('Accessibility.disable');
+    }
+    // On a wide screen it is the usual table, the periods in the header row.
+    await open({ width: 1280 });
+    m = await layout();
+    assert.equal(m.display, 'table-cell');
+    assert.deepEqual(m.labels, [...C.PERIODS].map(() => 'none'));
+    assert.deepEqual(problems, []);
+  });
+
+  test('turning on reduced motion slows the counter to one update a second, without a reload (O-17)', async () => {
+    await open();
+    // Updates of the counter's text during `ms`: the loop rewrites it on every tick.
+    const updates = (ms) => js(`new Promise((r) => {
+      let n = 0;
+      const o = new MutationObserver(() => n++);
+      o.observe(document.getElementById('tk'), { childList: true, characterData: true, subtree: true });
+      setTimeout(() => { o.disconnect(); r(n); }, ${ms});
+    })`);
+    const motion = (value) => cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }, { name: 'prefers-reduced-motion', value }] });
+    try {
+      assert.ok((await updates(1000)) >= 5, 'about 10 updates a second at first');
+      await motion('reduce');
+      await sleep(1100); // the tick already scheduled
+      const slow = await updates(2500);
+      assert.ok(slow <= 3, `${slow} updates in 2.5 s with reduced motion`);
+      await motion('no-preference');
+      await sleep(1100);
+      assert.ok((await updates(1000)) >= 5, 'fast again once it is turned off');
+    } finally {
+      await motion('');
+    }
+    assert.deepEqual(problems, []);
+  });
 });

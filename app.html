@@ -81,6 +81,17 @@ th:first-child,td:first-child{text-align:left;white-space:normal;min-width:150px
 thead th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
 td .sub{display:block;font-size:12px;color:var(--muted);font-family:var(--body)}
 .loss{color:var(--loss)} .gain{color:var(--gain)}
+/* Below 640px the four periods do not fit beside the first column: each cause becomes a block, with its values
+   two by two, each under the name of its period (O-18). The header row stays, hidden, for screen readers. */
+@media (max-width:640px){
+  table{min-width:0}
+  table,tbody,td{display:block}
+  thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+  td,td:first-child{border:0;padding:0;text-align:left;min-width:0}
+  td:first-child{grid-column:1/-1;padding-bottom:4px}
+  td[data-period]::before{content:attr(data-period);display:block;font-family:var(--body);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+}
 
 .facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:520px){.facts{grid-template-columns:minmax(0,1fr)}}
@@ -630,14 +641,18 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
   }
 
   /* ---------- rendering ---------- */
-  function cell(v, unit) {
-    if (!isFinite(v)) return '<td class="num">—</td>';
-    var r = Math.round(v * 100) / 100;
-    if (r === 0) return '<td class="num">' + fmt(0) + ' ' + unit + '</td>';
-    return '<td class="num ' + (r > 0 ? 'loss' : 'gain') + '">' + (r > 0 ? '−' : '+') + fmt(Math.abs(r)) + ' ' + unit + '</td>';
+  /* data-period: on a phone the header row is hidden and each value shows its period above it (O-18). */
+  function cell(v, unit, period) {
+    var r = Math.round(v * 100) / 100, cls = '', text = '—';
+    if (isFinite(v)) {
+      cls = r > 0 ? ' loss' : r < 0 ? ' gain' : '';
+      text = (r > 0 ? '−' : r < 0 ? '+' : '') + fmt(Math.abs(r)) + ' ' + unit;
+    }
+    return '<td class="num' + cls + '" data-period="' + period + '">' + text + '</td>';
   }
   function row(label, sub, values, unit) {
-    return '<tr><td>' + label + '<span class="sub">' + sub + '</span></td>' + values.map(function (v) { return cell(v, unit); }).join('') + '</tr>';
+    return '<tr><td>' + label + '<span class="sub">' + sub + '</span></td>' +
+      values.map(function (v, i) { return cell(v, unit, C.PERIODS[i].label); }).join('') + '</tr>';
   }
 
   function renderTable(s) {
@@ -804,7 +819,8 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
 
   /* ---------- live counter ---------- */
   var tick = { rate: 0, total: 0, last: performance.now() };
-  var slow = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  /* Read on every tick: turning "reduce motion" on later slows the counter at once, without a reload (O-17). */
+  var motion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   function renderTicker(s) {
     $('tkLabel').textContent = isFinite(s.S) ? 'Pentru ' + fmt(s.S, 0) + ' lei, de când ai deschis pagina:' : 'Completează suma.';
     if (!s.ok) { tick.rate = 0; $('tkNote').textContent = 'Contorul e oprit până corectezi câmpurile marcate.'; return; }
@@ -819,7 +835,7 @@ footer{font-size:13px;color:var(--muted);max-width:75ch}
     tick.last = now;
     $('tk').textContent = signed(tick.total, 'lei', 4);
     $('ticker').classList.toggle('is-gain', tick.total > 0.00005);
-    setTimeout(loop, slow ? 1000 : 100);
+    setTimeout(loop, motion && motion.matches ? 1000 : 100);
   }
 
   function render() {

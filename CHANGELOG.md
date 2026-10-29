@@ -14,7 +14,7 @@ Versiunile proiectului, pe scurt. Detaliile problemelor sunt în [`FINDINGS.md`]
   - pagina le citește și le validează.
 - **Publicare pe GitHub Pages:** `.github/workflows/publish.yml` aduce datele în zilele lucrătoare, face commit ca `github-actions[bot]` și publică (F-32).
 - **Pentru distribuire:** link spre cod în pagină, `og:url`, `canonical` și o imagine de previzualizare pentru linkuri (F-35, F-36).
-- **Documente:** licența MIT, `CHANGELOG.md`, `docs/LUCRU.md`, `.gitattributes`.
+- **Documente:** licența MIT, `CHANGELOG.md`, `docs/DEVELOPMENT.md`, `.gitattributes`.
 - **`CLAUDE.md`:** instrucțiunile pentru Claude Code (unde am rămas, reguli de lucru).
 - **Teste:** `tests/data.test.mjs`, cu rețeaua simulată; 120+ teste în total.
 
@@ -46,7 +46,7 @@ Versiunile proiectului, pe scurt. Detaliile problemelor sunt în [`FINDINGS.md`]
   - contor live;
   - grafic pe 10 ani.
 - **Publicare și rulare:** artifact pe claude.ai, server local, `start.cmd`.
-- **`BAZA.md`:** datele, cauzele, formulele și exemplul calculat.
+- **`DESIGN.md`:** datele, cauzele, formulele și exemplul calculat.
 
 [0.3.0]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.1.0...v0.2.0

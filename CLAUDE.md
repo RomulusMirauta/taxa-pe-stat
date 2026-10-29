@@ -14,10 +14,10 @@ Unde găsești restul:
 | Fișier | Ce conține |
 |---|---|
 | `README.md` | ce face aplicația și comenzile |
-| `BAZA.md` | formulele (§5), sursele de date (§2), deciziile, pașii următori (§11) |
+| `DESIGN.md` | formulele (§5), sursele de date (§2), deciziile, pașii următori (§11) |
 | `FINDINGS.md` | registrul de bug-uri și ce a rămas deschis (O-NN) |
 | `CHANGELOG.md` | versiunile |
-| `docs/LUCRU.md` | artifact-ul de pe claude.ai și copia locală |
+| `docs/DEVELOPMENT.md` | artifact-ul de pe claude.ai și copia locală |
 
 ## Unde am rămas (29 oct. 2026): de făcut, în ordine
 
@@ -42,7 +42,7 @@ Ce urmează a fost lucrat într-o sesiune claude.ai care nu putea face push în 
    - `data/rates.json` și `assets/og.png` răspund.
 5. **„About” pe GitHub:**
    `gh repo edit RomulusMirauta/taxa-pe-stat --description "Cât pierd leii tăi, zi de zi: inflația și cursul leului, cu date BNR și Eurostat actualizate zilnic." --homepage https://romulusmirauta.github.io/taxa-pe-stat/ --add-topic romania,inflation,exchange-rates,bnr,eurostat,github-actions,github-pages,calculator`
-6. **La final:** bifează în `BAZA.md` §11 ce s-a făcut și scurtează secțiunea asta.
+6. **La final:** bifează în `DESIGN.md` §11 ce s-a făcut și scurtează secțiunea asta.
 
 ## Reguli de lucru
 
@@ -81,8 +81,8 @@ Ce urmează a fost lucrat într-o sesiune claude.ai care nu putea face push în 
 
 **Date**
 - `data/rates.json` îl scrie doar botul (`scripts/update-data.mjs`); nu îl edita de mână.
-- Prognoza BNR și dobânzile orientative stau în `DATA`, în `app.html`. Când le schimbi, actualizează și sursele din `BAZA.md` §2.
-- Dacă schimbi formulele, actualizează `BAZA.md` §5 și testele.
+- Prognoza BNR și dobânzile orientative stau în `DATA`, în `app.html`. Când le schimbi, actualizează și sursele din `DESIGN.md` §2.
+- Dacă schimbi formulele, actualizează `DESIGN.md` §5 și testele.
 
 **Ce nu intră în repo:** `dist/`, `node_modules/`, `*.bundle`.
 
@@ -109,6 +109,6 @@ Dacă sesiunea ta nu poate publica artifact-ul, sincronizarea se face din claude
 ## Mediu
 
 - **Windows:** `start.cmd` pornește serverul și deschide browserul.
-- **Folderul local e clone-ul:** copia scrisă din claude.ai a fost transformată în clone git (`docs/LUCRU.md`). Ce scrie claude.ai apare în `git status`.
+- **Folderul local e clone-ul:** copia scrisă din claude.ai a fost transformată în clone git (`docs/DEVELOPMENT.md`). Ce scrie claude.ai apare în `git status`.
 - **Autorul commit-urilor** e setat local, în `.git/config`: git-ul global de pe calculator folosește altă adresă. Într-un clone nou, setează din nou `user.name` și `user.email`.
 - **`gh`** e în `C:\Program Files\GitHub CLI\`, dar poate lipsi din PATH (Git Bash: `"/c/Program Files/GitHub CLI/gh.exe"`). Contul activ trebuie să fie `RomulusMirauta` (`gh auth status`).

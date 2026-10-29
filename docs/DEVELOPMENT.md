@@ -1,6 +1,6 @@
 # Cum lucrăm
 
-Notițe despre felul în care e construit și întreținut proiectul. Pentru calcule și date vezi [`BAZA.md`](../BAZA.md).
+Notițe despre felul în care e construit și întreținut proiectul. Pentru calcule și date vezi [`DESIGN.md`](../DESIGN.md).
 
 ## Cu Claude
 

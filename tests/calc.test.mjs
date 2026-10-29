@@ -91,7 +91,7 @@ describe('inflația: pierderea reală', () => {
   test('comisioanele sunt deflatate ca restul banilor', () => {
     close(C.realLoss({ S: 0, pi: 0.1, rate: 0, tax: 0, fees: 110, net: true }, 365), 100, 1e-9);
   });
-  test('fără comisioane, formula e cea din BAZA.md: S·(1 − (g/(1+π))^y)', () => {
+  test('fără comisioane, formula e cea din DESIGN.md: S·(1 − (g/(1+π))^y)', () => {
     close(C.realLoss(dep, 182.5), S * (1 - Math.pow(1.0495 / (1 + PI), 0.5)), 1e-9);
   });
 });

@@ -42,7 +42,7 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 | F-15 | Minor | `start.cmd` deschidea browserul înainte de server | Reparat | — |
 | F-16 | Minor | Port ocupat → eroare tehnică, fără explicație | Reparat | — |
 | F-17 | Minor | Serverul local nu servea fonturi sau date | Reparat | `serve.test` |
-| F-18 | Major | `BAZA.md`: dobânda minimă descrisă greșit ca aproximare | Reparat | `calc.test` |
+| F-18 | Major | `DESIGN.md`: dobânda minimă descrisă greșit ca aproximare | Reparat | `calc.test` |
 | F-19 | Major | „Media 12 luni · 9,2%” folosită ca rată pentru viitor | Reparat | — |
 | F-20 | Major | Premisa „inflația e în continuă creștere”, doar pe jumătate adevărată | Reparat | — |
 | F-21 | Minor | Inflația pe 12 luni, cursul pe 289 de zile | Reparat | `calc.test` |
@@ -61,7 +61,7 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 | F-34 | Minor | `vercel.json` rămas după alegerea GitHub Pages | Reparat | — |
 | F-35 | Major | Commit-uri cu autor provizoriu; căi locale și linkuri provizorii în documente | Reparat | `build.test` |
 | F-36 | Minor | Linkul trimis prietenilor nu avea imagine de previzualizare; README fără captură | Reparat | `build.test` |
-| F-37 | Cosmetic | `BAZA.md`: un rând din tabelul §5.9 ajunsese la finalul §5.10 | Reparat | — |
+| F-37 | Cosmetic | `DESIGN.md`: un rând din tabelul §5.9 ajunsese la finalul §5.10 | Reparat | — |
 | F-38 | Major | Nicio cerere de date nu pleca: „ș” în User-Agent | Reparat | `data.test` |
 | F-39 | Minor | Avertismentele simulate din teste apăreau ca adnotări în GitHub Actions | Reparat | `data.test` |
 | F-40 | Major | BNR servește fișierele XML doar pe `curs.bnr.ro`; adresele vechi trimit spre prima pagină | Reparat | `data.test` |
@@ -167,7 +167,7 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 ## Logică și presupuneri greșite
 
 ### F-18 · Major · Dobânda minimă descrisă greșit ca aproximare
-- **Unde:** `BAZA.md` §5.4.
+- **Unde:** `DESIGN.md` §5.4.
 - **Problema:** formula `π / (1 − τ)` este exactă, nu aproximativă: valoarea reală rămâne aceeași ⟺ `(1+i) = (1+π)` ⟺ `i = π`, iar `i = r·(1−τ)`.
 - **Fix:**
   - documentul e corectat;
@@ -277,7 +277,7 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 
 ### F-33 · Info · Inflația automată e IAPC (Eurostat), nu IPC (INS)
 - **Problema:** INS nu oferă o sursă de date stabilă pentru automatizare. IAPC diferă puțin de IPC: în septembrie 2026, 6,5% vs. 6,61% total și 9,3% vs. 11,12% la servicii.
-- **Decizie:** IAPC. Sursa apare în pagină, iar BAZA §2 arată ambele valori.
+- **Decizie:** IAPC. Sursa apare în pagină, iar DESIGN §2 arată ambele valori.
 
 ## Găsite înainte de publicarea pe GitHub
 
@@ -309,7 +309,7 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 ## Găsite la publicarea pe GitHub
 
 ### F-37 · Cosmetic · Un rând din tabelul §5.9 rătăcit în §5.10
-- **Unde:** `BAZA.md`, §5.9 („Citirea numerelor”) și §5.10 („Datele automate”).
+- **Unde:** `DESIGN.md`, §5.9 („Citirea numerelor”) și §5.10 („Datele automate”).
 - **Problema:** rândul pentru valorile invalide („abc”, „”, „12.34.56”) ajunsese lipit de ultimul paragraf din §5.10. Fără antet, nu era tabel: apărea ca text cu bare verticale la finalul paragrafului, iar tabelul din §5.9 rămăsese fără el.
 - **Fix:** rândul e înapoi în tabelul din §5.9.
 
@@ -334,7 +334,7 @@ Registrul de probleme găsite în aplicație. Fiecare intrare are un ID stabil; 
 - **Fix:**
   - adresele noi, pe `curs.bnr.ro`;
   - o redirecționare e tratată ca eroare și apare în log cu adresa spre care trimite („redirecționat spre https://www.bnr.ro/”).
-- **Verificat pe date reale,** de pe un calculator din România: 28 oct. 2026, EUR 5,3495 și USD 4,8088, ca în BAZA §2.
+- **Verificat pe date reale,** de pe un calculator din România: 28 oct. 2026, EUR 5,3495 și USD 4,8088, ca în DESIGN §2.
 - **Test:** `data.test` → „fișierele XML sunt doar pe curs.bnr.ro” și „BNR trimite spre prima pagină”. Verificat prin mutație: cu adresele vechi sau fără verificarea redirecționării, pică testul respectiv.
 
 ---

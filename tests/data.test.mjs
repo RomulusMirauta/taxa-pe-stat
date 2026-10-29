@@ -160,7 +160,7 @@ describe('scriptul zilnic, cu rețea simulată', () => {
   const realFetch = globalThis.fetch;
   const today = '2026-10-29';
 
-  // Zile lucrătoare, ca în fișierele reale; cursurile cunoscute sunt cele din BAZA §2.
+  // Zile lucrătoare, ca în fișierele reale; cursurile cunoscute sunt cele din DESIGN §2.
   const KNOWN = { '2025-10-27': [5.0848, 4.3684], '2025-10-28': [5.0844, 4.3591], '2026-10-27': [5.3487, 4.7977], '2026-10-28': [5.3495, 4.8088] };
   const cubes = (from, to, skip = []) => {
     const out = [];

@@ -34,7 +34,7 @@ Nu este consultanță financiară. Ce introduci rămâne în browserul tău: pag
 - **Dacă o sursă cade,** rămân datele anterioare și apare un avertisment. Dacă nu există deloc un curs, jobul eșuează și GitHub trimite email.
 - **Pagina citește `data/rates.json`** de pe același domeniu și îl validează. Fără fișier, folosește valorile din `app.html`.
 
-Formulele, sursele și deciziile sunt în [`BAZA.md`](BAZA.md). Problemele găsite și reparate sunt în [`FINDINGS.md`](FINDINGS.md).
+Formulele, sursele și deciziile sunt în [`DESIGN.md`](DESIGN.md). Problemele găsite și reparate sunt în [`FINDINGS.md`](FINDINGS.md).
 
 ## Rulare locală
 
@@ -81,7 +81,7 @@ Fiecare pas e un commit, iar versiunile au tag-uri. Pe scurt, în [`CHANGELOG.md
 | **v0.2.0** | review-ul 1: 30 de probleme găsite și reparate, build, teste |
 | **v0.3.0** | *Taxa pe stat*: nume nou, date automate, publicare pe GitHub Pages |
 
-Cum lucrăm (artifact-ul de pe claude.ai, copia locală, sincronizarea): [`docs/LUCRU.md`](docs/LUCRU.md).
+Cum lucrăm (artifact-ul de pe claude.ai, copia locală, sincronizarea): [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## In English
 

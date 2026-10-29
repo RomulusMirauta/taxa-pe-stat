@@ -20,7 +20,8 @@ export const STATIC_DIRS = ['fonts', 'data', 'assets'];
 
 // The public address comes from package.json (homepage); og:url, canonical and the preview image depend on it.
 export const SITE_URL = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).homepage;
-const OG_IMAGE = 'assets/og.png';
+// No figures or dates on it: it is not regenerated with the daily data (docs/og-card.html). A new name makes messaging apps fetch it again (F-76).
+const OG_IMAGE = 'assets/og-card.png';
 
 const DESCRIPTION = 'Cât pierd economiile în lei din cauza inflației și a deprecierii față de euro și dolar, pe zi, săptămână, lună și an.';
 

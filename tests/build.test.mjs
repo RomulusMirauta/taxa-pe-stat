@@ -89,9 +89,10 @@ describe('the site build', () => {
     assert.match(page, new RegExp(`<link rel="canonical" href="${SITE_URL}">`));
   });
   test('the preview image: an absolute address, copied into the build', async () => {
-    assert.match(page, new RegExp(`<meta property="og:image" content="${SITE_URL}assets/og.png">`));
+    assert.match(page, new RegExp(`<meta property="og:image" content="${SITE_URL}assets/og-card.png">`));
     assert.match(page, /<meta name="twitter:card" content="summary_large_image">/);
-    await access(join(out, 'assets', 'og.png'));
+    await access(join(out, 'assets', 'og-card.png'));
+    await assert.rejects(access(join(out, 'assets', 'og.png')), 'the dated card is no longer published (F-76)');
   });
   test('no claude: meta (it was only for the artifact)', () => assert.doesNotMatch(page, /name="claude:/));
   test('CSP: exactly these directives, and script-src only the hashes of the two inline scripts', () => {

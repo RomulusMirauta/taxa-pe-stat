@@ -2,6 +2,12 @@
 
 The project's versions, briefly. The details of each problem are in [`FINDINGS.md`](FINDINGS.md), by ID.
 
+## [0.3.4] - 2026-10-29 - An official deposit rate
+
+### Changed
+- **The deposit rate** is BNR's official average for new household term deposits in lei, 6–12 months: 5.51% in July 2026, instead of an estimate from press round-ups. Its badge comes about 4 months after the end of its month, because BNR publishes it about two months later; the page and the README say so (F-83).
+- **The date list** shows the deposit and Tezaur months separately, each with its own badge.
+
 ## [0.3.3] - 2026-10-29 - Phones
 
 ### Fixed
@@ -104,6 +110,7 @@ The project's versions, briefly. The details of each problem are in [`FINDINGS.m
 - **Publishing and running:** an artifact on claude.ai, a local server, `start.cmd`.
 - **`BAZA.md`** (now `DESIGN.md`): the data, the causes, the formulas and the worked example.
 
+[0.3.4]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.0...v0.3.1

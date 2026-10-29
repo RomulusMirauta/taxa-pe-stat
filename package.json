@@ -1,6 +1,6 @@
 {
   "name": "taxa-pe-stat",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "description": "Taxa pe stat: how much money kept in Romanian lei loses to inflation and to the leu's depreciation against the euro and the dollar.",
   "homepage": "https://romulusmirauta.github.io/taxa-pe-stat/",

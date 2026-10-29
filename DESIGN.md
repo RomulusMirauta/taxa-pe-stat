@@ -112,12 +112,15 @@ By default, the app uses **the same 12-month interval as annual inflation**. Und
 | Product | Interest | Tax |
 |---|---|---|
 | Current account | ~0% | — |
+| Lei deposit, BNR average for new household term deposits, 6–12 months (used by the page) | 5.51% (July 2026; all maturities: 5.03%) | 10%, withheld at source |
 | Lei deposit, 12 months, big banks (BT, BCR, BRD, Raiffeisen, CEC) | 5.2–5.5% (July 2026) | 10%, withheld at source |
 | Lei deposit, 12 months, best offers | up to ~7% | 10% |
 | Tezaur, October 2026 | 1 year 6.5% · 3 years 7% · 5 years 7.5% | 0% (tax-free) |
 | Fidelis, October 2026 | 2 years 6.6% · 4 years 7.15% · 10 years 7.75% | 0% (tax-free) |
 
-**In the page (`DATA` in `app.html`):** every hand-set value has the month it is from: the deposit rate 5.5% (July 2026), Tezaur 1 year 6.5% (October 2026), the tax 10% (October 2026), and the BNR forecast 3.4% for December 2027 (the August 2026 report). The labels are built from these values, and the page flags them when they get old (F-71). On 29 October 2026 no newer source for the deposit rates was found, so the page shows that they may be out of date.
+**In the page (`DATA` in `app.html`):** every hand-set value has the month it is from: the deposit rate 5.51% (July 2026), Tezaur 1 year 6.5% (October 2026), the tax 10% (October 2026), and the BNR forecast 3.4% for December 2027 (the August 2026 report). The labels are built from these values, and the page flags them when they get old (F-71).
+
+**The deposit rate** is BNR's official statistic: the average rate on new term deposits in lei of households, with an initial maturity of 6 to 12 months (Buletin lunar, table 10.1.2, „Depozite noi”). BNR publishes it about two months after its month (July 2026 came out in September), so the page flags it only 150 days after the month's first day, about 4 months after its end, when at least one newer month should be out (F-83). Bank offers vary around it (from ~5.2% at the big banks to ~7% at the best offers). To update it: the newest monthly bulletin on bnr.ro, table 10.1.2, the households' „peste 6 luni și până la 12 luni inclusiv” column.
 
 Other tax rules:
 - The tax on interest stayed at 10% in 2026; the tax on dividends went up to 16%.
@@ -459,7 +462,7 @@ One-time steps (done on 29 October 2026):
 - [x] The open items that could be fixed in the page, in v0.3.2: the table on a phone (O-18) and reduced motion turned on later (O-17).
 - [x] Tests and fixes for phones, in v0.3.3: a sweep at nine sizes found F-80…F-82.
 - [ ] The owner's decision on protecting `main` and the tags, and on Dependabot for the actions (O-16).
-- [ ] A current source for the deposit rates (the page flags the July 2026 ones). Found: BNR's official statistic, Buletin lunar table 10.1.2 (households, new term deposits in lei, 6–12 months: 5.51% in July 2026), published about two months later.
+- [x] A current, official source for the deposit rate, in v0.3.4: BNR's average for new household term deposits in lei, 6–12 months (F-83). Reading it automatically is idea #7 in [`docs/IDEAS.md`](docs/IDEAS.md).
 - [ ] What is still in the app: the second table in [`FINDINGS.md`](FINDINGS.md).
 
 Ideas for later (a EUR/RON chart, CASS, the FX spread, personal inflation, lei vs euros) are in [`docs/IDEAS.md`](docs/IDEAS.md); they are not scheduled.
@@ -476,6 +479,7 @@ Ideas for later (a EUR/RON chart, CASS, the FX spread, personal inflation, lei v
 - [BNR rates on 28.10.2026](https://cursbnr.nxm.ro/data/28-10-2026) · [28.10.2025](https://cursbnr.nxm.ro/data/28-10-2025) · [Bugetul.ro, 28 Oct 2025](https://www.bugetul.ro/curs-bnr-marti-28-octombrie-2025-ce-se-intampla-cu-moneda-unica-europeana-dupa-doua-zile-consecutive-in-care-s-a-apreciat-in-raport-cu-leul-romanesc/)
 - [EUR all-time high, 6 Oct 2026](https://cursbnr.nxm.ro/convertor/usd-ron-8000)
 - [BNR: using the XML files to fetch exchange rates (curs.bnr.ro)](https://curs.bnr.ro/)
+- [BNR, Buletin lunar, July 2026, table 10.1.2](https://www.bnr.ro/uploads/2026-09buletinlunar-iulie_documentpdf_545_1788780813.pdf)
 - [Bank deposits, July 2026 (Wall-Street.ro)](https://www.wall-street.ro/articol/credite-si-depozite-bancare/depozite-bancare-iulie-2026.html)
 - [Tezaur, October 2026 (Financiarul)](https://financiarul.ro/finante-personale/tezaur-ofera-dobanzi-intre-6-5-si-7-5-in-octombrie-2026-cum-difera/) · [Fidelis, October 2026 (StartupCafe)](https://startupcafe.ro/titluri-de-stat-fidelis-s-a-anuntat-editia-din-octombrie-2026-ce-dobanzi-sunt-la-lei-si-euro-107768)
 - [The tax on interest stays at 10% (Wall-Street.ro)](https://www.wall-street.ro/articol/credite-si-depozite-bancare/cresterea-impozitului-s-ar-putea-sa-nu-se-opreasca-la-dividende.html) · [Guide to the deposit tax in 2026 (Financer)](https://financer.ro/investitii/impozit-depozit-bancar/)

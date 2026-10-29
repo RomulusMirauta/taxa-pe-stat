@@ -31,6 +31,7 @@ Nu este consultanță financiară. Ce introduci rămâne în browserul tău: pag
   - rulează testele pe datele noi, apoi face commit ca `github-actions[bot]`;
   - republică site-ul.
 - **Dacă o sursă cade,** rămân datele anterioare și apare un avertisment. După publicare, o verificare separată eșuează, iar GitHub trimite email, dacă datele s-au oprit: cursul are peste 7 zile sau vine de la BCE, ori inflația e prea veche.
+- **Dobânzile** se actualizează de mână. Depozitul folosește media BNR a dobânzilor la depozitele noi la termen în lei ale populației, cu scadența de 6–12 luni (Buletinul lunar BNR, tabelul 10.1.2). BNR o publică la circa două luni după luna respectivă, așa că pagina arată ultima lună publicată și o marchează ca veche abia după circa 4 luni de la sfârșitul ei. Dobânda Tezaur e cea a emisiunii din luna respectivă.
 - **Pagina citește `data/rates.json`** de pe același domeniu și îl validează. Fără fișier, folosește valorile din `app.html`. Când schimbi o dată, cursul acelei zile vine din istoricul BNR din fișier.
 
 Formulele, sursele și deciziile sunt în [`DESIGN.md`](DESIGN.md). Problemele, cele reparate și cele încă deschise, sunt în [`FINDINGS.md`](FINDINGS.md). Documentația pentru dezvoltare e în engleză.
@@ -86,6 +87,7 @@ Fiecare pas e un commit, iar versiunile au tag-uri. Pe scurt, în [`CHANGELOG.md
 | **v0.3.1** | datele automate merg cu adevărat; cursul urmează datele alese; 43 de probleme găsite de două review-uri și o rundă de testare, reparate; test în browser; documentația în engleză |
 | **v0.3.2** | tabelul de pierderi se vede întreg pe telefon; contorul încetinește imediat când pornești „mișcare redusă” |
 | **v0.3.3** | pe telefon: tabelul cu o perioadă pe rând, graficul la mărimea lui, butoane și câmpuri ușor de atins |
+| **v0.3.4** | dobânda la depozit: media oficială BNR pe 6–12 luni, cu întârzierea ei de publicare explicată |
 
 Cum lucrăm (cu Claude, copia locală): [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). Idei pentru mai târziu: [`docs/IDEAS.md`](docs/IDEAS.md).
 

@@ -22,10 +22,10 @@ Where to find the rest:
 
 ## Where we left off (29 Oct 2026)
 
-- **Published:** v0.3.3, on GitHub Pages; the repo's "About" is filled in.
+- **Published:** v0.3.4, on GitHub Pages; the repo's "About" is filled in.
 - **The daily data works:** BNR (from `curs.bnr.ro`) and Eurostat answer from GitHub Actions, and the bot commits "data: rates …". After every deploy, the `check` job fails (with an email) if the data has stopped updating. If a run's warnings look odd, read F-38…F-54 in `FINDINGS.md` first.
-- **Waiting for the owner:** O-16 (protecting `main` and the tags, Dependabot for the actions); a current source for the deposit rates (the page flags the July 2026 ones).
-- **Next (owner, 29 Oct 2026):** the deposit rate from BNR's statistic (6–12 months), its badge after ~4 months, and a note on its two-month lag, in the page and the README; then a version.
+- **Waiting for the owner:** O-16 (protecting `main` and the tags, Dependabot for the actions).
+- **By hand, monthly:** the deposit rate from BNR's Buletin lunar (table 10.1.2, households, 6–12 months; DESIGN §2) and the Tezaur rate of the month's issue.
 - **Next:** the "Still in the app" table in `FINDINGS.md`; the ideas in `docs/IDEAS.md` only when the owner asks for them.
 
 ## Working rules

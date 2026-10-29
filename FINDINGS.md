@@ -14,6 +14,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 - A testing sweep (five testers: the page, the data, security, test coverage, "outside the box"; every finding reproduced by a second agent): 29 October 2026, F-48…F-79 (v0.3.1).
 - The open items that could be fixed in the page: 29 October 2026, O-17 and O-18 (v0.3.2).
 - A mobile sweep (nine phone and tablet sizes, portrait and landscape, touch emulated): 29 October 2026, F-80…F-82 (v0.3.3).
+- An official source for the deposit rate: 29 October 2026, F-83 (v0.3.4).
 
 **Severity:**
 - **Major:** a wrong result, an unusable page or a risk when publishing.
@@ -108,6 +109,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | F-80 | Minor | On a phone, long values in the loss table ran into the next column (from v0.3.2) | Fixed | `e2e.test` |
 | F-81 | Minor | On phones under ~380 px the chart was scaled down, its labels to ~8.5 px | Fixed | `e2e.test` |
 | F-82 | Minor | On touch screens the buttons and fields were 30–42 px tall, under the 44 px a finger needs | Fixed | `e2e.test` |
+| F-83 | Minor | The deposit rate came from press round-ups and its badge stayed on for want of a newer one | Fixed | `calc.test`, `e2e.test` |
 | O-07 | — | The license for the open-source version | Resolved: MIT | — |
 | O-09 | — | BNR publishes only on working days, around 13:00 | Resolved: the script uses the last published day | `data.test` |
 | O-10 | — | `start.cmd` had not been tested on a real Windows machine | Resolved: tested on Windows 11 | — |
@@ -651,3 +653,10 @@ Headless Chrome at 320×568, 360×740, 375×667, 390×844, 430×932, 568×320, 7
 - **Problem:** on a phone the scenario buttons were 30 px tall, the mode toggle 33 px and the fields 42 px. They meet WCAG's 24 px minimum, but 44 px is what a finger needs (Apple's guideline, WCAG 2.5.5).
 - **Fix:** on touch screens (`pointer: coarse`), fields, scenario buttons and the toggle are at least 44 px tall; with a mouse nothing changes.
 - **Test:** `e2e.test` → "on a touch screen every field and button is at least 44 px tall".
+
+## Found while looking for a deposit-rate source (v0.3.4)
+
+### F-83 · Minor · The deposit rate came from press round-ups, and its badge stayed on
+- **Problem:** the deposit rate (5.5%, „bănci mari”) was taken from press round-ups of bank offers, with no official source behind it. On 29 October 2026 no round-up newer than July was found, so the „pot fi depășite” badge stayed on, and one badge covered both the deposit and the Tezaur rates.
+- **Fix:** the rate is BNR's average for new household term deposits in lei, 6–12 months (Buletin lunar, table 10.1.2): 5.51% in July 2026. BNR publishes it about two months after its month, so its badge („a apărut probabil o lună nouă”) comes 150 days after the month's first day, about 4 months after its end; Tezaur keeps 90 days and its own badge. The lag is explained under the scenario buttons, in the sources at the bottom of the page and in the README.
+- **Test:** `calc.test` → "the BNR deposit rate, published about two months after its month, only after 150 days", "the Tezaur rate after 90 days"; `e2e.test` → the date list and the scenario buttons.

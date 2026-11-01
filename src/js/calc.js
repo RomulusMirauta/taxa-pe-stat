@@ -2,11 +2,13 @@
    Rates are fractions: 0.0661 means 6.61%. Amounts are in nominal lei. */
 
 var YEAR_DAYS = 365;
+/* `days`: the length of the period in a projection; `back`: the same period in calendar days, looking back
+   from a date, for what already happened (fxRealized, F-84). */
 var PERIODS = [
-  { key: 'zi', label: 'Zi', days: 1 },
-  { key: 'saptamana', label: 'Săptămână', days: 7 },
-  { key: 'luna', label: 'Lună', days: 365 / 12 },
-  { key: 'an', label: 'An', days: 365 }
+  { key: 'zi', label: 'Zi', days: 1, back: 1 },
+  { key: 'saptamana', label: 'Săptămână', days: 7, back: 7 },
+  { key: 'luna', label: 'Lună', days: 365 / 12, back: 30 },
+  { key: 'an', label: 'An', days: 365, back: 365 }
 ];
 
 /* Reads numbers written the Romanian or English way: "6,61", "6.61", "50.000", "50 000", "1.234,56", "6,61%".
@@ -61,6 +63,12 @@ function daysBetween(a, b) {
   var ta = parseISODate(a), tb = parseISODate(b);
   if (!Number.isFinite(ta) || !Number.isFinite(tb)) return NaN;
   return Math.round((tb - ta) / 864e5);
+}
+
+/* The date `n` days after `iso` (before it, for a negative n); '' for an invalid date. */
+function addDays(iso, n) {
+  var t = parseISODate(iso);
+  return Number.isFinite(t) ? new Date(t + n * 864e5).toISOString().slice(0, 10) : '';
 }
 
 /* Age in days, on `today`, of a date or of a month ("YYYY-MM", counted from its first day). NaN if invalid. */
@@ -152,6 +160,25 @@ function fxLoss(p, annualDep, rateNow, days) {
   return (p.S - nominalBalance(p, y) * Math.pow(1 - annualDep, y)) / rateNow;
 }
 
+/* What already happened against a currency over the last `days` days, in that currency (F-84): the money that
+   became S lei today, valued at the rate of then, minus S valued at the rate of now. With interest that money
+   was less than S, with fees more (nominalBalance, backwards). Positive is a loss, like the other rows; without
+   interest and fees it is S/cThen − S/cNow. */
+function fxRealizedLoss(p, cThen, cNow, days) {
+  var y = days / YEAR_DAYS;
+  return ((p.S + feesOf(p) * y) / Math.pow(growth(p), y)) / cThen - p.S / cNow;
+}
+
+/* fxRealizedLoss for each period, looking back from `d1`, whose rate is `cNow`: the rate of then is BNR's on the
+   date `back` days before d1 (rateOn). NaN where the series does not reach that date. `col` is the currency's
+   column in the series: 1 for EUR, 2 for USD. Exchange rates go up and down: this is never projected. */
+function fxRealized(p, series, d1, cNow, col, today) {
+  return PERIODS.map(function (q) {
+    var row = rateOn(series, addDays(d1, -q.back), today);
+    return row ? fxRealizedLoss(p, row[col], cNow, q.back) : NaN;
+  });
+}
+
 /* Real value (today's lei) after `years` years. */
 function realValue(p, years) { return Math.max(0, nominalBalance(p, years)) / Math.pow(1 + p.pi, years); }
 
@@ -228,10 +255,11 @@ function normalizeRates(j) {
 
 export const Calc = Object.freeze({
   YEAR_DAYS: YEAR_DAYS, PERIODS: PERIODS, parseNum: parseNum, parseISODate: parseISODate,
-  daysBetween: daysBetween, ageDays: ageDays, isStale: isStale, inflationOverdue: inflationOverdue,
+  daysBetween: daysBetween, addDays: addDays, ageDays: ageDays, isStale: isStale, inflationOverdue: inflationOverdue,
   monthPassed: monthPassed, fxPairOk: fxPairOk, fxTrend: fxTrend, isShortInterval: isShortInterval,
   rateOn: rateOn, mergeInputs: mergeInputs, netRate: netRate, growth: growth,
-  nominalBalance: nominalBalance, realLoss: realLoss, fxLoss: fxLoss, realValue: realValue,
+  nominalBalance: nominalBalance, realLoss: realLoss, fxLoss: fxLoss, fxRealizedLoss: fxRealizedLoss,
+  fxRealized: fxRealized, realValue: realValue,
   lossRatePerYear: lossRatePerYear, accountNote: accountNote, breakEvenRate: breakEvenRate,
   extraNeeded: extraNeeded, niceStep: niceStep, normalizeRates: normalizeRates
 });

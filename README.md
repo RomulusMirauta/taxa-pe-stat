@@ -11,10 +11,9 @@
 
 ## Ce face
 
-- Calculează pierderea pe **zi, săptămână, lună și an**, din trei cauze, fiecare pe rândul ei:
-  - inflația (puterea de cumpărare);
-  - leul față de euro;
-  - leul față de dolar.
+- Arată, pe **zi, săptămână, lună și an**:
+  - cât pierzi din cauza inflației (puterea de cumpărare);
+  - cât a pierdut sau a câștigat deja leul față de euro și de dolar, după cursul BNR din fiecare zi. Cursul urcă și coboară de la o zi la alta, așa că nu e proiectat pe mai puțin de un an.
 - **Unde stau banii schimbă rezultatul:** cont curent, depozit sau titluri de stat, cu impozitul pe dobândă și comisioanele.
 - **Contor live:** cât ai pierdut (sau câștigat) de când ai deschis pagina.
 - **Pe scurt:** cât s-a pierdut deja în euro și dolari în ultimul an și dobânda minimă cu care ții pasul cu inflația.

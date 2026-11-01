@@ -110,13 +110,18 @@ export function readState() {
     var t = fxMissing.length ? null : Calc.fxTrend(c[k][0], c[k][1], days);
     fx[k] = t ? { c0: c[k][0], c1: c[k][1], lost: t.lost, annual: t.annual } : null;
   });
+  /* The rates of d1 alone: what already happened (F-84) needs neither d0 nor its rates. */
+  var now = {};
+  ['eur', 'usd'].forEach(function (k) { now[k] = fxDay[1] && fxDay[1] !== 'missing' ? c[k][1] : NaN; });
   var netOk = isFinite(rate) && isFinite(tax) && isFinite(fees);
   var p = { S: S, pi: infl / 100, rate: rate / 100, tax: tax / 100, fees: fees, net: mode === 'net' };
   return {
     p: p,
     pNet: netOk ? { S: S, pi: infl / 100, rate: rate / 100, tax: tax / 100, fees: fees, net: true } : null,
     ok: isFinite(S) && isFinite(infl) && (!p.net || netOk),
-    fx: fx, days: days, d0: d0, d1: d1, fxDay: fxDay, fxMissing: fxMissing, errors: errors,
+    /* The exchange rates do not need inflation. */
+    okFx: isFinite(S) && (!p.net || netOk),
+    fx: fx, now: now, days: days, d0: d0, d1: d1, fxDay: fxDay, fxMissing: fxMissing, errors: errors,
     S: S, infl: infl, rate: rate, tax: tax, fees: fees
   };
 }

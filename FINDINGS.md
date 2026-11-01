@@ -15,6 +15,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 - The open items that could be fixed in the page: 29 October 2026, O-17 and O-18 (v0.3.2).
 - A mobile sweep (nine phone and tablet sizes, portrait and landscape, touch emulated): 29 October 2026, F-80…F-82 (v0.3.3).
 - An official source for the deposit rate: 29 October 2026, F-83 (v0.3.4).
+- A skeptical review of v0.3.4 (the page's numbers against the real data, the Actions runs, the tests): 1 November 2026, F-84…F-90 (v0.4.0).
 
 **Severity:**
 - **Major:** a wrong result, an unusable page or a risk when publishing.
@@ -110,6 +111,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | F-81 | Minor | On phones under ~380 px the chart was scaled down, its labels to ~8.5 px | Fixed | `e2e.test` |
 | F-82 | Minor | On touch screens the buttons and fields were 30–42 px tall, under the 44 px a finger needs | Fixed | `e2e.test` |
 | F-83 | Minor | The deposit rate came from press round-ups and its badge stayed on for want of a newer one | Fixed | `calc.test`, `e2e.test` |
+| F-84 | Major | The EUR/USD rows stretched the leu's yearly pace over a day, a week and a month, and often got even the sign wrong | Fixed: they show what already happened; only a year is projected | `calc.test`, `table.test`, `e2e.test` |
 | O-07 | — | The license for the open-source version | Resolved: MIT | — |
 | O-09 | — | BNR publishes only on working days, around 13:00 | Resolved: the script uses the last published day | `data.test` |
 | O-10 | — | `start.cmd` had not been tested on a real Windows machine | Resolved: tested on Windows 11 | — |
@@ -660,3 +662,10 @@ Headless Chrome at 320×568, 360×740, 375×667, 390×844, 430×932, 568×320, 7
 - **Problem:** the deposit rate (5.5%, „bănci mari”) was taken from press round-ups of bank offers, with no official source behind it. On 29 October 2026 no round-up newer than July was found, so the „pot fi depășite” badge stayed on, and one badge covered both the deposit and the Tezaur rates.
 - **Fix:** the rate is BNR's average for new household term deposits in lei, 6–12 months (Buletin lunar, table 10.1.2): 5.51% in July 2026. BNR publishes it about two months after its month, so its badge („a apărut probabil o lună nouă”) comes 150 days after the month's first day, about 4 months after its end; Tezaur keeps 90 days and its own badge. The lag is explained under the scenario buttons, in the sources at the bottom of the page and in the README.
 - **Test:** `calc.test` → "the BNR deposit rate, published about two months after its month, only after 150 days", "the Tezaur rate after 90 days"; `e2e.test` → the date list and the scenario buttons.
+
+## Found in the review of v0.3.4 (v0.4.0)
+
+### F-84 · Major · The EUR/USD rows projected noise
+- **Problem:** the „Față de EUR/USD” rows took the leu's pace over the chosen interval (12 months by default) and stretched it over a day, a week and a month. Exchange rates don't move like that: day to day they go either way (on BNR's series up to 30 October 2026, the leu fell against the euro on 145 days and rose or stayed flat on 130), so the projection often got even the sign wrong. On 30 October 2026, for 50,000 lei, the page said the last day cost 1.26 € and the last week 8.84 €, while the leu had gained 4.03 € and 12.07 €.
+- **Fix:** EUR and USD have their own table, „Față de euro și dolar, până acum”, with what already happened: for each period, BNR's rate 1, 7, 30 and 365 calendar days before the current date against the form's rate for that date (`Calc.fxRealized`, `Calc.fxRealizedLoss`). With interest or fees, the money of then is the one that grew into today's sum. Where the daily history does not reach, or without it, the cell shows „—”, never a projection. The only projection left is a year's, in one sentence under the table („Dacă ritmul din ultimul an continuă: …”). The rows no longer need inflation or the reference date. DESIGN §5.3.
+- **Test:** `calc.test` → "what already happened against a currency", the worked example of 30 Oct 2026; `table.test` → the rows and the note (`fxView`); `e2e.test` → the cells equal `Calc.fxRealized` for the bot's data, the fixture's gaps show „—”, no realised values without the history, the annual sentence, both tables on a phone. Mutation-checked: the old projection in place of the realised values, and the interest left out of `fxRealizedLoss`, each fail tests.

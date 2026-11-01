@@ -4,7 +4,7 @@ import { DATA } from './builtin-data.js';
 import { $ } from './dom.js';
 import { fmtDate, fmtMonth, short, todayISO } from './format.js';
 import { fillInputs, noteInput, readState, setMode, syncChips } from './form.js';
-import { renderTable, renderTableHead } from './table.js';
+import { renderFxTable, renderTable, renderTableHead } from './table.js';
 import { renderFacts } from './facts.js';
 import { renderChart } from './chart.js';
 import { forecastShown, renderFresh } from './fresh.js';
@@ -16,6 +16,7 @@ function render() {
   err.hidden = !s.errors.length;
   err.textContent = s.errors.length ? 'Verifică: ' + s.errors.join('; ') + '.' : '';
   renderTable(s);
+  renderFxTable(s);
   renderFacts(s);
   renderChart(s);
   renderFresh(s);
@@ -54,7 +55,7 @@ function renderStatic() {
     '; dobânzi: media BNR la depozitele noi la termen în lei ale populației, 6–12 luni, ' + fmtMonth(Sv.deposit.asOf) +
     ' (BNR o publică la circa două luni după), Tezaur ' + fmtMonth(Sv.tezaur1y.asOf) +
     '; impozitul pe dobândă: ' + short(Sv.tax.rate) + '% (' + fmtMonth(Sv.tax.asOf) + '). ' +
-    'Pierderile pe cauze nu se adună: inflația din România include deja o parte din efectul cursului. Inflația și ritmul leului sunt presupuse constante. ' +
+    'Pierderile pe cauze nu se adună: inflația din România include deja o parte din efectul cursului. Inflația e presupusă constantă; cursul nu e proiectat pe mai puțin de un an. ' +
     'Nu este consultanță financiară. Ce introduci rămâne în browserul tău.';
 }
 

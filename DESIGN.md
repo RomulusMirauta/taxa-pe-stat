@@ -201,15 +201,30 @@ Without fees, the formula becomes `S · (1 − (g/(1+π))^y)`.
 
 A negative value means a real gain: the interest beats inflation. The page shows it in green, with „+”.
 
-### 5.3 The loss against EUR / USD (in the foreign currency)
+### 5.3 Against EUR / USD (in the foreign currency): what already happened
+
+The table „Față de euro și dolar, până acum” looks back from the current date `d₁`, for each period (F-84):
+
+```
+n' = 1, 7, 30, 365 calendar days                // Calc.PERIODS[…].back
+cₙ = BNR's rate on d₁ − n'                       // the last BNR day on or before it, at most 10 days before (rateOn)
+B  = (S + F·y') / g^y'                           // the money that became S lei today; y' = n'/365
+pierdere_valută(n') = B / cₙ − S / c₁            // without interest and fees: S/cₙ − S/c₁
+```
+
+Positive is a loss; a gain is green, with „+”. `c₁` is the form's rate for `d₁`, so the rows need neither `d₀` nor inflation. Where the history does not reach `d₁ − n'`, or without the history (the built-in values), the cell shows „—”: nothing is projected instead (`Calc.fxRealized`).
+
+**Why not a projection:** day to day the leu moves either way. On BNR's series up to 30 October 2026 it fell against the euro on 145 days and rose or stayed on 130. The earlier version stretched the year's pace over a day, a week and a month, and often got even the sign wrong: on 30 October 2026 it showed −1.26 € for the last day, when the leu had gained 4.03 € (FINDINGS F-84).
+
+**The only projection, a year's**, in the sentence under the table („Dacă ritmul din ultimul an continuă: …”):
 
 ```
 k = c₀ / c₁                         // how much of the value in foreign currency is left
 d = 1 − k^(365/D)                   // the annual rate; at D = 365, d = 1 − k exactly
-pierdere_valută(n) = (S − sold_nominal(y) · (1−d)^y) / c₁
+pierdere_un_an = (S − sold_nominal(1) · (1−d)) / c₁
 ```
 
-Assumption: the leu keeps moving at the pace of the chosen interval.
+Assumption: the leu keeps the pace of the chosen interval for a year. A currency is never projected for less than a year.
 
 **The rates follow the dates** (F-62): when a date changes, that side's EUR and USD rates come from BNR's daily history in `data/rates.json` (`Calc.rateOn`: the last BNR day on or before the date, at most 10 days before it). Without such a day, or without a history, the page asks for the rate and shows „—” instead of computing with a rate from another date. Rates typed by the user stay theirs.
 
@@ -314,6 +329,16 @@ Example (29 October 2026): `S` = 50,000 lei, `π` = 6.61% (CPI, INS), BNR rates 
 - EUR: €9,834.00 → €9,346.67, i.e. **−€487.33**
 - USD: $11,470.26 → $10,397.60, i.e. **−$1,072.65**
 
+**Against foreign currency, by period, already happened (§5.3), from the BNR rates up to 30 Oct 2026:**
+
+| | Day | Week | Month | Year |
+|---|---|---|---|---|
+| EUR, current account | +€4.03 | +€12.07 | −€113.65 | −€472.94 |
+| USD, current account | +$53.57 | +$15.80 | −$276.08 | −$932.91 |
+| EUR, deposit 5.51% (BNR's average) | +€5.27 | +€20.74 | −€76.04 | −€8.42 |
+
+The leu gained over the last day and week and lost over the month and the year: exactly what a projection of the yearly pace cannot show.
+
 **Against foreign currency, projected over a year (if the pace continues):**
 
 | | EUR | USD |
@@ -354,7 +379,7 @@ This is not financial advice.
 ## 8. The app's limitations
 
 - **The exchange rates and inflation are automatic; the BNR forecast and the interest rates are not.** Those are updated by hand, in `src/js/builtin-data.js` (`DATA`), each with the month it is from; the page flags them when they get old (F-71). BNR publishes its inflation report every quarter (February, May, August, November).
-- Inflation and the leu's pace are assumed **constant** in the projections.
+- Inflation is assumed **constant** in the projections. The leu's pace is projected only for a year, in one sentence; the table by period shows what already happened (§5.3).
 - It does not model:
   - CASS;
   - the FX spread;
@@ -362,7 +387,8 @@ This is not financial advice.
   - the full comparison of lei vs euros.
 
   Details: FINDINGS O-01…O-04; ideas: [`docs/IDEAS.md`](docs/IDEAS.md).
-- The pace of the exchange rate comes from a single interval, so it depends on the dates chosen.
+- The yearly pace of the exchange rate comes from a single interval, so it depends on the dates chosen.
+- What already happened depends on the day: a week back from a Monday starts on a Monday, from a Sunday on the Friday before; over a single day the leu often gains.
 
 ---
 

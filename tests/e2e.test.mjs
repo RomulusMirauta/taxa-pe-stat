@@ -159,6 +159,8 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     return {
       text: document.body.innerText,
       rows: [...document.querySelectorAll('#tb tr')].map((tr) => [...tr.cells].map((td) => td.textContent)),
+      fxRows: [...document.querySelectorAll('#fxb tr')].map((tr) => [...tr.cells].map((td) => td.textContent)),
+      fxNote: $('fxNote').textContent,
       facts: [...document.querySelectorAll('#facts .fact')].map((f) => ({ value: f.querySelector('b').textContent, cls: f.querySelector('b').className, text: f.querySelector('span').textContent })),
       invalid: [...document.querySelectorAll('[aria-invalid="true"]')].map((e) => e.id),
       formErr: $('formErr').hidden ? null : $('formErr').textContent,
@@ -319,14 +321,21 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     const p = { S: n('sum', true), pi: n('infl') / 100, rate: n('rate') / 100, tax: n('tax') / 100, fees: n('fees', true), net: true };
     const days = C.daysBetween(s.v.d0, s.v.d1);
     const fx = (k) => C.fxTrend(n(k + '0'), n(k + '1'), days);
-    const expected = [
-      C.PERIODS.map((q) => C.realLoss(p, q.days)),
-      C.PERIODS.map((q) => C.fxLoss(p, fx('eur').annual, n('eur1'), q.days)),
-      C.PERIODS.map((q) => C.fxLoss(p, fx('usd').annual, n('usd1'), q.days)),
-    ];
-    assert.equal(s.rows.length, 3);
-    s.rows.forEach((row, i) => row.slice(1).forEach((cell, j) =>
-      assert.ok(Math.abs(cellValue(cell) - expected[i][j]) < 0.0051, `row ${i + 1}, ${C.PERIODS[j].label}: ${cell} ≠ ${expected[i][j]}`)));
+    const near = (rows, expected, what) => rows.forEach((row, i) => row.slice(1).forEach((cell, j) =>
+      assert.ok(Math.abs(cellValue(cell) - expected[i][j]) < 0.0051, `${what} row ${i + 1}, ${C.PERIODS[j].label}: ${cell} ≠ ${expected[i][j]}`)));
+    assert.equal(s.rows.length, 1);
+    near(s.rows, [C.PERIODS.map((q) => C.realLoss(p, q.days))], 'loss');
+    // EUR and USD: what already happened, from BNR's daily history; none of these cells is a projection (F-84).
+    assert.equal(s.fxRows.length, 2);
+    const realised = [C.fxRealized(p, r.fx.series, s.v.d1, n('eur1'), 1, r.fx.d1), C.fxRealized(p, r.fx.series, s.v.d1, n('usd1'), 2, r.fx.d1)];
+    assert.ok(realised.flat().every(Number.isFinite), 'the bot keeps a year of history: every window is reached');
+    near(s.fxRows, realised, 'realised');
+    // The only projection: one year, in the sentence under the table.
+    const year = (k, unit) => {
+      const v = -C.fxLoss(p, fx(k).annual, n(k + '1'), 365), a = Math.abs(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+,)/g, '.');
+      return `${v < 0 ? '−' : '+'}${a} ${unit} pe an`;
+    };
+    assert.ok(s.fxNote.includes(`Dacă ritmul din ultimul an continuă: ${year('eur', '€')} față de euro și ${year('usd', '$')} față de dolar.`), s.fxNote);
     // „Pe scurt” is computed in the page script (renderFacts), not in Calc: this is where it is checked (DESIGN §5.4).
     const shown = s.facts.map((f) => -cellValue(f.value.replace(/%$/, '')));
     const want = [p.S / n('eur1') - p.S / n('eur0'), p.S / n('usd1') - p.S / n('usd0'),
@@ -350,6 +359,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.deepEqual(s.invalid, ['infl']);
     assert.match(s.formErr, /inflația/);
     assert.ok(s.rows.every(dash));
+    assert.ok(!s.fxRows.some(dash), 'the exchange rates do not need inflation');
     assert.doesNotMatch(s.text, /NaN|undefined|Infinity/);
 
     await type('infl', '6,5');
@@ -364,7 +374,8 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     await type('d0', '');
     s = await state();
     assert.deepEqual(s.invalid, ['d0']);
-    assert.ok(!dash(s.rows[0]) && dash(s.rows[1]) && dash(s.rows[2]), 'F-03: only the exchange-rate rows show „—”');
+    assert.ok(!dash(s.rows[0]) && !s.fxRows.some(dash), 'F-03: what already happened needs only the current date (F-84)');
+    assert.doesNotMatch(s.fxNote, /Dacă ritmul/, 'F-03: without an interval there is no annual pace');
 
     await type('d0', '2099-01-01');
     s = await state();
@@ -383,19 +394,23 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     // Exchange rates that cannot be real: above 1000, or a pair more than 4 times apart.
     await type('eur0', '53495');
     s = await state();
-    assert.ok(s.invalid.includes('eur0') && dash(s.rows[1]));
+    assert.ok(s.invalid.includes('eur0'));
+    assert.doesNotMatch(s.fxNote, /față de euro/, 'no annual pace for EUR without the rate of then');
+    assert.match(s.fxNote, /pe an față de dolar/);
     assert.match(s.formErr, /cursul EUR de atunci/);
     await type('eur0', '53,495');
     s = await state();
     assert.deepEqual(s.invalid, ['eur0', 'eur1']);
     assert.match(s.formErr, /cursurile EUR de atunci și de acum nu par reale/);
+    assert.ok(dash(s.fxRows[0]) && !dash(s.fxRows[1]), 'a pair that cannot be real: no EUR at all');
     assert.doesNotMatch(s.text, /∞|NaN/);
     // A wrong first digit over 1 day is a plausible pair, but no pace can be extrapolated from it.
     await type('d0', shiftDays(r.fx.d1, -1));
     await type('eur0', '7,3495');
     s = await state();
-    assert.match(s.rows[1][0], /ritmul anual nu se poate extrapola/);
-    assert.ok(dash(s.rows[1]));
+    assert.doesNotMatch(s.fxNote, /față de euro/);
+    // USD's pace over that day depends on the day's data: projected for a year, or not extrapolated at all.
+    assert.match(s.fxNote, /Dacă ritmul din intervalul ales \(1 zi\) continuă: [−+][\d.]+,\d\d \$ pe an față de dolar\.|Din intervalul ales, ritmul anual nu se poate extrapola\./);
     assert.doesNotMatch(s.text, /∞|\d{1,3}(\.\d{3}){5}/, 'no number of 16 digits or more');
     await type('d0', d0);
     await type('eur0', comma(row[1]));
@@ -426,7 +441,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.doesNotMatch(s.text, /[-−]0(?:[,.]0+)?(?![\d,.])/, 'no zero with a sign');
     await type('sum', '0');
     s = await state();
-    assert.ok(s.rows.flatMap((row) => row.slice(1)).every((c) => /^0,00 (lei|€|\$)$/.test(c)), 'F-08: zero without a sign');
+    assert.ok([...s.rows, ...s.fxRows].flatMap((row) => row.slice(1)).every((c) => /^0,00 (lei|€|\$)$/.test(c)), 'F-08: zero without a sign');
 
     await click('#mRaw');
     await click('#mNet');
@@ -447,6 +462,15 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       await open({ now: NOW });
       let s = await state();
       assert.match(s.fxHint, /Atunci: cursul BNR din 28 oct\. 2025\. Acum: cursul BNR din 28 oct\. 2026\./);
+      // The fixture's history has 27 Oct and 28 Oct 2025, then gaps: a week and a month back from 28 Oct 2026 it has
+      // no rate within 10 days, so those windows show „—” (F-84), while a day and a year are computed.
+      const p = { S: 50000, pi: 0.065, rate: 0, tax: 0.1, fees: 0, net: true };
+      const wanted = (col, cNow) => C.fxRealized(p, FIXTURE.fx.series, '2026-10-28', cNow, col, '2026-10-29');
+      assert.deepEqual(wanted(1, 5.3495).map(Number.isFinite), [true, false, false, true]);
+      for (const [i, w] of [[0, wanted(1, 5.3495)], [1, wanted(2, 4.8088)]]) {
+        s.fxRows[i].slice(1).forEach((cell, j) => assert.ok(Number.isFinite(w[j]) ? Math.abs(cellValue(cell) - w[j]) < 0.0051 : cell === '—', `${cell} ≠ ${w[j]}`));
+      }
+      assert.match(s.fxRows[0][0], /^EURpână pe 28 oct\. 2026$/);
 
       await type('d0', '2026-10-04'); // a Sunday: the rate of Friday 2 October
       s = await state();
@@ -460,10 +484,11 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       s = await state();
       assert.equal(s.formErr, 'Verifică: cursul BNR din 15 sept. 2026 (bnr.ro).');
       assert.deepEqual(s.invalid, ['eur0', 'usd0']);
-      assert.ok(dash(s.rows[1]) && dash(s.rows[2]));
+      assert.doesNotMatch(s.fxNote, /Dacă ritmul/, 'no annual pace without the rates of then');
+      assert.ok(!dash(s.fxRows[0]), 'what already happened needs only the current date');
       assert.deepEqual([s.facts[0].value, s.facts[1].value], ['—', '—']);
       assert.match(s.facts[0].text, /Lipsește cursul BNR din 15 sept\. 2026/);
-      assert.doesNotMatch(s.text, /valorau/);
+      assert.doesNotMatch(s.text, /lei valorau/, '„Pe scurt” shows no value without the rate of then');
 
       // Rates typed by the user stay theirs: a new date no longer replaces them.
       await type('eur0', '5,25');
@@ -511,12 +536,16 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
           assert.match(s.fresh, /Curs: <img src=x id=xss>, /);
         }
         if (what === 'missing') {
+          // Without the daily history, what already happened is unknown: „—”, never a projection instead (F-84).
+          assert.ok(s.fxRows.every(dash), 'no realised values without the history');
+          assert.ok(s.fxRows.every((row) => row[0].endsWith('lipsește istoricul zilnic al cursului')), s.fxRows.map((row) => row[0]).join(' | '));
+          assert.match(s.fxNote, /Dacă ritmul din ultimul an continuă: /, 'the annual pace needs only the two rates of the form');
           // Without a BNR history (the built-in values), a new date has no rate: no false history.
           const other = shiftDays(s.v.d0, -1);
           await type('d0', other);
           let t = await state();
           assert.equal(t.formErr, `Verifică: cursul BNR din ${roDate(other)} (bnr.ro).`);
-          assert.ok(dash(t.rows[1]) && dash(t.rows[2]));
+          assert.doesNotMatch(t.fxNote, /Dacă ritmul/);
           await type('d0', s.v.d0);
           t = await state();
           assert.equal(t.formErr, null, 'back on the date of the built-in rates');
@@ -619,14 +648,16 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.deepEqual(problems, []);
   });
 
-  test('on a phone the loss table shows every period, one per line, without sideways scrolling or broken numbers, and stays a table for screen readers (O-18, F-80)', async () => {
+  test('on a phone both tables show every period, one per line, without sideways scrolling or broken numbers, and stay tables for screen readers (O-18, F-80, F-84)', async () => {
     const layout = () => js(`(() => {
-      const wrap = document.querySelector('.tablewrap'), box = wrap.getBoundingClientRect();
-      const tds = [...document.querySelectorAll('#tb td')];
+      const wraps = [...document.querySelectorAll('.tablewrap')];
+      const tds = [...document.querySelectorAll('#tb td, #fxb td')];
+      const outside = (td) => { const box = td.closest('.tablewrap').getBoundingClientRect(), r = td.getBoundingClientRect(); return r.left < box.left - 0.5 || r.right > box.right + 0.5; };
       return {
-        sw: wrap.scrollWidth, cw: wrap.clientWidth,
-        out: tds.filter((td) => { const r = td.getBoundingClientRect(); return r.left < box.left - 0.5 || r.right > box.right + 0.5; }).map((td) => td.textContent),
-        labels: tds.slice(1, 5).map((td) => getComputedStyle(td, '::before').content),
+        tables: wraps.length,
+        sw: Math.max(...wraps.map((w) => w.scrollWidth - w.clientWidth)), cw: 0,
+        out: tds.filter(outside).map((td) => td.textContent),
+        labels: [...document.querySelectorAll('#fxb tr:first-child td')].slice(1).map((td) => getComputedStyle(td, '::before').content),
         // Content wider than its cell runs into the next one.
         overflowing: tds.filter((td) => td.scrollWidth > td.clientWidth + 0.5).map((td) => td.textContent),
         // A value split over two lines: „−6.035.034,2” / „7 lei”.
@@ -646,7 +677,8 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
         await type('sum', sum);
         m = await layout();
         const at = `at ${width} px, sum ${sum}`;
-        assert.ok(m.sw <= m.cw, `the table scrolls sideways ${at}: ${m.sw} > ${m.cw}`);
+        assert.equal(m.tables, 2);
+        assert.ok(m.sw <= m.cw, `a table scrolls sideways ${at}, by ${m.sw} px`);
         assert.deepEqual(m.out, [], `values outside the table ${at}`);
         assert.deepEqual(m.overflowing, [], `values wider than their cell ${at}`);
         assert.deepEqual(m.broken, [], `values split over two lines ${at}`);
@@ -657,10 +689,11 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     try {
       const { nodes } = await cdp.send('Accessibility.getFullAXTree');
       const named = (role) => nodes.filter((n) => n.role?.value === role && !n.ignored).map((n) => n.name?.value);
-      assert.equal(named('table').length, 1, 'the table role survives the phone layout');
+      assert.equal(named('table').length, 2, 'the table role survives the phone layout');
       const lower = (a) => a.map((s) => s.toLowerCase());
-      assert.deepEqual(lower(named('columnheader')), lower(['Cauza', ...C.PERIODS.map((q) => q.label)]), 'the hidden header row is still read (in capitals: text-transform)');
-      assert.equal(named('row').length, 4);
+      const periods = C.PERIODS.map((q) => q.label);
+      assert.deepEqual(lower(named('columnheader')), lower(['Cauza', ...periods, 'Valuta', ...periods]), 'the hidden header rows are still read (in capitals: text-transform)');
+      assert.equal(named('row').length, 5, 'a header row and inflation; a header row, EUR and USD');
     } finally {
       await cdp.send('Accessibility.disable');
     }

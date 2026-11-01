@@ -50,6 +50,15 @@ describe('dates', () => {
   test('missing or nonexistent dates → NaN', () => {
     for (const d of ['', '2026-02-30', '28.10.2026', '2026-13-01']) assert.ok(Number.isNaN(C.daysBetween(d, '2026-10-28')), d);
   });
+  test('addDays: back and forth across months, years and 29 February; "" for an invalid date', () => {
+    assert.equal(C.addDays('2026-10-30', -1), '2026-10-29');
+    assert.equal(C.addDays('2026-10-30', -30), '2026-09-30');
+    assert.equal(C.addDays('2026-10-30', -365), '2025-10-30');
+    assert.equal(C.addDays('2026-01-01', -1), '2025-12-31');
+    assert.equal(C.addDays('2028-03-01', -1), '2028-02-29');
+    assert.equal(C.addDays('2026-12-31', 1), '2027-01-01');
+    for (const d of ['', '2026-02-30', null]) assert.equal(C.addDays(d, -1), '', String(d));
+  });
 });
 
 describe('exchange rate: depreciation of the leu', () => {
@@ -122,6 +131,53 @@ describe('the BNR rate on a date (rateOn)', () => {
   test('no answer without a series or a valid date', () => {
     for (const s of [undefined, null, [], 'x']) assert.equal(C.rateOn(s, '2026-10-02', '2026-10-29'), null);
     for (const d of ['', '2026-02-30', '02.10.2026', null]) assert.equal(C.rateOn(series, d, '2026-10-29'), null);
+  });
+});
+
+describe('what already happened against a currency (fxRealizedLoss, fxRealized; F-84)', () => {
+  const cash = { S, pi: PI, rate: 0, tax: 0.1, fees: 0, net: true };
+  // The lei that the money of then was, from the loss at an unchanged rate c: (B − S) / c.
+  const balanceThen = (p, days, c = 5) => (C.fxRealizedLoss(p, c, c, days) + p.S / c) * c;
+  test('without interest: S/cThen − S/cNow, in the currency', () => {
+    close(C.fxRealizedLoss(cash, 5.0844, 5.3495, 365), S / 5.0844 - S / 5.3495, 1e-9);
+    close(C.fxRealizedLoss(raw, 5.0844, 5.3495, 365), S / 5.0844 - S / 5.3495, 1e-9, 'the no-interest mode, the same');
+  });
+  test('0 when neither the rate nor the balance changes', () => {
+    assert.equal(C.fxRealizedLoss(cash, 5.3, 5.3, 30), 0);
+  });
+  test('negative, a gain, when the leu gained', () => assert.ok(C.fxRealizedLoss(cash, 5.35, 5.30, 1) < 0));
+  test('with interest, the money of then is what grew into S: less than S', () => {
+    const B = balanceThen(dep, 365);
+    assert.ok(B < S);
+    close(C.nominalBalance({ ...dep, S: B }, 1), S, 1e-6);
+  });
+  test('with fees, the money of then is what nominalBalance turns into S after them', () => {
+    const p = { S, pi: PI, rate: 0.05, tax: 0.1, fees: 240, net: true };
+    close(C.nominalBalance({ ...p, S: balanceThen(p, 30) }, 30 / 365), S, 1e-6);
+    const feesOnly = { ...cash, fees: 240 };
+    assert.ok(balanceThen(feesOnly, 365) > S, 'fees alone: there was more money then');
+  });
+  describe('fxRealized: each period looking back from d1, with the rate the form has for d1', () => {
+    const series = [
+      ['2025-10-30', 5.0856, 4.38], ['2026-09-30', 5.27, 4.55], ['2026-10-23', 5.33, 4.75],
+      ['2026-10-29', 5.34, 4.78], ['2026-10-30', 5.3426, 4.7698],
+    ];
+    const at = (rows, cNow, col = 1) => C.fxRealized(cash, rows, '2026-10-30', cNow, col, '2026-10-30');
+    test('1, 7, 30 and 365 calendar days back, the rate of then from the series (rateOn)', () => {
+      const want = [5.34, 5.33, 5.27, 5.0856].map((c) => S / c - S / 5.3426);
+      at(series, 5.3426).forEach((v, i) => close(v, want[i], 1e-9, C.PERIODS[i].label));
+      assert.deepEqual(C.PERIODS.map((q) => q.back), [1, 7, 30, 365]);
+    });
+    test('USD from the third column; the rate of now is the one given, not the series row', () => {
+      close(at(series, 4.7698, 2)[0], S / 4.78 - S / 4.7698, 1e-9);
+      close(at(series, 5.40)[3], S / 5.0856 - S / 5.40, 1e-9);
+    });
+    test('a window the series does not reach within 10 days is NaN, never a projection', () => {
+      const gap = series.filter((r) => r[0] !== '2026-09-30');
+      assert.deepEqual(at(gap, 5.3426).map(Number.isFinite), [true, true, false, true]);
+      assert.ok(at(undefined, 5.3426).every(Number.isNaN), 'without a history');
+      assert.ok(C.fxRealized(cash, series, '', 5.3426, 1, '2026-10-30').every(Number.isNaN), 'without d1');
+    });
   });
 });
 
@@ -360,5 +416,21 @@ describe('the worked example in DESIGN §6 (50,000 lei, 6.61%, BNR 28 Oct 2025 �
     close(C.breakEvenRate(PI, 0.1, 0, S), 0.0734, 0.00005, 'with a 10% tax');
     close(C.breakEvenRate(PI, 0, 0, S), 0.0661, 1e-12, 'without tax');
     close(C.extraNeeded(S, PI, 1), 3305, 1e-9, 'extra lei next year');
+  });
+});
+
+describe('the worked example in DESIGN §6, already happened (50,000 lei, BNR up to 30 Oct 2026; F-84)', () => {
+  // The BNR rows the four windows reach from 30 Oct 2026: 29 Oct, 23 Oct, 30 Sep 2026 and 30 Oct 2025.
+  const series = [['2025-10-30', 5.0856, 4.38], ['2026-09-30', 5.2785, 4.6474], ['2026-10-23', 5.3495, 4.777], ['2026-10-29', 5.3449, 4.7943], ['2026-10-30', 5.3426, 4.7698]];
+  const cash = { S, pi: PI, rate: 0, tax: 0.1, fees: 0, net: true };
+  const deposit = { ...cash, rate: 0.0551 };
+  const check = (p, col, cNow, want, what) =>
+    C.fxRealized(p, series, '2026-10-30', cNow, col, '2026-10-30').forEach((v, i) => close(v, want[i], 0.005, `${what}, ${C.PERIODS[i].label}:`));
+  test('current account: the leu gained over the day and the week, lost over the month and the year', () => {
+    check(cash, 1, 5.3426, [-4.03, -12.07, 113.65, 472.94], 'EUR');
+    check(cash, 2, 4.7698, [-53.57, -15.80, 276.08, 932.91], 'USD');
+  });
+  test('deposit at BNR\'s average 5.51%: the interest covers most of the year against the euro', () => {
+    check(deposit, 1, 5.3426, [-5.27, -20.74, 76.04, 8.42], 'EUR');
   });
 });

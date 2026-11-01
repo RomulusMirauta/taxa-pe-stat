@@ -589,7 +589,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       const read = () => js("['tkLabel', 'tk', 'tkNote', 'tkYear'].map((id) => document.getElementById(id).textContent)")
         .then(([label, tk, note, year]) => ({ label, note, year, secs: Number(label.match(/\((\d+) s\):$/)?.[1]), total: -cellValue(tk), tk }));
       const after = (n, what) => until(async () => { const r = await read(); return r.secs >= n && r; }, what, 8000);
-      const lossSinceJan = (r) => cellValue(r.year.replace('De la 1 ianuarie: ', ''));
+      const lossSinceJan = (r) => cellValue(r.year.replace('De la 1 ianuarie 2026: ', ''));
 
       // Each whole second adds the loss of a second: about 0,0001 lei for 50.000 lei.
       let r = await after(2, 'two seconds on the stopwatch');
@@ -613,7 +613,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       await type('sum', '5.000.000.000');
       await until(async () => (await read()).tk.startsWith('+'), 'a gain once a second has passed', 4000);
       assert.equal(await js("document.getElementById('ticker').classList.contains('is-gain')"), true);
-      assert.match((await read()).year, /^De la 1 ianuarie: \+[\d.]+,\d\d lei$/);
+      assert.match((await read()).year, /^De la 1 ianuarie 2026: \+[\d.]+,\d\d lei$/);
 
       // A wrong field stops the counter, and the year shows „—”.
       await type('infl', 'abc');
@@ -622,7 +622,19 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       r = await read();
       assert.equal(r.tk, stopped.tk, 'no seconds added while a field is wrong');
       assert.match(r.note, /Contorul e oprit/);
-      assert.equal(r.year, 'De la 1 ianuarie: —');
+      assert.equal(r.year, 'De la 1 ianuarie 2026: —');
+      assert.deepEqual(problems, []);
+    });
+  });
+  test('the line under the counter names the year, and in a new year counts from its own 1 January', async () => {
+    const now = '2027-01-02T10:00:00Z'; // noon in Bucharest, 1.5 days into 2027
+    await intercept(json(FIXTURE), async () => {
+      await open({ now });
+      const year = await until(async () => { const t = await js("document.getElementById('tkYear').textContent"); return /\d,\d\d lei$/.test(t) && t; }, 'the loss since 1 January', 4000);
+      const p = { S: 50000, pi: 0.065, rate: 0, tax: 0.1, fees: 0, net: true };
+      const expected = C.realLoss(p, C.secondsSinceYearStart(Date.parse(now), -120, -120) / 86400);
+      assert.match(year, /^De la 1 ianuarie 2027: −[\d.]+,\d\d lei$/);
+      assert.ok(Math.abs(cellValue(year.replace('De la 1 ianuarie 2027: ', '')) - expected) < 1, `${year}: about ${expected.toFixed(2)} lei`);
       assert.deepEqual(problems, []);
     });
   });

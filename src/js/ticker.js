@@ -33,6 +33,6 @@ export function loop() {
   /* The same sum since 1 January: a what-if, recomputed from the form (F-85). */
   var n = new Date();
   var year = Calc.secondsSinceYearStart(n.getTime(), n.getTimezoneOffset(), new Date(n.getFullYear(), 0, 1).getTimezoneOffset());
-  $('tkYear').textContent = 'De la 1 ianuarie: ' + (tick.p ? signed(-Calc.realLoss(tick.p, year / 86400), 'lei') : '—');
+  $('tkYear').textContent = 'De la 1 ianuarie ' + n.getFullYear() + ': ' + (tick.p ? signed(-Calc.realLoss(tick.p, year / 86400), 'lei') : '—');
   setTimeout(loop, 1000 - ms % 1000 + 5); // a timer may fire a little early: just after the second, not before it
 }

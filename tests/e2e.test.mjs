@@ -882,6 +882,28 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.deepEqual(problems, []);
   });
 
+  test('the largest sums: „Pe scurt” stays in its columns, and a toast says the sum is too large (F-97)', async () => {
+    const toastText = () => js("(() => { const t = document.getElementById('toast'); return t.hidden ? null : t.textContent; })()");
+    for (const width of [1280, 375]) {
+      await open({ width });
+      for (const sum of ['999.999.999.999.999.999.999.999.999.999', '9.999.999.999.999.999.999.999.999.999.999']) {
+        await type('sum', sum);
+        // Each card stays inside its own box: nothing runs into the card beside it.
+        const out = await js(`[...document.querySelectorAll('#facts .fact')].flatMap((f) => [...f.children].filter((c) => c.scrollWidth > f.clientWidth + 0.5).map((c) => c.textContent))`);
+        assert.deepEqual(out, [], `at ${width} px, sum ${sum}`);
+      }
+      assert.equal(await toastText(), 'Wow! Ai atât de mulți bani, încât strici interfața aplicației! 😂');
+    }
+    await type('sum', '50.000');
+    await type('infl', '100');
+    assert.match(await toastText(), /^Inflația de 100% este imposibilă/);
+    await type('infl', 'abc');
+    assert.match(await toastText(), /^Inflația de 100%/, 'nothing new while the inflation is being typed');
+    await js("document.getElementById('infl').dispatchEvent(new Event('change', { bubbles: true }))");
+    assert.match(await toastText(), /^Inflația trebuie să fie un număr între −50% și 100%/);
+    assert.deepEqual(problems, []);
+  });
+
   test('on a phone the chart is not scaled down: its labels keep their size (F-81)', async () => {
     for (const width of [320, 360, 375]) {
       await open({ width });

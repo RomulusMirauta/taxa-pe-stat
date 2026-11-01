@@ -8,7 +8,8 @@
   --ticker-bg:#1b2036; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae;
   --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
   --body:"Source Sans 3",ui-sans-serif,system-ui,sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  /* Numbers: Source Sans 3 with digits of one width (tabular-nums); its 0 is plain, JetBrains Mono's had a dot in it. */
+  --num:"Source Sans 3",ui-sans-serif,system-ui,sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#12141f; --surface:#1a1d2c; --ink:#e8e9f2; --muted:#9a9fbb; --line:#2c3047;

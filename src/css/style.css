@@ -18,7 +18,9 @@ h2{font-size:20px;font-weight:700}
 .ticker.is-gain .big{color:var(--ticker-gain)}
 .ticker small{opacity:.8;font-size:14px}
 
-.grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:start}
+.grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:stretch}
+/* The form reaches the bottom of the results beside it; its fields stay at the top. */
+.grid>form{align-content:start}
 @media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
 .col{display:grid;gap:24px;min-width:0}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:18px;min-width:0}
@@ -85,7 +87,7 @@ svg text.assume{fill:var(--ink);font-weight:600}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
 .sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .sw.is-loss{background:var(--loss)} .sw.is-accent{background:var(--accent)}
-footer{font-size:13px;color:var(--muted);max-width:75ch}
+footer{font-size:13px;color:var(--muted)}
 .src{font-size:13px;color:var(--muted);margin:-12px 0 0}
 .src a{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}

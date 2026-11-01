@@ -520,6 +520,21 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     s = await state();
     assert.equal(s.facts[2].cls, 'num gain', `„Minimul pentru plus”: ${s.facts[2].value}`);
     assert.match(s.rows[0][4], /^\+/);
+    // A new sum, then the button, or the button, then a new sum: the same interest and results (F-95).
+    const results = (x) => ({ rate: x.v.rate, tax: x.v.tax, rows: x.rows, facts: x.facts, tkNote: x.tkNote });
+    await type('sum', '20.000');
+    const minAfter = results(await state());
+    await click(deposit);
+    await type('sum', '50.000');
+    await type('sum', '20.000');
+    await click('[data-min]');
+    assert.deepEqual(minAfter, results(await state()));
+    assert.equal(C.parseNum(minAfter.rate), C.rateForGainIn(0.065, 0, 0, 20000, 3));
+    // An interest typed by hand stays, whatever the sum.
+    await type('rate', '9');
+    await type('sum', '30.000');
+    assert.equal((await state()).v.rate, '9');
+    await type('sum', '50.000');
     await click(deposit);
     s = await state();
     assert.match(await js(`document.querySelector('${deposit}').textContent`), /^Depozit 6–12 luni, media BNR · \d+(,\d+)?%$/);

@@ -10,8 +10,19 @@ import { renderChart } from './chart.js';
 import { forecastShown, renderFresh } from './fresh.js';
 import { loop, renderTicker } from './ticker.js';
 
+/* After „Minimul pentru plus”, the interest follows the sum, the inflation and the fees, until the user types an
+   interest or a tax or picks another account: the order of a click and a new sum does not matter (F-95). */
+var followMin = false;
 function render() {
   var s = readState();
+  if (followMin) {
+    var r = Calc.rateForGainIn(s.infl / 100, 0, s.fees, s.S, 3);
+    if (r <= 100 && (Calc.parseNum($('rate').value) !== r || Calc.parseNum($('tax').value) !== 0)) {
+      $('rate').value = short(r);
+      $('tax').value = '0';
+      s = readState();
+    }
+  }
   var err = $('formErr');
   err.hidden = !s.errors.length;
   err.textContent = s.errors.length ? 'Verifică: ' + s.errors.join('; ') + '.' : '';
@@ -85,6 +96,7 @@ function setup() {
       var back = b.dataset.back !== undefined && b.getAttribute('aria-pressed') === 'true';
       $('infl').value = short(Number(back ? b.dataset.back : b.dataset.infl));
     } else if (b.dataset.rate !== undefined) {
+      followMin = b.dataset.min !== undefined;
       $('rate').value = short(Number(b.dataset.rate));
       $('tax').value = short(Number(b.dataset.tax));
     }
@@ -105,6 +117,7 @@ function setup() {
       var g = groupInput(el.value, el.selectionStart);
       if (g.value !== el.value) { el.value = g.value; el.setSelectionRange(g.caret, g.caret); }
     }
+    if (el.id === 'rate' || el.id === 'tax') followMin = false;
     noteInput(el.id);
     render();
   });

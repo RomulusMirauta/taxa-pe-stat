@@ -12,7 +12,7 @@ The project's versions, briefly. The details of each problem are in [`FINDINGS.m
 - **Layout:** the form as tall as the results, more room before each group of fields, the sources justified across the page; the forecast button under the chart is a toggle.
 
 ### Added
-- **„Minimul pentru plus”:** the lowest tax-free interest that turns the counter green within 3 seconds, for the sum, inflation and fees in the form (F-94).
+- **„Minimul pentru plus”:** the lowest tax-free interest that turns the counter green within 3 seconds, for the sum, inflation and fees in the form (F-94); it follows them until another interest is chosen (F-95).
 
 ### Fixed
 - **Large sums** take the stacked table layout on wide screens too, instead of running out of the table (F-92).

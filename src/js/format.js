@@ -64,3 +64,5 @@ export function todayISO(now) {
 /* A signed value split into its sign and the rest, so the counter can set the sign apart: "−0,0008 lei" →
    ["−", "0,0008 lei"]; without a sign the first part is empty. */
 export function splitSign(text) { return /^[−+]/.test(text) ? [text.charAt(0), text.slice(1)] : ['', text]; }
+/* A field with a ceiling: a number above `max` becomes `max` as it is typed ("999" → "100"); anything else stays. */
+export function capInput(text, max) { return Calc.parseNum(text) > max ? short(max) : text; }

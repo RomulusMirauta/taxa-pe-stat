@@ -1,7 +1,7 @@
 // Tests for the page's formatting (src/js/format.js): numbers, signs, dates and day counts, the Romanian way.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, duration, groupInput, splitSign, todayISO } from '../src/js/format.js';
+import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, duration, groupInput, capInput, splitSign, todayISO } from '../src/js/format.js';
 
 const cases = (fn, list) => {
   for (const [args, expected] of list) test(`${fn.name}(${args.map((a) => JSON.stringify(a)).join(', ')}) → ${expected}`, () => assert.equal(fn(...args), expected));
@@ -54,6 +54,10 @@ describe('a sum as it is typed: the thousands dots come by themselves (F-93)', (
     [['50000', 2], '50.000', 2], [['500000', 3], '500.000', 3], [['50.00', 3], '5.000', 3],
     [['abc'], 'abc', 3], [['50.000,5,1'], '50.000,5,1', 10], [['-50000'], '-50000', 6],
   ]) test(`groupInput(${args.map((a) => JSON.stringify(a)).join(', ')}) → ${value}, caret ${caret}`, () => assert.deepEqual(g(...args), { value, caret }));
+});
+
+describe('inflation above 100% becomes 100% as it is typed (F-96)', () => {
+  cases(capInput, [[['999', 100], '100'], [['100,5', 100], '100'], [['100', 100], '100'], [['6,5', 100], '6,5'], [['-50', 100], '-50'], [['abc', 100], 'abc'], [['', 100], '']]);
 });
 
 test('splitSign: the counter sets the sign apart from the number', () => {

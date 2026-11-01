@@ -2,7 +2,7 @@
 import { Calc } from './calc.js';
 import { DATA } from './builtin-data.js';
 import { $ } from './dom.js';
-import { fmtDate, fmtMonth, groupInput, short, todayISO } from './format.js';
+import { capInput, fmtDate, fmtMonth, groupInput, short, todayISO } from './format.js';
 import { fillInputs, noteInput, readState, syncChips } from './form.js';
 import { renderFxTable, renderTable, renderTableHead } from './table.js';
 import { renderFacts } from './facts.js';
@@ -117,6 +117,8 @@ function setup() {
       var g = groupInput(el.value, el.selectionStart);
       if (g.value !== el.value) { el.value = g.value; el.setSelectionRange(g.caret, g.caret); }
     }
+    /* Inflation above 100% becomes 100% as it is typed (F-96). */
+    if (el.id === 'infl' && capInput(el.value, 100) !== el.value) el.value = capInput(el.value, 100);
     if (el.id === 'rate' || el.id === 'tax') followMin = false;
     noteInput(el.id);
     render();

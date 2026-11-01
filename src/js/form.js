@@ -6,7 +6,7 @@ import { fmtDate, RATE4, short, todayISO } from './format.js';
 
 var FIELDS = {
   sum:  { money: true, min: 0, err: 'suma (un număr ≥ 0, de ex. 50.000)' },
-  infl: { min: -50, max: 500, err: 'inflația (între −50% și 500%)' },
+  infl: { min: -50, max: 100, err: 'inflația (între −50% și 100%)' },
   rate: { min: 0, max: 100, err: 'dobânda (între 0% și 100%)' },
   tax:  { min: 0, max: 100, err: 'impozitul (între 0% și 100%)' },
   fees: { money: true, min: 0, err: 'comisioanele (un număr ≥ 0)' },

@@ -393,6 +393,13 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.ok(!s.fxRows.some(dash), 'the exchange rates do not need inflation');
     assert.doesNotMatch(s.text, /NaN|undefined|Infinity/);
 
+    // Inflation above 100% becomes 100% as it is typed, and is then a valid field (F-96).
+    await type('infl', '999');
+    s = await state();
+    assert.equal(s.v.infl, '100');
+    assert.deepEqual(s.invalid, []);
+    assert.match(s.tkNote, /inflație 100%\/an/);
+
     await type('infl', '6,5');
     await type('tax', '300');
     assert.deepEqual((await state()).invalid, ['tax'], 'F-09: a tax above 100%');

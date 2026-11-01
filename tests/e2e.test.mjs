@@ -587,13 +587,13 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       const sinceJan = (q) => C.realLoss(q, C.secondsSinceYearStart(Date.parse(now), -120, -120) / 86400);
       // One snapshot: the loop writes the label, the counter and the line under it in the same tick.
       const read = () => js("['tkLabel', 'tk', 'tkNote', 'tkYear'].map((id) => document.getElementById(id).textContent)")
-        .then(([label, tk, note, year]) => ({ label, note, year, secs: Number(label.match(/\((\d+) s\):$/)?.[1]), total: -cellValue(tk), tk }));
+        .then(([label, tk, note, year]) => ({ label, note, year, secs: Number(label.match(/\((\d+) s\)/)?.[1]), total: -cellValue(tk), tk }));
       const after = (n, what) => until(async () => { const r = await read(); return r.secs >= n && r; }, what, 8000);
       const lossSinceJan = (r) => cellValue(r.year.replace('De la 1 ianuarie 2026: ', ''));
 
       // Each whole second adds the loss of a second: about 0,0001 lei for 50.000 lei.
       let r = await after(2, 'two seconds on the stopwatch');
-      assert.match(r.label, /^Pentru 50\.000 lei, de când ai deschis pagina \(\d+ s\):$/);
+      assert.match(r.label, /^Pentru 50\.000 lei, de când ai deschis pagina \(\d+ s\), ai pierdut:$/);
       assert.ok(Math.abs(r.total - r.secs * perSecond(p)) < 0.00006, `${r.tk} after ${r.secs} s`);
       assert.equal(r.note, 'Ritm actual: −0,3594 lei pe oră | −8,63 lei pe zi (inflație 6,5%/an, fără dobândă).');
       assert.ok(Math.abs(lossSinceJan(r) - sinceJan(p)) < 1, `${r.year}: about ${sinceJan(p).toFixed(2)} lei`);
@@ -613,6 +613,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       await type('sum', '5.000.000.000');
       await until(async () => (await read()).tk.startsWith('+'), 'a gain once a second has passed', 4000);
       assert.equal(await js("document.getElementById('ticker').classList.contains('is-gain')"), true);
+      assert.match((await read()).label, /, ai câștigat:$/);
       assert.match((await read()).year, /^De la 1 ianuarie 2026: \+[\d.]+,\d\d lei$/);
 
       // A wrong field stops the counter, and the year shows „—”.

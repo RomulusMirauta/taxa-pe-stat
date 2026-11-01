@@ -8,7 +8,7 @@ import { duration, esc, fmt, lei, pct, short, signed, splitSign } from './format
    form now: a new sum recounts them all (F-91 replaces F-06's running sum). While a field is wrong it stops. */
 var tick = { S: NaN, p: null, rate: 0, total: 0, secs: 0, start: performance.now() };
 function label(secs) {
-  $('tkLabel').textContent = isFinite(tick.S) ? 'Pentru ' + fmt(tick.S, 0) + ' lei, de când ai deschis pagina (' + duration(secs) + '):' : 'Completează suma.';
+  $('tkLabel').textContent = isFinite(tick.S) ? 'Pentru ' + fmt(tick.S, 0) + ' lei, de când ai deschis pagina (' + duration(secs) + '), ai ' + (tick.total > 0.00005 ? 'câștigat' : 'pierdut') + ':' : 'Completează suma.';
 }
 export function renderTicker(s) {
   tick.S = s.S;

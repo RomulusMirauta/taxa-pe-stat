@@ -1,16 +1,8 @@
-// Tests for the calculations in app.html (the <script id="calc"> block).
+// Tests for the calculations of the page (src/js/calc.js).
 // Run: npm test  (or: node --test)
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
-
-const html = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
-const src = html.match(/<script id="calc">([\s\S]*?)<\/script>/)?.[1];
-assert.ok(src, 'the <script id="calc"> block is missing from app.html');
-const ctx = vm.createContext({});
-vm.runInContext(src, ctx);
-const C = ctx.Calc;
+import { Calc as C } from '../src/js/calc.js';
 
 const close = (actual, expected, eps, what = '') =>
   assert.ok(Math.abs(actual - expected) <= eps, `${what} ${actual} ≠ ${expected} (±${eps})`);

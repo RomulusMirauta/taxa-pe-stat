@@ -7,16 +7,12 @@ import { readFileSync } from 'node:fs';
 import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import vm from 'node:vm';
 import {
   parseBnrXml, parseCsv, parseEcbCsv, mergeSeries, pickYearAgo, fxFromSeries, parseEurostat,
   buildInflation, shiftYear, shiftDays, main, UA,
 } from '../scripts/update-data.mjs';
+import { Calc as C } from '../src/js/calc.js';
 
-const html = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
-const ctx = vm.createContext({});
-vm.runInContext(html.match(/<script id="calc">([\s\S]*?)<\/script>/)[1], ctx);
-const C = ctx.Calc;
 
 /* ---------- fixtures, in the real format of the sources ---------- */
 

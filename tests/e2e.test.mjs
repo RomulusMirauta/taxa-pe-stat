@@ -11,8 +11,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, sep, extname } from 'node:path';
-import vm from 'node:vm';
 import { build } from '../build.mjs';
+import { Calc as C } from '../src/js/calc.js';
 
 const CHROME = [
   process.env.CHROME_PATH,
@@ -27,13 +27,9 @@ const missing = !CHROME ? 'Chrome is not installed (or set CHROME_PATH)'
 // Locally it is skipped; in GitHub Actions the runner has Chrome, so a missing one must fail, not pass unnoticed.
 const skip = process.env.E2E === '0' ? 'E2E=0' : missing && !process.env.GITHUB_ACTIONS ? missing : false;
 
-const html = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
-const ctx = vm.createContext({});
-vm.runInContext(html.match(/<script id="calc">([\s\S]*?)<\/script>/)[1], ctx);
-const C = ctx.Calc;
 // The data written by the bot: read when the test runs, so the test does not depend on today's values.
 const rates = () => JSON.parse(readFileSync(new URL('../data/rates.json', import.meta.url), 'utf8'));
-const tokens = html.match(/\/\* tokens:start \*\/([\s\S]*?)\/\* tokens:end \*\//)[1];
+const tokens = readFileSync(new URL('../src/css/tokens.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').trim();
 const bgToken = (re) => tokens.match(re)[1].match(/--bg:\s*#([0-9a-f]{6})/i)[1];
 const rgb = (hex) => `rgb(${[0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`;
 const BG = { light: rgb(bgToken(/^\s*:root\{([^}]*)\}/)), dark: rgb(bgToken(/:root\[data-theme="dark"\]\{([^}]*)\}/)) };

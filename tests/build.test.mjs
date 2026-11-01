@@ -1,15 +1,17 @@
-// The site build: a complete document, local fonts, a correct CSP, relative paths, the 404 page, the font licences.
+// The site build: the source joined into one page, a complete document, local fonts, a correct CSP, relative paths,
+// the 404 page, the font licences.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, readdir, mkdtemp, rm, access } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
+import { readFile, readdir, mkdtemp, mkdir, rm, access, cp, writeFile } from 'node:fs/promises';
+import { readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
+import vm from 'node:vm';
 import { brotliDecompressSync } from 'node:zlib';
-import { build, wrap, notFoundPage, inlineScriptHashes, APP, ROOT, SITE_URL } from '../build.mjs';
+import { build, wrap, assemble, bundle, notFoundPage, inlineScriptHashes, SRC, ROOT, SITE_URL } from '../build.mjs';
 
-const app = readFileSync(APP, 'utf8');
+const tokensCss = readFileSync(join(SRC, 'css', 'tokens.css'), 'utf8').replace(/\r\n?/g, '\n').trim();
 // The hash the browser computes: on the script text after the HTML parser has turned CRLF and CR into LF.
 const hash = (code) => `'sha256-${createHash('sha256').update(code.replace(/\r\n?/g, '\n'), 'utf8').digest('base64')}'`;
 const cspOf = (html) => html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1].replace(/&#39;|&apos;/g, "'");
@@ -95,13 +97,26 @@ describe('the site build', () => {
     await assert.rejects(access(join(out, 'assets', 'og.png')), 'the dated card is no longer published (F-76)');
   });
   test('no claude: meta (it was only for the artifact)', () => assert.doesNotMatch(page, /name="claude:/));
-  test('CSP: exactly these directives, and script-src only the hashes of the two inline scripts', () => {
+  test('CSP: exactly these directives, and script-src only the hash of the one inline script', () => {
     const csp = cspOf(page);
-    assert.equal(csp.replace(/'sha256-[^']+'/g, 'H'), "default-src 'self'; script-src H H; style-src 'self' 'unsafe-inline'; " +
+    assert.equal(csp.replace(/'sha256-[^']+'/g, 'H'), "default-src 'self'; script-src H; style-src 'self' 'unsafe-inline'; " +
       "font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'");
     const inline = inlineScripts(page);
-    assert.equal(inline.length, 2);
-    for (const code of inline) assert.ok(csp.includes(hash(code)), 'an inline script has no hash in the CSP: the browser would block it');
+    assert.equal(inline.length, 1);
+    assert.ok(csp.includes(hash(inline[0])), 'the inline script has no hash in the CSP: the browser would block it');
+  });
+  test('the modules are inline, in one module script that parses, with no import or export left (F-46)', () => {
+    assert.deepEqual([...page.matchAll(/<script\b[^>]*>/g)].map((m) => m[0]), ['<script type="module">']);
+    const code = inlineScripts(page)[0];
+    assert.doesNotThrow(() => new vm.Script(code, { filename: 'the bundle' }));
+    assert.doesNotMatch(code, /^\s*(import|export)\b/m);
+    for (const f of readdirSync(join(SRC, 'js'))) assert.ok(code.includes(`/* js/${f} */`), `${f} is not in the page`);
+  });
+  test('the stylesheets are inline, the tokens first, and nothing else from src/ is linked', () => {
+    const style = page.match(/<body>[\s\S]*?<style>\n([\s\S]*?)<\/style>/)[1];
+    assert.ok(style.startsWith(readFileSync(join(SRC, 'css', 'tokens.css'), 'utf8').replace(/\r\n?/g, '\n')));
+    assert.ok(style.includes(readFileSync(join(SRC, 'css', 'style.css'), 'utf8').replace(/\r\n?/g, '\n')));
+    assert.doesNotMatch(page, /(?:href|src)="(?:css|js)\//);
   });
   test('no referrer: the sites the page links to are not told its address', () => {
     assert.match(page, /<head>[\s\S]*<meta name="referrer" content="no-referrer">[\s\S]*<\/head>/);
@@ -130,12 +145,11 @@ describe('the site build', () => {
       assert.equal(cspOf(notFound), "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'");
       assert.match(notFound, /<meta name="referrer" content="no-referrer">/);
     });
-    test('the colours of the site, light and dark, only through the tokens of app.html', () => {
-      const tokens = app.replace(/\r\n?/g, '\n').match(/\/\* tokens:start \*\/[\s\S]*?\/\* tokens:end \*\//)[0];
+    test('the colours of the site, light and dark, only through the tokens of src/css/tokens.css', () => {
       const style = notFound.match(/<style>([\s\S]*?)<\/style>/)[1];
-      assert.ok(style.includes(tokens), 'the tokens of app.html are missing');
-      assert.match(tokens, /prefers-color-scheme:\s*dark/);
-      assert.doesNotMatch(style.replace(tokens, ''), /#[0-9a-f]{3,8}\b|\b(?:rgb|hsl)a?\(/i);
+      assert.ok(style.includes(tokensCss), 'the tokens are missing');
+      assert.match(tokensCss, /prefers-color-scheme:\s*dark/);
+      assert.doesNotMatch(style.replace(tokensCss, ''), /#[0-9a-f]{3,8}\b|\b(?:rgb|hsl)a?\(/i);
     });
   });
 
@@ -171,13 +185,23 @@ describe('the site build', () => {
 });
 
 describe('wrap() and the CSP hashes', () => {
-  const lf = app.replace(/\r\n?/g, '\n'); // the checkout is LF; this keeps the test exact on a CRLF working copy too
-  test('app.html with CRLF or CR line endings: the same pages, so the same hashes, and no CR in them', () => {
-    for (const [endings, variant] of [['CRLF', lf.replace(/\n/g, '\r\n')], ['CR', lf.replace(/\n/g, '\r')]]) {
-      const html = wrap(variant);
-      assert.doesNotMatch(html, /\r/, endings);
-      assert.equal(html, wrap(lf), endings);
-      assert.equal(notFoundPage(variant), notFoundPage(lf), endings);
+  test('source files with CRLF or CR line endings: the same pages, so the same hashes, and no CR in them', async () => {
+    const lf = wrap(assemble());
+    for (const [endings, eol] of [['CRLF', '\r\n'], ['CR', '\r']]) {
+      const src = await mkdtemp(join(tmpdir(), 'taxa-pe-stat-src-'));
+      try {
+        await cp(SRC, src, { recursive: true });
+        for (const f of await readdir(src, { recursive: true })) {
+          if (!/\.(html|css|js)$/.test(f)) continue;
+          await writeFile(join(src, f), (await readFile(join(src, f), 'utf8')).replace(/\r\n?/g, '\n').replace(/\n/g, eol));
+        }
+        const html = wrap(assemble(src));
+        assert.doesNotMatch(html, /\r/, endings);
+        assert.equal(html, lf, endings);
+        assert.equal(notFoundPage(tokensCss.replace(/\n/g, eol)), notFoundPage(tokensCss), endings);
+      } finally {
+        await rm(src, { recursive: true, force: true });
+      }
     }
   });
   test('inlineScriptHashes: the hash the browser computes, with CRLF and CR read as LF', () => {
@@ -188,6 +212,57 @@ describe('wrap() and the CSP hashes', () => {
       .split('; ').find((d) => d.startsWith('script-src'));
     assert.equal(scriptSrc, `script-src ${hash('a()')} ${hash('b()')}`);
   });
+});
+
+describe('bundle(): the ES modules of src/js, joined without a bundler', () => {
+  let dir;
+  before(async () => { dir = await mkdtemp(join(tmpdir(), 'taxa-pe-stat-bundle-')); });
+  after(() => rm(dir, { recursive: true, force: true }));
+  /** Writes the modules ({ 'a.js': 'code' }) into a fresh folder and bundles from main.js. */
+  let n = 0;
+  async function bundleOf(files) {
+    const d = join(dir, String(n++));
+    await mkdir(d);
+    for (const [name, code] of Object.entries(files)) await writeFile(join(d, name), code);
+    return bundle(join(d, 'main.js'));
+  }
+  // Runs a bundle and returns what it logged.
+  const run = (code) => { const out = []; vm.runInNewContext(code, { log: (v) => out.push(v) }); return out; };
+
+  test('each module runs once, after what it imports, and sees only what it imports', async () => {
+    const code = await bundleOf({
+      'a.js': "log('a');\nexport const A = 1;\nvar secret = 'a';\nexport function twice(v) { return 2 * v; }\n",
+      'b.js': "import { A } from './a.js';\nlog('b');\nexport const B = A + 1;\nvar secret = 'b';\n",
+      'main.js': "import { B } from './b.js';\nimport { A, twice } from './a.js';\nlog([A, B, twice(B), typeof secret].join(' '));\n",
+    });
+    assert.deepEqual(run(code), ['a', 'b', '1 2 4 undefined']);
+  });
+  test('a module can change an exported object, not rebind the export: the others see the change', async () => {
+    const code = await bundleOf({
+      'data.js': "export const DATA = { live: false };\n",
+      'load.js': "import { DATA } from './data.js';\nexport function load() { DATA.live = true; }\n",
+      'main.js': "import { DATA } from './data.js';\nimport { load } from './load.js';\nload();\nlog(DATA.live);\n",
+    });
+    assert.deepEqual(run(code), [true]);
+  });
+  const refused = [
+    ['export default', { 'main.js': 'export default 1;\n' }, /main\.js:1: only "export function\|const\|class name"/],
+    ['export let', { 'main.js': 'export let a = 1;\n' }, /main\.js:1: only "export/],
+    ['export { … }', { 'main.js': 'const a = 1;\nexport { a };\n' }, /main\.js:2: only "export/],
+    ['import … as', { 'a.js': 'export const a = 1;\n', 'main.js': "import { a as b } from './a.js';\n" }, /main\.js:1: only "import \{ a, b \}/],
+    ['import *', { 'a.js': 'export const a = 1;\n', 'main.js': "import * as A from './a.js';\n" }, /main\.js:1: only "import/],
+    ['a package', { 'main.js': "import { x } from 'lodash';\n" }, /main\.js:1: only "import/],
+    ['a dynamic import()', { 'main.js': "const m = import('./a.js');\n" }, /main\.js:1: only "import/],
+    ['a name the module does not export', { 'a.js': 'export const a = 1;\n', 'main.js': "import { b } from './a.js';\n" }, /main\.js:1: \.\/a\.js does not export b/],
+    ['a missing file', { 'main.js': "import { a } from './nope.js';\n" }, /main\.js:1: .*nope\.js does not exist/],
+    ['an import cycle', { 'a.js': "import { b } from './b.js';\nexport const a = 1;\n", 'b.js': "import { a } from './a.js';\nexport const b = 1;\n", 'main.js': "import { a } from './a.js';\n" }, /an import cycle: .*a\.js → .*b\.js → .*a\.js/],
+    ['"</script" in the code', { 'main.js': "log('</script>');\n" }, /<\/script/],
+  ];
+  for (const [what, files, message] of refused) {
+    test(`refuses ${what}, naming the file and the line`, async () => {
+      await assert.rejects(bundleOf(files), message);
+    });
+  }
 });
 
 test('package.json: Node.js 22 or newer (Node 20 is end-of-life since 30 April 2026; the end-to-end test needs the global WebSocket)', () => {

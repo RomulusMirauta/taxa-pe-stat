@@ -1,0 +1,26 @@
+/* The colour tokens, for both themes: the only place with literal colours (tests/page.test.mjs).
+   The dark palette is written twice: for the system setting, and for data-theme="dark". 404.html uses them too. */
+:root{
+  --bg:#f3f4f8; --surface:#ffffff; --ink:#1b2036; --muted:#5d6380; --line:#dfe2ec;
+  --accent:#3d3fa0; --accent-soft:#e7e7f7; --on-accent:#ffffff;
+  --loss:#b8322a; --loss-soft:#fbe9e7; --gain:#1f7a4d; --gain-soft:#e4f3ea;
+  --warn:#8a5a00; --warn-soft:#fdf1d8;
+  --ticker-bg:#1b2036; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Source Sans 3",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12141f; --surface:#1a1d2c; --ink:#e8e9f2; --muted:#9a9fbb; --line:#2c3047;
+  --accent:#9c9ef0; --accent-soft:#25274a; --on-accent:#12141f;
+  --loss:#f07a6e; --loss-soft:#3a1f22; --gain:#5fcf94; --gain-soft:#173326;
+  --warn:#f2c46b; --warn-soft:#3a2f17;
+  --ticker-bg:#262a46; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12141f; --surface:#1a1d2c; --ink:#e8e9f2; --muted:#9a9fbb; --line:#2c3047;
+  --accent:#9c9ef0; --accent-soft:#25274a; --on-accent:#12141f;
+  --loss:#f07a6e; --loss-soft:#3a1f22; --gain:#5fcf94; --gain-soft:#173326;
+  --warn:#f2c46b; --warn-soft:#3a2f17;
+  --ticker-bg:#262a46; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae;
+  color-scheme:dark}

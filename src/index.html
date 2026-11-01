@@ -1,0 +1,113 @@
+<title>Taxa pe stat</title>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/style.css">
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Calculator · lei · RON</div>
+    <h1>Taxa pe stat</h1>
+    <p class="lede"><strong>Cât pierd leii tăi, zi de zi.</strong> Taxa pe care o plătești când banii stau: inflația și leul care pierde teren față de euro și dolar. Introdu suma și vezi cât te costă pe zi, săptămână, lună și an.</p>
+    <ul class="fresh" id="fresh" aria-label="Cât de noi sunt datele"></ul>
+  </header>
+
+  <noscript><p class="formerr">Calculatorul are nevoie de JavaScript. Activează-l și reîncarcă pagina.</p></noscript>
+
+  <section class="ticker" id="ticker" aria-label="Contor live">
+    <small id="tkLabel"></small>
+    <div class="big" id="tk">—</div>
+    <small id="tkNote"></small>
+  </section>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off" novalidate>
+      <fieldset>
+        <legend>Banii tăi</legend>
+        <label for="sum">Suma în lei
+          <input id="sum" type="text" inputmode="decimal" spellcheck="false"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Inflația</legend>
+        <label for="infl">Rata anuală (%)
+          <input id="infl" type="text" inputmode="decimal" spellcheck="false"></label>
+        <div class="chips" id="inflChips"></div>
+        <p class="hint" id="inflHint"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Unde stau banii</legend>
+        <div class="row2">
+          <label for="rate">Dobândă brută (%/an)
+            <input id="rate" type="text" inputmode="decimal" spellcheck="false"></label>
+          <label for="tax">Impozit pe dobândă (%)
+            <input id="tax" type="text" inputmode="decimal" spellcheck="false"></label>
+        </div>
+        <label for="fees">Comisioane bancare (lei/an)
+          <input id="fees" type="text" inputmode="decimal" spellcheck="false"></label>
+        <div class="chips" id="rateChips"></div>
+        <p class="hint" id="rateHint"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Cursul BNR (lei pentru 1 unitate)</legend>
+        <div class="dates">
+          <label for="d0">Data de referință
+            <input id="d0" type="date"></label>
+          <label for="d1">Data curentă
+            <input id="d1" type="date"></label>
+        </div>
+        <div class="row2">
+          <label for="eur0">EUR atunci
+            <input id="eur0" type="text" inputmode="decimal" spellcheck="false"></label>
+          <label for="eur1">EUR acum
+            <input id="eur1" type="text" inputmode="decimal" spellcheck="false"></label>
+          <label for="usd0">USD atunci
+            <input id="usd0" type="text" inputmode="decimal" spellcheck="false"></label>
+          <label for="usd1">USD acum
+            <input id="usd1" type="text" inputmode="decimal" spellcheck="false"></label>
+        </div>
+        <p class="hint" id="fxHint"></p>
+      </fieldset>
+
+      <p class="formerr" id="formErr" role="status" hidden></p>
+    </form>
+
+    <div class="col">
+      <section class="panel" aria-labelledby="hLoss">
+        <div class="head">
+          <h2 id="hLoss">Pierderea, pe perioade</h2>
+          <div class="toggle" role="group" aria-label="Mod de calcul">
+            <button type="button" id="mRaw" aria-pressed="false">Fără dobândă</button>
+            <button type="button" id="mNet" aria-pressed="true">Cu dobânda netă</button>
+          </div>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr id="thead"></tr></thead>
+            <tbody id="tb"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="modeHint"></p>
+      </section>
+
+      <section class="panel" aria-labelledby="hFacts">
+        <h2 id="hFacts">Pe scurt</h2>
+        <div class="facts" id="facts"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="hChart">
+        <div class="head">
+          <h2 id="hChart">Puterea de cumpărare în 10 ani</h2>
+          <div class="legend"><span><i class="sw is-loss"></i>Fără dobândă</span><span><i class="sw is-accent"></i>Cu dobânda netă</span></div>
+        </div>
+        <div class="chartwrap"><svg id="ch" viewBox="0 0 640 260" width="100%" role="img" aria-labelledby="hChart" aria-describedby="chHint"></svg></div>
+        <p class="hint" id="chHint"></p>
+      </section>
+    </div>
+  </div>
+
+  <footer id="foot"></footer>
+  <p class="src">Cod sursă: <a href="https://github.com/RomulusMirauta/taxa-pe-stat">github.com/RomulusMirauta/taxa-pe-stat</a> · licență MIT</p>
+</div>
+
+<script type="module" src="js/main.js"></script>

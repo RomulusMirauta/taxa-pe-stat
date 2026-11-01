@@ -22,7 +22,7 @@ describe('the local server', () => {
     assert.match(t, /<title>Taxa pe stat<\/title>/);
     assert.match(t, /\/__v/);
   });
-  test('/__v returns the version of app.html', async () => {
+  test('/__v returns the version of the source (the newest change in src/)', async () => {
     const r = await fetch(base + '/__v');
     assert.equal(r.status, 200);
     assert.ok(Number(await r.text()) > 0);
@@ -39,7 +39,7 @@ describe('the local server', () => {
     assert.match(r.headers.get('content-type'), /application\/json/);
     assert.ok((await r.json()).fx);
   });
-  for (const p of ['/package.json', '/scripts/update-data.mjs', '/app.html', '/build.mjs', '/fonts/../package.json', '/fonts/..%2f..%2fpackage.json',
+  for (const p of ['/package.json', '/scripts/update-data.mjs', '/src/index.html', '/src/js/calc.js', '/js/main.js', '/build.mjs', '/fonts/../package.json', '/fonts/..%2f..%2fpackage.json',
     '/fonts/%2e%2e/%2e%2e/package.json', '/fonts/', '/missing']) {
     test(`refuses ${p}`, async () => {
       const r = await fetch(base + p);

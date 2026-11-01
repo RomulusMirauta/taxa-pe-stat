@@ -12,7 +12,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
-import vm from 'node:vm';
+import { Calc } from '../src/js/calc.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const OUT = join(ROOT, 'data', 'rates.json');
@@ -170,13 +170,9 @@ export function buildInflation({ ro, services, avg12, euroArea }, prev) {
   return out;
 }
 
-/** The page's own validator (Calc.normalizeRates, from app.html's <script id="calc">), run in a sandbox. */
-export async function pageValidator(appHtml = join(ROOT, 'app.html')) {
-  const code = (await readFile(appHtml, 'utf8')).match(/<script id="calc">([\s\S]*?)<\/script>/)?.[1];
-  if (!code) throw new Error('app.html has no <script id="calc"> block');
-  const ctx = vm.createContext({});
-  vm.runInContext(code, ctx);
-  return (data) => ctx.Calc.normalizeRates(JSON.parse(JSON.stringify(data)));
+/** The page's own validator: Calc.normalizeRates, from src/js/calc.js, on a copy of the data. */
+export function pageValidator() {
+  return (data) => Calc.normalizeRates(JSON.parse(JSON.stringify(data)));
 }
 
 /* ---------- network ---------- */
@@ -282,7 +278,7 @@ export async function main({ today = new Date().toISOString().slice(0, 10), out 
 
   const data = { version: 1, fx, inflation };
   // A file the page would reject must not reach the repo: it would break the page and the next deploys (F-52).
-  const accepted = (await pageValidator())(data);
+  const accepted = pageValidator()(data);
   const rejected = ['fx', 'inflation'].filter((k) => data[k] && !accepted?.[k]);
   if (rejected.length) {
     error(`The page would reject the ${rejected.join(' and ')} section; data/rates.json is not written.`);

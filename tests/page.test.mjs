@@ -1,34 +1,29 @@
-// Static checks on app.html: the artifact rules, code ↔ page links, light/dark themes.
+// Static checks on the source in src/: what index.html may load, code ↔ page links, light/dark themes.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { readFileSync, readdirSync } from 'node:fs';
+import { esc } from '../src/js/format.js';
+import { DATA } from '../src/js/builtin-data.js';
 
-const html = readFileSync(new URL('../app.html', import.meta.url), 'utf8');
-const style = html.match(/<style>([\s\S]*?)<\/style>/)[1];
-const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map((m) => m[1]).join('\n');
-const markup = html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<style>[\s\S]*?<\/style>/, '');
-// The page script (not the calculations): the texts, the labels and the built-in DATA.
-const ui = html.match(/<script>([\s\S]*?)<\/script>/)[1];
-const tokens = style.match(/\/\* tokens:start \*\/([\s\S]*?)\/\* tokens:end \*\//)?.[1] ?? '';
+const read = (path) => readFileSync(new URL('../src/' + path, import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
+const markup = read('index.html');
+const style = read('css/style.css');
+// The token file without its comments: :root{…}, the dark @media and :root[data-theme="dark"]{…}.
+const tokens = read('css/tokens.css').replace(/\/\*[\s\S]*?\*\//g, '');
+const modules = Object.fromEntries(readdirSync(new URL('../src/js/', import.meta.url)).filter((f) => f.endsWith('.js')).map((f) => [f, read('js/' + f)]));
+const scripts = Object.values(modules).join('\n');
 
-describe('artifact rules', () => {
-  test('is a fragment: no doctype, html, head or body', () => {
-    assert.doesNotMatch(html, /<!doctype|<html[\s>]|<head[\s>]|<body[\s>]/i);
+describe('what index.html loads', () => {
+  test('no doctype, html, head or body: build.mjs writes the document around it', () => {
+    assert.doesNotMatch(markup, /<!doctype|<html[\s>]|<head[\s>]|<body[\s>]/i);
   });
-  test('has a <title> in the first 8 KB', () => assert.match(html.slice(0, 8192), /<title>[^<]{3,60}<\/title>/));
-  test('external scripts only from the allowed CDNs', () => {
-    for (const m of html.matchAll(/<script[^>]*\bsrc="([^"]+)"/g)) {
-      assert.match(m[1], /^https:\/\/(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net\/npm|unpkg\.com)\//);
-    }
+  test('has a <title> in the first 8 KB', () => assert.match(markup.slice(0, 8192), /<title>[^<]{3,60}<\/title>/));
+  test('only its own stylesheets and its one module script, which the build puts inline; nothing inline', () => {
+    for (const m of markup.matchAll(/<link\b[^>]*>/g)) assert.match(m[0], /^<link rel="stylesheet" href="css\/[\w-]+\.css">$/);
+    assert.deepEqual([...markup.matchAll(/<script\b[^>]*>[\s\S]*?<\/script>/g)].map((m) => m[0]), ['<script type="module" src="js/main.js"></script>']);
+    assert.doesNotMatch(markup, /<style/);
   });
-  test('external stylesheets only from Google Fonts, marked data-fonts (the build replaces them)', () => {
-    for (const m of html.matchAll(/<link[^>]*rel="stylesheet"[^>]*>/g)) {
-      assert.match(m[0], /href="https:\/\/fonts\.googleapis\.com\//);
-      assert.match(m[0], /\bdata-fonts\b/);
-    }
-  });
-  test('no network requests to other sites (the artifact blocks them)', () => {
+  test('no network requests to other sites', () => {
     assert.doesNotMatch(scripts, /XMLHttpRequest|new WebSocket/);
   });
   test('fetch only with relative paths: the site lives under /taxa-pe-stat/', () => {
@@ -38,19 +33,13 @@ describe('artifact rules', () => {
     assert.deepEqual(urls.filter((u) => /^(\/|[a-z][a-z0-9+.-]*:)/i.test(u)), []);
   });
   test('no inline event handlers (onclick=…) or javascript: links: the CSP of the build blocks them', () => {
-    assert.doesNotMatch(html, /<[a-z][^<>]*\son[a-z]+\s*=/i);
-    assert.doesNotMatch(html, /javascript:/i);
+    for (const text of [markup, scripts]) {
+      assert.doesNotMatch(text, /<[a-z][^<>]*\son[a-z]+\s*=/i);
+      assert.doesNotMatch(text, /javascript:/i);
+    }
   });
-  test('no alert/confirm/prompt (the artifact does not show them)', () => {
+  test('no alert/confirm/prompt', () => {
     assert.doesNotMatch(scripts, /\b(alert|confirm|prompt)\(/);
-  });
-});
-
-describe('the page scripts', () => {
-  test('every inline script parses: a syntax error would stop the whole page (F-46)', () => {
-    const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-    assert.equal(inline.length, 2);
-    inline.forEach((code, i) => assert.doesNotThrow(() => new vm.Script(code, { filename: `app.html, inline script ${i + 1}` })));
   });
 });
 
@@ -74,8 +63,7 @@ describe('links between code and page', () => {
   });
   test('numeric fields accept a comma: no type="number"', () => assert.doesNotMatch(markup, /type="number"/));
   test('the data source labels reach innerHTML only through esc()', () => {
-    for (const k of ['fx', 'inflation']) assert.match(ui, new RegExp(`esc\\(D(?:ATA)?\\.${k}\\.source\\)`), k);
-    const esc = vm.runInNewContext('(' + ui.match(/function esc\(v\) \{[^\n]*\}/)[0] + ')');
+    for (const k of ['fx', 'inflation']) assert.match(modules['fresh.js'], new RegExp(`esc\\(D(?:ATA)?\\.${k}\\.source\\)`), k);
     assert.equal(esc('<img src=x onerror="a()">&'), '&lt;img src=x onerror=&quot;a()&quot;&gt;&amp;');
   });
   test('fields are at least 16px (otherwise the iPhone zooms in on tap)', () => {
@@ -96,7 +84,6 @@ describe('without JavaScript', () => {
 });
 
 describe('the hand-set values in DATA', () => {
-  const DATA = vm.runInNewContext('(' + ui.match(/var DATA = (\{[\s\S]*?\n {2}\});/)[1] + ')');
   const month = /^\d{4}-(0[1-9]|1[0-2])$/;
   test('each one has the month it is from, so the page can flag it when it gets old', () => {
     assert.ok(typeof DATA.forecast.value === 'number');
@@ -107,26 +94,36 @@ describe('the hand-set values in DATA', () => {
       assert.match(v.asOf, month, k);
     }
   });
-  test('their labels come from DATA: no month, year or tax rate written in the page script', () => {
+  test('their labels come from DATA: no month, year or tax rate written in the other modules', () => {
     const months = /\b(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie|ian|feb|mar|apr|iun|iul|aug|sept|oct|nov|dec)\.?\s+(19|20)\d\d\b/i;
-    assert.doesNotMatch(ui, months);
-    assert.doesNotMatch(ui, /Impozitul de \d/);
+    for (const [f, code] of Object.entries(modules)) {
+      if (f === 'builtin-data.js') continue;
+      assert.doesNotMatch(code, months, f);
+      assert.doesNotMatch(code, /Impozitul de \d/, f);
+    }
   });
 });
 
 describe('light and dark themes', () => {
-  const outside = style.replace(/\/\* tokens:start \*\/[\s\S]*?\/\* tokens:end \*\//, '');
   const block = (re) => tokens.match(re)?.[1] ?? '';
   const vars = (text) => new Map([...text.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
   const light = vars(block(/^\s*:root\{([^}]*)\}/));
   const darkMedia = block(/:root:not\(\[data-theme="light"\]\)\{([^}]*)\}/);
   const darkAttr = block(/:root\[data-theme="dark"\]\{([^}]*)\}/);
 
-  test('the token section is marked', () => assert.ok(tokens.length > 100));
-  test('no literal colors outside the tokens (CSS and code)', () => {
+  test('tokens.css holds only the tokens: :root, the dark @media and [data-theme="dark"] (404.html copies it whole)', () => {
+    assert.ok(tokens.length > 100);
+    const rest = tokens
+      .replace(/^\s*:root\{[^}]*\}/, '')
+      .replace(/@media \(prefers-color-scheme:\s*dark\)\s*\{\s*:root:not\(\[data-theme="light"\]\)\s*\{[^}]*\}\s*\}/, '')
+      .replace(/:root\[data-theme="dark"\]\{[^}]*\}/, '');
+    assert.equal(rest.trim(), '');
+  });
+  test('no literal colors outside the tokens (CSS, markup and code)', () => {
     const literal = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/;
-    assert.doesNotMatch(outside, literal);
-    assert.doesNotMatch(scripts, literal);
+    assert.doesNotMatch(style, literal);
+    assert.doesNotMatch(markup, literal);
+    for (const [f, code] of Object.entries(modules)) assert.doesNotMatch(code, literal, f);
   });
   test('every light-theme color is redefined for dark', () => {
     const colors = [...light].filter(([, v]) => v.startsWith('#')).map(([k]) => k);
@@ -139,26 +136,23 @@ describe('light and dark themes', () => {
     assert.equal(darkMedia.replace(/\s+/g, ''), darkAttr.replace(/\s+/g, ''));
     assert.match(darkMedia, /color-scheme:dark/);
   });
-  test('body has an explicit background from a token', () => assert.match(outside, /body\{[^}]*background:var\(--bg\)/));
+  test('body has an explicit background from a token', () => assert.match(style, /body\{[^}]*background:var\(--bg\)/));
   test('the dark palette applies only with prefers-color-scheme: dark', () => {
     assert.match(tokens, /@media \(prefers-color-scheme:\s*dark\)\s*\{\s*:root:not\(\[data-theme="light"\]\)\s*\{/);
   });
-  test('the braces of <style> balance, and nothing after the tokens ends up inside the dark @media', () => {
-    let depth = 0;
-    let atEnd = null;
-    const end = style.indexOf('/* tokens:end */');
-    for (let i = 0; i < style.length; i++) {
-      if (i === end) atEnd = depth;
-      if (style[i] === '{') depth++;
-      else if (style[i] === '}') assert.ok(--depth >= 0, 'a } too many');
+  test('the braces balance in each stylesheet: the page joins them, so an open one would swallow the next', () => {
+    for (const [name, css] of [['tokens.css', tokens], ['style.css', style]]) {
+      let depth = 0;
+      for (const ch of css) {
+        if (ch === '{') depth++;
+        else if (ch === '}') assert.ok(--depth >= 0, `${name}: a } too many`);
+      }
+      assert.equal(depth, 0, `${name}: a { left open`);
     }
-    assert.equal(atEnd, 0);
-    assert.equal(depth, 0);
   });
   test('the counter is readable in both themes: contrast ≥ 4.5 between the .ticker colours and its background (F-01)', () => {
-    const light = vars(block(/^\s*:root\{([^}]*)\}/));
     const dark = new Map([...light, ...vars(darkAttr)]);
-    const rule = (sel) => outside.match(new RegExp(`(?:^|[}\\s])${sel.replace(/[.]/g, '\\.')}\\{([^}]*)\\}`))?.[1] ?? '';
+    const rule = (sel) => style.match(new RegExp(`(?:^|[}\\s])${sel.replace(/[.]/g, '\\.')}\\{([^}]*)\\}`))?.[1] ?? '';
     const varOf = (decl, prop) => decl.match(new RegExp(`(?:^|;)\\s*${prop}:var\\(--([\\w-]+)\\)`))?.[1];
     const bg = varOf(rule('.ticker'), 'background');
     const fgs = [varOf(rule('.ticker'), 'color'), varOf(rule('.ticker .big'), 'color'), varOf(rule('.ticker.is-gain .big'), 'color')];

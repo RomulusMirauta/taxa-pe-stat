@@ -1,5 +1,5 @@
 // Local development server. No dependencies, only Node 20 or newer.
-// Serves the same page as the site build (local fonts, CSP) and reloads it by itself when you save app.html.
+// Serves the same page as the site build (local fonts, CSP) and reloads it by itself when you save a file in src/.
 //
 //   node serve.mjs              → http://localhost:5173
 //   node serve.mjs --open       → starts and opens the browser (start.cmd does this)
@@ -7,12 +7,12 @@
 //   HOST=0.0.0.0 node serve.mjs → reachable from a phone too, on the home network
 
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { networkInterfaces } from 'node:os';
 import { join, resolve, sep, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ROOT, APP, STATIC_DIRS, wrap } from './build.mjs';
+import { ROOT, SRC, STATIC_DIRS, renderPage } from './build.mjs';
 
 const TYPES = {
   '.css': 'text/css; charset=utf-8',
@@ -23,8 +23,15 @@ const TYPES = {
   '.png': 'image/png',
 };
 
-// Asks the server every second whether app.html has changed.
+// Asks the server every second whether a file in src/ has changed.
 const RELOAD = "(()=>{let v=null;setInterval(async()=>{try{const r=await fetch('/__v',{cache:'no-store'});const t=await r.text();if(v&&t!==v)location.reload();v=t}catch{}},1000)})();";
+
+/** The version of the source: the newest change among the files in src/. */
+async function sourceVersion() {
+  const entries = await readdir(SRC, { recursive: true, withFileTypes: true });
+  const times = await Promise.all(entries.filter((e) => e.isFile()).map(async (e) => (await stat(join(e.parentPath, e.name))).mtimeMs));
+  return Math.max(...times);
+}
 
 function send(res, code, type, body) {
   res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' });
@@ -41,11 +48,10 @@ async function handle(req, res) {
   }
 
   if (pathname === '/' || pathname === '/index.html') {
-    const app = await readFile(APP, 'utf8');
-    return send(res, 200, 'text/html; charset=utf-8', wrap(app, { reloadScript: RELOAD }));
+    return send(res, 200, 'text/html; charset=utf-8', await renderPage({ reloadScript: RELOAD }));
   }
   if (pathname === '/__v') {
-    return send(res, 200, 'text/plain; charset=utf-8', String((await stat(APP)).mtimeMs));
+    return send(res, 200, 'text/plain; charset=utf-8', String(await sourceVersion()));
   }
 
   // Only files from the allowed folders; nothing outside them (protection against ../).

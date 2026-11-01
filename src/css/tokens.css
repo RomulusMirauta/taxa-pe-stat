@@ -5,7 +5,7 @@
   --accent:#3d3fa0; --accent-soft:#e7e7f7; --on-accent:#ffffff;
   --loss:#b8322a; --loss-soft:#fbe9e7; --gain:#1f7a4d; --gain-soft:#e4f3ea;
   --warn:#8a5a00; --warn-soft:#fdf1d8;
-  --ticker-bg:#1b2036; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae; --ticker-zero:#a9adc6;
+  --ticker-bg:#1b2036; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae; --ticker-zero:#a9adc6; --toast-bg:#f6f6fb; --toast-fg:#1b2036; --toast-edge:#6366f1; --toast-shadow:#00000080;
   --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
   --body:"Source Sans 3",ui-sans-serif,system-ui,sans-serif;
   /* Numbers: Source Sans 3 with digits of one width (tabular-nums); its 0 is plain, JetBrains Mono's had a dot in it. */
@@ -16,12 +16,12 @@
   --accent:#9c9ef0; --accent-soft:#25274a; --on-accent:#12141f;
   --loss:#f07a6e; --loss-soft:#3a1f22; --gain:#5fcf94; --gain-soft:#173326;
   --warn:#f2c46b; --warn-soft:#3a2f17;
-  --ticker-bg:#262a46; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae; --ticker-zero:#a9adc6;
+  --ticker-bg:#262a46; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae; --ticker-zero:#a9adc6; --toast-bg:#f6f6fb; --toast-fg:#1b2036; --toast-edge:#6366f1; --toast-shadow:#00000080;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#12141f; --surface:#1a1d2c; --ink:#e8e9f2; --muted:#9a9fbb; --line:#2c3047;
   --accent:#9c9ef0; --accent-soft:#25274a; --on-accent:#12141f;
   --loss:#f07a6e; --loss-soft:#3a1f22; --gain:#5fcf94; --gain-soft:#173326;
   --warn:#f2c46b; --warn-soft:#3a2f17;
-  --ticker-bg:#262a46; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae; --ticker-zero:#a9adc6;
+  --ticker-bg:#262a46; --ticker-fg:#e8e9f2; --ticker-loss:#ff9b8f; --ticker-gain:#7fe0ae; --ticker-zero:#a9adc6; --toast-bg:#f6f6fb; --toast-fg:#1b2036; --toast-edge:#6366f1; --toast-shadow:#00000080;
   color-scheme:dark}

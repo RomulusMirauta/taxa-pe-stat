@@ -1,5 +1,5 @@
 // Tests for the toasts' messages (src/js/toast.js): which text asks for which message (F-97, F-98).
-import { test } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { TOASTS, toastFor } from '../src/js/toast.js';
 
@@ -44,4 +44,29 @@ test('letters or symbols in the inflation, at once; the rest once it is typed', 
   for (const text of ['', '6,5', '6,5%']) assert.equal(toastFor('infl', text, true), '', JSON.stringify(text));
 });
 
-test('other fields have no toast', () => assert.equal(toastFor('rate', 'abc', true), ''));
+test('dates and other fields have no message of their own', () => assert.equal(toastFor('d1', '2030-01-01', true), ''));
+
+describe('interest, tax, fees and exchange rates (F-99)', () => {
+  test('letters or symbols, at once, with the field\'s name', () => {
+    assert.equal(toastFor('tax', 'abc', false), 'Impozitul trebuie să fie un număr, de ex. 10. Literele și simbolurile nu merg aici.');
+    assert.match(toastFor('rate', '5%%a', false), /^Dobânda trebuie să fie un număr/);
+    assert.match(toastFor('fees', '$', false), /^Comisioanele trebuie să fie un număr/);
+    assert.match(toastFor('eur1', 'x', false), /^Cursul EUR trebuie să fie un număr/);
+  });
+  test('negative, at once', () => {
+    assert.equal(toastFor('tax', '-5', false), 'Impozitul nu poate fi negativ.');
+    assert.equal(toastFor('rate', '−1', false), 'Dobânda nu poate fi negativă.');
+    assert.match(toastFor('fees', '-120', false), /^Comisioanele nu pot fi negative/);
+    assert.equal(toastFor('usd0', '-4', false), 'Cursul USD nu poate fi negativ.');
+    assert.equal(toastFor('tax', '-0', false), '', '„-0” is 0');
+  });
+  test('out of range or broken, once it is typed', () => {
+    assert.equal(toastFor('eur1', '0', false), '');
+    assert.match(toastFor('eur1', '0', true), /^Cursul EUR trebuie să fie un număr între 0 și 1\.000/);
+    assert.match(toastFor('usd1', '1000', true), /^Cursul USD trebuie să fie un număr între 0 și 1\.000/);
+    assert.match(toastFor('rate', '5,5,5', true), /^Dobânda trebuie să fie între 0% și 100%/);
+    assert.equal(toastFor('eur1', '5,0867', true), '');
+    assert.equal(toastFor('fees', '1.200', true), '');
+  });
+  test('a tax of 100%: the state takes all the interest', () => assert.equal(toastFor('tax', '100', false), TOASTS.tax100));
+});

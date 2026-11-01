@@ -401,10 +401,11 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.match(s.tkNote, /inflație 100%\/an/);
 
     await type('infl', '6,5');
+    // A tax above 100% becomes 100% as it is typed (F-99; F-09 marked it wrong).
     await type('tax', '300');
-    assert.deepEqual((await state()).invalid, ['tax'], 'F-09: a tax above 100%');
-    await type('tax', '100');
     s = await state();
+    assert.equal(s.v.tax, '100');
+    assert.deepEqual(s.invalid, []);
     assert.equal(s.facts[3].value, '—', 'at a 100% tax no interest keeps up');
     assert.doesNotMatch(s.text, /NaN|undefined|Infinity/);
     await type('tax', '10');
@@ -914,6 +915,20 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     await type('sum', 'abc!');
     assert.match(await toastText(), /^Suma trebuie să fie un număr/);
     await type('sum', '50.000');
+    // The other fields (F-99): letters, a negative tax, interest capped at 100%, a date in the future.
+    await type('tax', 'zece');
+    assert.match(await toastText(), /^Impozitul trebuie să fie un număr/);
+    await type('tax', '-5');
+    assert.equal(await toastText(), 'Impozitul nu poate fi negativ.');
+    await type('tax', '10');
+    await type('rate', '150');
+    assert.equal((await state()).v.rate, '100', 'interest above 100% becomes 100%');
+    await type('rate', '0');
+    const d1 = (await state()).v.d1;
+    await type('d1', '2099-01-01');
+    await leave('d1');
+    assert.match(await toastText(), /^Verifică: .*data curentă nu poate fi în viitor/);
+    await type('d1', d1);
     // The × closes it before its 5 seconds.
     await click('#toastClose');
     assert.equal(await toastText(), null);

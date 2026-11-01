@@ -105,7 +105,7 @@ function setup() {
   });
   /* The sums get their thousands dots as they are typed (F-93). Backspace or Delete next to a dot removes the
      digit beyond it: the dot itself would come back at once. */
-  var MONEY = { sum: 1, fees: 1 };
+  var MONEY = { sum: 1, fees: 1 }, CAP = { infl: 100, rate: 100, tax: 100 };
   $('f').addEventListener('keydown', function (e) {
     var el = e.target, c = el.selectionStart;
     if (!MONEY[el.id] || c !== el.selectionEnd) return;
@@ -118,18 +118,21 @@ function setup() {
       var g = groupInput(el.value, el.selectionStart);
       if (g.value !== el.value) { el.value = g.value; el.setSelectionRange(g.caret, g.caret); }
     }
-    /* Inflation above 100% becomes 100% as it is typed (F-96). */
-    if (el.id === 'infl' && capInput(el.value, 100) !== el.value) el.value = capInput(el.value, 100);
-    if (el.id === 'sum' || el.id === 'infl') toast(el.id, toastFor(el.id, el.value, false));
+    /* Inflation, interest and tax above 100% become 100% as they are typed (F-96, F-99). */
+    if (CAP[el.id] && capInput(el.value, CAP[el.id]) !== el.value) el.value = capInput(el.value, CAP[el.id]);
+    toast(el.id, toastFor(el.id, el.value, false));
     if (el.id === 'rate' || el.id === 'tax') followMin = false;
     noteInput(el.id);
     render();
   });
   $('toastClose').addEventListener('click', closeToast);
-  /* What may still become a number is told once it is typed: when the field is left or Enter is pressed (F-97). */
+  /* What may still become a number is told once it is typed: when the field is left or Enter is pressed (F-97).
+     Without a message of its own, a field that leaves the form wrong (a date in the future, rates that do not
+     look real, a day without a BNR rate) gets the form's own error as a toast (F-99). */
   $('f').addEventListener('change', function (e) {
-    var id = e.target.id;
-    if (id === 'sum' || id === 'infl') toast(id, toastFor(id, e.target.value, true));
+    var id = e.target.id, msg = toastFor(id, e.target.value, true), errors = readState().errors;
+    if (!msg && errors.length && e.target.getAttribute('aria-invalid') === 'true') msg = 'Verifică: ' + errors.join('; ') + '.';
+    toast(id, msg);
   });
   $('f').addEventListener('submit', function (e) { e.preventDefault(); });
   var pending = false;

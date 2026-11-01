@@ -2,6 +2,20 @@
 
 The project's versions, briefly. The details of each problem are in [`FINDINGS.md`](FINDINGS.md), by ID.
 
+## [0.4.2] - 2026-11-01 - Messages for every field
+
+### Added
+- **Toasts**, at the bottom left, with a ×: letters or symbols in a number field, a negative sum or rate, a sum past 30 digits, an inflation, interest or tax of 100%, deflation, and a field left wrong, such as a date in the future (F-97, F-98, F-99).
+- **A line under the account buttons** says why „Minimul pentru plus” is missing (F-102).
+
+### Changed
+- **Inflation, interest and tax** above 100% become 100% as they are typed (F-96, F-99).
+- **The texts** show the sum as typed, with its decimals, and „1 leu” (F-101); the counter asks to correct a wrong sum (F-102).
+
+### Fixed
+- **The sum:** zeros in front made „05.000” count as 5 lei, and a pasted „1234.56” became 123.456 lei (F-100).
+- **„Pe scurt”** kept huge numbers in their column (F-97); after „Minimul pentru plus” the interest follows the sum (F-95).
+
 ## [0.4.1] - 2026-11-01 - A stopwatch and a way to the plus
 
 ### Changed
@@ -142,6 +156,7 @@ The project's versions, briefly. The details of each problem are in [`FINDINGS.m
 - **Publishing and running:** an artifact on claude.ai, a local server, `start.cmd`.
 - **`BAZA.md`** (now `DESIGN.md`): the data, the causes, the formulas and the worked example.
 
+[0.4.2]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.3...v0.3.4

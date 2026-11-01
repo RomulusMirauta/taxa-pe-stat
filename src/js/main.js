@@ -21,7 +21,18 @@ function render() {
   renderChart(s);
   renderFresh(s);
   renderTicker(s);
+  renderMinChip(s);
   syncChips();
+}
+
+/* The best case: the lowest tax-free interest at which the counter turns green within 3 seconds, for the sum,
+   the inflation and the fees in the form. Hidden when the form has none, or when it would be over 100%. */
+function renderMinChip(s) {
+  var r = Calc.rateForGainIn(s.infl / 100, 0, s.fees, s.S, 3), b = document.querySelector('[data-min]');
+  b.hidden = !(r <= 100);
+  if (b.hidden) return;
+  b.dataset.rate = r;
+  b.textContent = 'Minimul pentru plus · ' + short(r) + '%, fără impozit';
 }
 
 /* Texts that depend on the data: scenario buttons, explanations, sources. */
@@ -51,7 +62,7 @@ function renderStatic() {
     [Sv.tezaur1y.rate, 0, 'Tezaur 1 an · ' + short(Sv.tezaur1y.rate) + '%, fără impozit']
   ].map(function (c) {
     return '<button type="button" class="chip" data-rate="' + c[0] + '" data-tax="' + c[1] + '" aria-pressed="false">' + c[2] + '</button>';
-  }).join('');
+  }).join('') + '<button type="button" class="chip" data-min data-rate="" data-tax="0" aria-pressed="false" hidden></button>';
   $('rateHint').textContent = 'Depozitul: media BNR a dobânzilor la depozitele noi la termen în lei ale populației, cu scadența de 6–12 luni, din ' +
     fmtMonth(Sv.deposit.asOf) + '. BNR o publică la circa două luni după; ofertele băncilor pot fi mai mari sau mai mici. Impozitul de ' + short(Sv.tax.rate) + '% se reține automat; peste un prag anual de venituri din investiții se poate adăuga CASS, pe care calculul nu îl include.';
 

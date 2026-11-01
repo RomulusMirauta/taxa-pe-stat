@@ -213,6 +213,16 @@ function breakEvenRate(pi, tax, feesPerYear, S) {
   return need <= 0 ? 0 : need / (1 - tax);
 }
 
+/* The lowest gross rate, in %, rounded up to 2 decimals, at which the counter turns green within `secs` seconds:
+   a real gain of 0,00006 lei by then, which the counter rounds to +0,0001. From lossRatePerYear ≤ −G:
+   1 + r(1−τ) = (1+π)·e^((F+G)/S). NaN without a sum. */
+function rateForGainIn(pi, tax, feesPerYear, S, secs) {
+  if (!(S > 0) || !(tax >= 0 && tax < 1) || !(secs > 0)) return NaN;
+  var G = 0.00006 / secs * YEAR_DAYS * 86400;
+  var r = ((1 + pi) * Math.exp((Math.max(0, feesPerYear) + G) / S) - 1) / (1 - tax);
+  return Math.max(0, Math.ceil(r * 1e4 - 1e-9) / 100);
+}
+
 /* How many extra lei you need in `years` years for the same basket. */
 function extraNeeded(S, pi, years) { return S * (Math.pow(1 + pi, years) - 1); }
 
@@ -264,7 +274,7 @@ function normalizeRates(j) {
 }
 
 export const Calc = Object.freeze({
-  YEAR_DAYS: YEAR_DAYS, PERIODS: PERIODS, parseNum: parseNum, parseISODate: parseISODate,
+  YEAR_DAYS: YEAR_DAYS, PERIODS: PERIODS, parseNum: parseNum, parseISODate: parseISODate, rateForGainIn: rateForGainIn,
   daysBetween: daysBetween, addDays: addDays, secondsSinceYearStart: secondsSinceYearStart, ageDays: ageDays, isStale: isStale, inflationOverdue: inflationOverdue,
   monthPassed: monthPassed, fxPairOk: fxPairOk, fxTrend: fxTrend, isShortInterval: isShortInterval,
   rateOn: rateOn, mergeInputs: mergeInputs, netRate: netRate, growth: growth,

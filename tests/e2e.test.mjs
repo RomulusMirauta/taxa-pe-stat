@@ -511,7 +511,17 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.ok(Math.abs(cellValue(s.rows[0][4]) - C.realLoss(dp, 365)) < 0.0051, `the table: ${s.rows[0][4]}`);
     assert.match(s.lossHint, /^Cu dobânda netă de /);
     assert.match(s.tkNote, /cu dobânda netă de /, 'the counter too');
-    assert.equal(s.facts[2].value, cash.facts[2].value, '„Pe scurt” keeps its year without interest');
+    // „Pe scurt” follows the form's interest too (F-94): a smaller loss, and the words say which interest.
+    assert.equal(s.facts[2].value, s.rows[0][4], '„Pe scurt”: the same year as the table');
+    assert.notEqual(s.facts[2].value, cash.facts[2].value);
+    assert.match(s.facts[2].text, /într-un an cu dobânda netă de /);
+    // The best case: green everywhere it is shown.
+    await click('[data-min]');
+    s = await state();
+    assert.equal(s.facts[2].cls, 'num gain', `„Minimul pentru plus”: ${s.facts[2].value}`);
+    assert.match(s.rows[0][4], /^\+/);
+    await click(deposit);
+    s = await state();
     assert.match(await js(`document.querySelector('${deposit}').textContent`), /^Depozit 6–12 luni, media BNR · \d+(,\d+)?%$/);
     assert.equal(await js(`document.querySelector('${deposit}').getAttribute('aria-pressed')`), 'true');
     assert.match(await js("document.getElementById('rateHint').textContent"), /BNR o publică la circa două luni după/, 'the lag of the source, under the buttons');
@@ -642,6 +652,9 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       await type('sum', '0');
       await until(async () => (await js("document.getElementById('tk').textContent")) === '0,0000 lei', 'zero on the counter', 4000);
       const atZero = await numberLeft();
+      assert.equal(await js("document.getElementById('ticker').className"), 'ticker is-zero', 'zero is neither a loss nor a gain');
+      assert.match(await js("document.getElementById('tkLabel').textContent"), /, nu ai pierdut, nu ai câștigat:$/, 'and the words say so');
+      assert.equal(await js("getComputedStyle(document.getElementById('tk')).color"), 'rgb(169, 173, 198)', 'zero in grey');
       await type('sum', '50.000');
       await until(async () => (await js("document.getElementById('tk').textContent")).startsWith('−'), 'a loss on the counter', 4000);
       assert.equal(await numberLeft(), atZero, 'the number does not move when the minus comes');

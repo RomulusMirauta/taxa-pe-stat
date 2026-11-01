@@ -1,7 +1,8 @@
-/* „Pe scurt”: what the sum was worth in EUR and USD on the two dates, a year of inflation, the break-even interest. */
+/* „Pe scurt”: what the sum was worth in EUR and USD on the two dates, a year of inflation with the form's interest,
+   the break-even interest. */
 import { Calc } from './calc.js';
 import { $ } from './dom.js';
-import { fmt, fmtDate, pct, short, sign2, signed, tone } from './format.js';
+import { fmt, fmtDate, lei, pct, short, sign2, signed, tone } from './format.js';
 
 function fact(value, cls, text) {
   return '<div class="fact"><b class="num ' + cls + '">' + value + '</b><span>' + text + '</span></div>';
@@ -20,11 +21,13 @@ export function renderFacts(s) {
       fmt(s.S, 0) + ' lei valorau ' + fmt(a) + ' ' + c[1] + ' pe ' + fmtDate(s.d0) + ' și ' + fmt(b) + ' ' + c[1] + ' pe ' + fmtDate(s.d1) + '.');
   });
   if (isFinite(s.S) && isFinite(s.infl)) {
-    /* Deflation is a gain: the words follow the sign that is shown (F-08), never „pierdută” next to a green „+”. */
-    var lostYr = Calc.realLoss({ S: s.S, pi: s.infl / 100, net: false }, Calc.YEAR_DAYS), more = Calc.extraNeeded(s.S, s.infl / 100, 1);
+    /* Deflation is a gain: the words follow the sign that is shown (F-08), never „pierdută” next to a green „+”.
+       The year follows the form's interest and fees, as the table and the counter do (F-94). */
+    var p = s.pNet || { S: s.S, pi: s.infl / 100, net: false };
+    var lostYr = Calc.realLoss(p, Calc.YEAR_DAYS), more = Calc.extraNeeded(s.S, s.infl / 100, 1);
     h += fact(signed(-lostYr, 'lei'), tone(-lostYr),
       'putere de cumpărare ' + ['câștigată', 'neschimbată', 'pierdută'][sign2(lostYr) + 1] +
-      ' într-un an fără dobândă, în lei de azi. La anul îți trebuie ' +
+      ' într-un an ' + (s.pNet ? Calc.accountNote(p, pct, lei) : 'fără dobândă') + ', în lei de azi. La anul îți trebuie ' +
       ['cu ' + fmt(-more) + ' lei mai puțin', 'aceiași bani', 'cu ' + fmt(more) + ' lei mai mult'][sign2(more) + 1] + ' pentru același coș.');
     if (isFinite(s.tax)) {
       var be = Calc.breakEvenRate(s.infl / 100, s.tax / 100, isFinite(s.fees) ? s.fees : 0, s.S);

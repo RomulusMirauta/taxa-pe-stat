@@ -361,6 +361,25 @@ describe('loss against foreign currency', () => {
   });
 });
 
+describe('the best case: the lowest interest that turns the counter green within 3 seconds', () => {
+  const shown = (r, tax, fees, S, secs) => {
+    const p = { S, pi: 0.065, rate: r / 100, tax, fees, net: true };
+    return Math.round(-C.lossRatePerYear(p) / (C.YEAR_DAYS * 86400) * secs * 1e4) / 1e4; // as the counter rounds it
+  };
+  for (const [tax, fees, S] of [[0, 0, 50000], [0, 240, 50000], [0.1, 0, 50000], [0, 0, 1e9], [0, 0, 2000]]) {
+    test(`${S} lei, ${fees} lei fees, ${tax * 100}% tax: +0,0001 by the 3rd second, not 0,01% lower`, () => {
+      const r = C.rateForGainIn(0.065, tax, fees, S, 3);
+      assert.ok(shown(r, tax, fees, S, 3) >= 0.0001, `at ${r}%`);
+      assert.ok(-C.lossRatePerYear({ S, pi: 0.065, rate: (r - 0.01) / 100, tax, fees, net: true }) / (C.YEAR_DAYS * 86400) * 3 < 0.00006, `${r}% is the lowest`);
+    });
+  }
+  test('50.000 lei at 6,5% inflation: 7,86%, above the break-even 6,5%', () => assert.equal(C.rateForGainIn(0.065, 0, 0, 50000, 3), 7.86));
+  test('without a sum, or at 100% tax: no answer', () => {
+    for (const S of [0, NaN]) assert.ok(Number.isNaN(C.rateForGainIn(0.065, 0, 0, S, 3)));
+    assert.ok(Number.isNaN(C.rateForGainIn(0.065, 1, 0, 50000, 3)));
+  });
+});
+
 describe('other results', () => {
   test('the minimum gross rate is exact: 6.61% / (1 − 10%) = 7.344%', () => {
     close(C.breakEvenRate(PI, 0.1, 0, S), 0.073444, 0.000001);

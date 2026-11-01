@@ -76,7 +76,7 @@ Where to find the rest:
 - The BNR forecast and the indicative interest rates live in `DATA`, in `src/js/builtin-data.js`, each with the month it is from (`asOf`, `report`). When you change them, update that month and the sources in `DESIGN.md` §2; the page flags them when they get old.
 - If you change the formulas, update `DESIGN.md` §5 and the tests.
 
-**Screenshots:** `docs/screenshot.png` is taken in the dark theme, at 1280×860, in the default state, at any moment (since F-85 the counter shows the loss since 1 January, so there is no value to wait for).
+**Screenshots:** `docs/screenshot.png` is taken in the dark theme, at 1280×860, in the default state, 29 seconds after the page opens: since F-91 the counter is a stopwatch, and the README shows „−0,0029 lei”. Headless Chrome: `--force-dark-mode --window-size=1280,860 --virtual-time-budget=29500 --screenshot`.
 
 **Not in the repo:** `dist/`, `node_modules/`, `*.bundle`.
 

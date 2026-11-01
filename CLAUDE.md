@@ -98,4 +98,5 @@ The page was also published as a private artifact on claude.ai; its URL and last
 - **Windows:** `start.cmd` starts the server and opens the browser.
 - **The local folder is the clone:** the copy written from claude.ai was turned into a git clone (`docs/DEVELOPMENT.md`). What claude.ai writes shows up in `git status`.
 - **The commit author** is set locally, in `.git/config`: the computer's global git uses another address. In a new clone, set `user.name` and `user.email` again.
+- **`git config pull.rebase true`**, also in `.git/config`: the bot pushes data commits to `main` on weekdays, and a plain `git pull` would merge them into local work (F-89). Set it again in a new clone. Before a push, `git pull --rebase`.
 - **`gh`** lives in `C:\Program Files\GitHub CLI\`, but may be missing from PATH (Git Bash: `"/c/Program Files/GitHub CLI/gh.exe"`). The active account must be `RomulusMirauta` (`gh auth status`).

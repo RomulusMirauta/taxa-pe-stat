@@ -34,3 +34,4 @@ On the author's computer, the folder that Claude writes to from claude.ai, throu
 - **What Claude writes from claude.ai** shows up in `git status`, like any local change. Commits and pushes are made from here.
 - **`.github/`:** from claude.ai, Claude is not allowed to write there on the computer. The workflows are changed from Claude Code or in the repo.
 - **The commit author** is set in the clone's own config (`.git/config`), because the computer's global git config uses another address (`CLAUDE.md`, "Environment").
+- **`pull.rebase = true`**, in the same config: the bot commits the daily data to `main`, so local work meets its commits often. With a rebase, `git pull` puts the local commits on top of the bot's instead of adding a merge commit (F-89; `cf052c6` is such a merge, left as it is).

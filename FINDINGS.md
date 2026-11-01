@@ -116,6 +116,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | F-86 | Minor | A „Fără dobândă / Cu dobânda netă” switch said again what the 0% rate already says | Fixed: removed; the form's interest always applies | `calc.test`, `e2e.test` |
 | F-87 | Minor | The chart held September's backward-looking rate for 10 years, and said so only in a sentence under it | Fixed: the assumption in the drawing, and a button for BNR's forecast | `e2e.test` |
 | F-88 | Minor | The scheduled data runs started 4.5 to 6 hours late, while the documents promised 13:30 | Fixed: three runs off the round minutes; the documents give observed times | `workflow.test` |
+| F-89 | Minor | A plain `git pull` merged the bot's data commits into local work | Fixed: `pull.rebase` in the clone, in CLAUDE.md and DEVELOPMENT.md | — |
 | O-07 | — | The license for the open-source version | Resolved: MIT | — |
 | O-09 | — | BNR publishes only on working days, around 13:00 | Resolved: the script uses the last published day | `data.test` |
 | O-10 | — | `start.cmd` had not been tested on a real Windows machine | Resolved: tested on Windows 11 | — |
@@ -696,3 +697,8 @@ Headless Chrome at 320×568, 360×740, 375×667, 390×844, 430×932, 568×320, 7
 - **Fix:** three runs, off the round minutes: `17 11`, `47 13` and `23 16 * * 1-5` (UTC). DESIGN §5.10 and the workflow's comments give the times observed, not the times requested.
 - **To check:** a week after v0.4.0, `gh run list -R RomulusMirauta/taxa-pe-stat --workflow publish.yml --event schedule --json createdAt --limit 20`, and write the observed start times here and in DESIGN §5.10.
 - **Test:** `workflow.test` → "the schedule": working days only, three runs, none at minute 0 or 30, none before BNR publishes (mutation-checked: a run at minute 30 fails).
+
+### F-89 · Minor · The bot's data commits created merge commits locally
+- **Problem:** `cf052c6 Merge branch 'main' of https://github.com/RomulusMirauta/taxa-pe-stat` (1 November 2026): a plain `git pull` met a bot data commit and merged it into local work.
+- **Fix:** `git config pull.rebase true` in the clone, written in `CLAUDE.md` („Environment”, with the author identity a new clone needs) and in `docs/DEVELOPMENT.md`. The existing merge commit stays; history is not rewritten.
+- **Test:** none: it is the clone's configuration, not the repo's.

@@ -414,7 +414,7 @@ This is not financial advice.
 | `serve.mjs` | A local server, without dependencies: the same page as on the site, with automatic reload. |
 | `start.cmd` | Double-click on Windows: starts the server and opens the browser. |
 | `fonts/` | The fonts, hosted locally (OFL). |
-| `tests/` | The tests (`node:test`). All the project's tests live here; `e2e.test.mjs` drives the built page in headless Chrome and skips when Chrome is missing (it fails in GitHub Actions in that case). |
+| `tests/` | The tests (`node:test`). All the project's tests live here; `e2e.test.mjs` drives the built page in headless Chrome, started by `chrome.mjs` (tested in `chrome.test.mjs`), and skips when Chrome is missing (it fails in GitHub Actions in that case). |
 | `scripts/update-data.mjs` | Fetches the exchange rates (BNR, with the ECB as fallback) and inflation (Eurostat) and writes `data/rates.json` (§5.10). |
 | `scripts/check-fresh.mjs` | After publishing, fails the run (with an email) when the data has stopped updating (§5.10). |
 | `data/rates.json` | The daily data, updated by GitHub Actions. |

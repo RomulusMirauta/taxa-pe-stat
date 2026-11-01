@@ -5,7 +5,6 @@
 // Skipped when Chrome is missing (CHROME_PATH or the usual places), when Node has no global WebSocket, or with E2E=0.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
@@ -13,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve, sep, extname } from 'node:path';
 import { build } from '../build.mjs';
 import { Calc as C } from '../src/js/calc.js';
+import { chromeArgs, launchChrome } from './chrome.mjs';
 
 const CHROME = [
   process.env.CHROME_PATH,
@@ -235,20 +235,9 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     server = await serve(dist);
     base = `http://127.0.0.1:${server.address().port}${PREFIX}`;
     profile = await mkdtemp(join(tmpdir(), 'taxa-pe-stat-chrome-'));
-    chrome = spawn(CHROME, [
-      '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`,
-      '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-sync',
-      '--disable-background-networking', '--disable-component-update', '--mute-audio', '--hide-scrollbars',
-      // GitHub's Ubuntu runners restrict the namespaces Chrome's sandbox needs.
-      ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : []),
-      'about:blank',
-    ], { stdio: 'ignore' });
-    // With port 0, Chrome picks a free port and writes it here: no collisions when several tests run.
-    const [port, path] = await until(async () => {
-      if (chrome.exitCode !== null) throw new Error(`Chrome stopped at startup (code ${chrome.exitCode}): ${CHROME}`);
-      const [p, b] = (await readFile(join(profile, 'DevToolsActivePort'), 'utf8').catch(() => '')).split(/\r?\n/);
-      return /^\d+$/.test(p) && b ? [p, b] : null;
-    }, 'the DevTools port of Chrome', 30000);
+    // A Chrome that cannot start fails the suite with its own words, never a silent „cancelledByParent” (F-90).
+    let port, path;
+    ({ chrome, port, path } = await launchChrome(CHROME, chromeArgs({ profile }), profile));
     browserUrl = `ws://127.0.0.1:${port}${path}`;
     const page = await until(async () => (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page'), 'the tab');
     cdp = connect(page.webSocketDebuggerUrl);

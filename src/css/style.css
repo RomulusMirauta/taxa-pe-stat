@@ -64,6 +64,15 @@ td .sub{display:block;font-size:12px;color:var(--muted);font-family:var(--body)}
   td[data-period]{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:baseline;gap:0 12px}
   td[data-period]::before{content:attr(data-period);margin-right:auto;font-family:var(--body);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
 }
+/* The same layout on a wide screen when the values do not fit beside each other (large sums): table.js adds .stacked. */
+.stacked table{min-width:0}
+.stacked table,.stacked tbody,.stacked td{display:block}
+.stacked thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.stacked tr{display:grid;gap:2px;padding:10px 0;border-bottom:1px solid var(--line)}
+.stacked td,.stacked td:first-child{border:0;padding:0;text-align:left;min-width:0}
+.stacked td:first-child{padding-bottom:4px}
+.stacked td[data-period]{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:baseline;gap:0 12px}
+.stacked td[data-period]::before{content:attr(data-period);margin-right:auto;font-family:var(--body);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
 
 .facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:520px){.facts{grid-template-columns:minmax(0,1fr)}}

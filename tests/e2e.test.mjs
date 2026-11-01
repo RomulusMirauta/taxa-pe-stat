@@ -786,6 +786,14 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     m = await layout();
     assert.equal(m.display, 'table-cell');
     assert.deepEqual(m.labels, [...C.PERIODS].map(() => 'none'));
+    // Large sums on a wide screen: values too long to sit side by side get the phone layout too, never a sideways scroll.
+    for (const sum of ['10.000.000', '5.000.000.000']) {
+      await type('sum', sum);
+      m = await layout();
+      assert.ok(m.sw <= m.cw, `at 1280 px, sum ${sum}: a table scrolls sideways, by ${m.sw} px`);
+      assert.deepEqual(m.overflowing, [], `values wider than their cell at 1280 px, sum ${sum}`);
+      assert.deepEqual(m.broken, [], `values split over two lines at 1280 px, sum ${sum}`);
+    }
     assert.deepEqual(problems, []);
   });
 

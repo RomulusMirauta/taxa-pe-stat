@@ -5,6 +5,13 @@ import { DATA } from './builtin-data.js';
 import { $ } from './dom.js';
 import { daysWord, fmt, fmtDate, fmtMonth, pct, short, signed, todayISO } from './format.js';
 
+/* A table whose values do not fit beside each other (large sums) gets the phone layout, one period per line. */
+function fit(tbody) {
+  var wrap = tbody.closest('.tablewrap');
+  wrap.classList.remove('stacked');
+  if (wrap.scrollWidth > wrap.clientWidth) wrap.classList.add('stacked');
+}
+
 function head(first) {
   return '<th scope="col">' + first + '</th>' + Calc.PERIODS.map(function (q) { return '<th scope="col">' + q.label + '</th>'; }).join('');
 }
@@ -31,6 +38,7 @@ function row(label, sub, values, unit) {
 export function renderTable(s) {
   var inflSub = isFinite(s.infl) ? 'putere de cumpărare, ' + short(s.infl) + '%/an' : 'completează inflația';
   $('tb').innerHTML = row('Inflație', inflSub, Calc.PERIODS.map(function (q) { return s.ok ? Calc.realLoss(s.p, q.days) : NaN; }), 'lei');
+  fit($('tb'));
 
   var t;
   if (isFinite(s.rate) && isFinite(s.tax) && (Calc.netRate(s.p) > 0 || s.fees > 0)) {
@@ -87,5 +95,6 @@ export function fxView(s, D, today) {
 export function renderFxTable(s) {
   var v = fxView(s, DATA, todayISO());
   $('fxb').innerHTML = v.rows.map(function (r) { return row(r.label, r.sub, r.values, r.unit); }).join('');
+  fit($('fxb'));
   $('fxNote').textContent = v.note;
 }

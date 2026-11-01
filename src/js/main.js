@@ -33,6 +33,10 @@ function renderStatic() {
   $('inflChips').innerHTML = chips.map(function (c) {
     return '<button type="button" class="chip" data-infl="' + c[0] + '" aria-pressed="false">' + c[1] + '</button>';
   }).join('');
+  /* Under the chart, the same forecast button: the chart holds today's inflation for 10 years (F-87). */
+  var shown = forecastShown(todayISO());
+  $('chForecast').hidden = !shown;
+  $('chForecast').innerHTML = shown ? '<button type="button" class="chip" data-infl="' + P.value + '" aria-pressed="false">Vezi cu prognoza BNR (' + short(P.value) + '%)</button>' : '';
   var hint = 'Rata anuală, după ' + I.source + ', compară prețurile din ' + fmtMonth(I.month) + ' cu aceeași lună de anul trecut.';
   if (I.avg12 !== undefined && I.avg12 - I.yoy > 1) {
     hint += ' Media pe 12 luni, ' + short(I.avg12) + '%, e mai mare pentru că include scumpiri mai vechi; pentru viitor, rata anuală e un reper mai bun.';

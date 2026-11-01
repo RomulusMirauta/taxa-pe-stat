@@ -7,8 +7,9 @@ export function renderChart(s) {
   var svg = $('ch'), hint = $('chHint');
   /* The drawing's width follows the container, so the text keeps its size on phones too: a drawing wider than
      the container would be scaled down, its 11px labels with it (F-81). */
-  /* R leaves room for „+10 ani” centred on the last year; L grows with the longest axis label (F-78). */
-  var W = Math.round(Math.max(200, Math.min(640, svg.parentNode.clientWidth || 640))), H = 260, L = 64, R = 30, T = 14, B = 30, yrs = 10;
+  /* R leaves room for „+10 ani” centred on the last year; L grows with the longest axis label (F-78). T leaves a
+     band above the drawing for the assumption, where no line can reach it, whichever way the lines go (F-87). */
+  var W = Math.round(Math.max(200, Math.min(640, svg.parentNode.clientWidth || 640))), H = 260, L = 64, R = 30, T = 32, B = 30, yrs = 10;
   svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
   if (!(s.S > 0) || !isFinite(s.infl)) {
     svg.innerHTML = '<text x="' + W / 2 + '" y="130" text-anchor="middle">Introdu suma și inflația ca să vezi graficul.</text>';
@@ -42,6 +43,8 @@ export function renderChart(s) {
     g += '<circle cx="' + x(yrs) + '" cy="' + y(net[yrs]) + '" r="4" fill="var(--accent)"/>';
   }
   g += '<circle cx="' + x(yrs) + '" cy="' + y(raw[yrs]) + '" r="4" fill="var(--loss)"/>';
+  /* The assumption, in the drawing itself: a hint under it is easy to miss (F-87). */
+  g += '<text id="chAssume" class="assume" x="' + (W - 2) + '" y="14" text-anchor="end">inflație constantă: ' + short(s.infl) + '%/an</text>';
   svg.innerHTML = g;
   hint.textContent = 'În lei de azi: peste 10 ani, ' + fmt(s.S, 0) + ' lei fără dobândă cumpără cât ' + fmt(raw[yrs], 0) + ' lei azi' +
     (net.length && (Calc.netRate(s.pNet) > 0 || s.fees > 0) ? '; ' + Calc.accountNote(s.pNet, pct, lei) + ', cât ' + fmt(net[yrs], 0) + ' lei' : '') +

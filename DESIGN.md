@@ -282,7 +282,7 @@ The real value for `t = 0…10` years, in two cases:
 - without interest;
 - with the net interest and the fees from the form.
 
-The axis uses a "round" step (1, 2, 2.5, 5 × 10ⁿ). It assumes constant inflation.
+The axis uses a "round" step (1, 2, 2.5, 5 × 10ⁿ). It assumes constant inflation: the latest annual rate, which looks back, held for 10 years, while BNR expects less. So the assumption is written in the drawing, in a band above the lines where no line can reach („inflație constantă: 6,5%/an”), and a button under the chart, „Vezi cu prognoza BNR (3,4%)”, sets the inflation to BNR's forecast, like the chip by the field (F-87). The button goes with the forecast once its target month is over.
 
 ### 5.8 Why the losses by cause do NOT add up
 

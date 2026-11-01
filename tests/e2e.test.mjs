@@ -298,6 +298,43 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       assert.deepEqual(problems, []);
     }
   });
+  test('the chart states its assumption in the drawing, above the lines, and offers the BNR forecast (F-87)', async () => {
+    const assumption = () => js(`(() => {
+      const svg = document.getElementById('ch'), t = document.getElementById('chAssume'), b = t.getBBox();
+      // The highest point any line or end dot reaches: the smallest y.
+      const ys = [...svg.querySelectorAll('path')].flatMap((p) => [...p.getAttribute('d').matchAll(/[ML][\\d.]+,([\\d.]+)/g)].map((m) => Number(m[1])))
+        .concat([...svg.querySelectorAll('circle')].map((c) => Number(c.getAttribute('cy')) - Number(c.getAttribute('r'))));
+      return { text: t.textContent, bottom: b.y + b.height, highest: Math.min(...ys) };
+    })()`);
+    await intercept(json(FIXTURE), async () => {
+      for (const width of [1280, 320]) {
+        await open({ width, now: NOW });
+        // The worst cases: lines that reach the top of the axis, at the left when they fall (40,000 lei, the axis
+        // ends at 40 mii), at the right, under the assumption, when they rise (46,399 lei at 15% tax-free grow to
+        // just under 100 mii in 10 years, the axis's end).
+        for (const [sum, rate, tax] of [['40.000', '0', '10'], ['46.399', '15', '0']]) {
+          await type('sum', sum);
+          await type('rate', rate);
+          await type('tax', tax);
+          const a = await assumption();
+          assert.equal(a.text, 'inflație constantă: 6,5%/an');
+          assert.ok(a.bottom <= a.highest, `at ${width} px, ${sum} lei at ${rate}%: the assumption (bottom ${a.bottom}) overlaps a line (top ${a.highest})`);
+        }
+      }
+      await click('#chForecast .chip');
+      const s = await state();
+      assert.equal(s.v.infl, '3,4', 'the button sets the forecast, like the chip by the field');
+      assert.equal((await assumption()).text, 'inflație constantă: 3,4%/an');
+      assert.equal(await js("document.querySelector('#chForecast .chip').getAttribute('aria-pressed')"), 'true');
+      assert.deepEqual(problems, []);
+    });
+    // After its target month the forecast is gone from under the chart too.
+    await intercept(json(FIXTURE), async () => {
+      await open({ now: '2028-01-03T10:00:00Z' });
+      assert.equal(await js("document.getElementById('chForecast').hidden && !document.querySelector('#chForecast button')"), true);
+    });
+  });
+
   test('loads with the daily data, without errors, CSP violations or requests to other sites; the results are those of Calc', async () => {
     await open();
     assert.deepEqual(problems, []);

@@ -595,7 +595,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       let r = await after(2, 'two seconds on the stopwatch');
       assert.match(r.label, /^Pentru 50\.000 lei, de când ai deschis pagina \(\d+ s\):$/);
       assert.ok(Math.abs(r.total - r.secs * perSecond(p)) < 0.00006, `${r.tk} after ${r.secs} s`);
-      assert.equal(r.note, 'Ritm: −0,0001 lei pe secundă · −8,63 lei pe zi (inflație 6,5%/an, fără dobândă).');
+      assert.equal(r.note, 'Ritm actual: −0,3594 lei pe oră | −8,63 lei pe zi (inflație 6,5%/an, fără dobândă).');
       assert.ok(Math.abs(lossSinceJan(r) - sinceJan(p)) < 1, `${r.year}: about ${sinceJan(p).toFixed(2)} lei`);
 
       // A new sum recounts every second since the page opened at its pace; the year is recomputed too.

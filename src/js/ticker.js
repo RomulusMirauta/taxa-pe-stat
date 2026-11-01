@@ -17,7 +17,7 @@ export function renderTicker(s) {
   tick.p = s.p;
   var perYear = Calc.lossRatePerYear(s.p);
   tick.rate = -perYear / (Calc.YEAR_DAYS * 86400);
-  $('tkNote').textContent = 'Ritm: ' + signed(tick.rate, 'lei', 4) + ' pe secundă · ' + signed(-perYear / Calc.YEAR_DAYS, 'lei') +
+  $('tkNote').textContent = 'Ritm actual: ' + signed(tick.rate * 3600, 'lei', 4) + ' pe oră | ' + signed(-perYear / Calc.YEAR_DAYS, 'lei') +
     ' pe zi (inflație ' + short(s.infl) + '%/an, ' + Calc.accountNote(s.p, pct, lei) + ').';
 }
 /* Once a second, on the second since the page opened, like a stopwatch; that is calm enough for reduced motion too. */

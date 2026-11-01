@@ -65,6 +65,15 @@ function daysBetween(a, b) {
   return Math.round((tb - ta) / 864e5);
 }
 
+/* Seconds from 1 January, 00:00 local time, of the local year of `nowMs`, to `nowMs` (the counter, F-85). The
+   offsets are getTimezoneOffset()'s, in minutes (UTC − local): the one at `nowMs`, which gives the local year, and
+   the one on 1 January, which gives its midnight; in summer time they differ by an hour. */
+function secondsSinceYearStart(nowMs, offsetNow, offsetJan1) {
+  if (![nowMs, offsetNow, offsetJan1].every(Number.isFinite)) return NaN;
+  var year = new Date(nowMs - offsetNow * 60000).getUTCFullYear();
+  return (nowMs - (Date.UTC(year, 0, 1) + offsetJan1 * 60000)) / 1000;
+}
+
 /* The date `n` days after `iso` (before it, for a negative n); '' for an invalid date. */
 function addDays(iso, n) {
   var t = parseISODate(iso);
@@ -255,7 +264,7 @@ function normalizeRates(j) {
 
 export const Calc = Object.freeze({
   YEAR_DAYS: YEAR_DAYS, PERIODS: PERIODS, parseNum: parseNum, parseISODate: parseISODate,
-  daysBetween: daysBetween, addDays: addDays, ageDays: ageDays, isStale: isStale, inflationOverdue: inflationOverdue,
+  daysBetween: daysBetween, addDays: addDays, secondsSinceYearStart: secondsSinceYearStart, ageDays: ageDays, isStale: isStale, inflationOverdue: inflationOverdue,
   monthPassed: monthPassed, fxPairOk: fxPairOk, fxTrend: fxTrend, isShortInterval: isShortInterval,
   rateOn: rateOn, mergeInputs: mergeInputs, netRate: netRate, growth: growth,
   nominalBalance: nominalBalance, realLoss: realLoss, fxLoss: fxLoss, fxRealizedLoss: fxRealizedLoss,

@@ -342,13 +342,13 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       -C.realLoss({ S: p.S, pi: p.pi, net: false }, 365), C.breakEvenRate(p.pi, p.tax, p.fees, p.S) * 100];
     want.forEach((w, i) => assert.ok(Math.abs(shown[i] - w) < 0.0051, `Pe scurt #${i + 1}: ${s.facts[i].value} ≠ ${w}`));
     if (p.rate === 0) assert.match(s.lossHint, /^Bani ținuți fără dobândă/, 'F-14: no „dobânda netă de 0,00%”');
-    // The counter's sign follows the data: a loss with inflation, a gain with deflation (F-07). With 50 million,
-    // the first visible decimal appears within ~0.1 s even at a low inflation.
+    // The counter's sign follows the data: a loss with inflation, a gain with deflation (F-07). 50 million keeps it
+    // away from zero even in the first seconds of a year.
     const perYear = C.lossRatePerYear(p);
     if (perYear !== 0) {
       await type('sum', '50.000.000');
       const t = await until(async () => { const v = (await state()).ticker; return v !== '0,0000 lei' && v; }, 'the counter starts', 5000);
-      assert.match(t, perYear > 0 ? /^−\d+,\d{4} lei$/ : /^\+\d+,\d{4} lei$/);
+      assert.match(t, perYear > 0 ? /^−[\d.]+,\d{4} lei$/ : /^\+[\d.]+,\d{4} lei$/);
     }
   });
 
@@ -437,7 +437,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
 
     await type('sum', '-0');
     s = await state();
-    assert.match(s.text, /Pentru 0 lei, de când/);
+    assert.match(s.text, /Pentru 0 lei, de la 1 ianuarie/);
     assert.doesNotMatch(s.text, /[-−]0(?:[,.]0+)?(?![\d,.])/, 'no zero with a sign');
     await type('sum', '0');
     s = await state();
@@ -521,6 +521,33 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       s = await state();
       assert.equal(s.formErr, null, 'today is not in the future');
       assert.match(s.fxHint, /Acum: cursul BNR din 28 oct\. 2026, ultima zi cu curs până la 30 oct\. 2026\./);
+    });
+  });
+
+  test('the counter: the loss since 1 January for the sum in the form, recomputed at once, green when the interest wins (F-85)', async () => {
+    const now = '2026-11-01T10:00:00Z'; // noon in Bucharest, 304.5 days into the year
+    await intercept(json(FIXTURE), async () => {
+      await open({ now });
+      const p = { S: 50000, pi: 0.065, rate: 0, tax: 0.1, fees: 0, net: true };
+      const expected = (q) => C.realLoss(q, C.secondsSinceYearStart(Date.parse(now), -120, -120) / 86400);
+      const shows = (q, what) => until(async () => Math.abs(cellValue((await state()).ticker) - expected(q)) < 1, what, 3000);
+      assert.equal(await js("document.getElementById('tkLabel').textContent"), 'Pentru 50.000 lei, de la 1 ianuarie până acum, în ritmul de acum:');
+      await shows(p, `about ${expected(p).toFixed(0)} lei, the plan's −2.555 lei at midnight plus half a day`);
+      assert.match((await state()).ticker, /^−2\.5\d\d,\d{4} lei$/);
+
+      await type('sum', '100.000');
+      await shows({ ...p, S: 100000 }, 'twice as much, right away: a what-if, not a running sum');
+
+      await type('rate', '10');
+      await type('tax', '0');
+      await shows({ ...p, S: 100000, rate: 0.1, tax: 0 }, 'a gain with 10% interest and no tax');
+      assert.match((await state()).ticker, /^\+[\d.]+,\d{4} lei$/);
+      assert.equal(await js("document.getElementById('ticker').classList.contains('is-gain')"), true);
+
+      await type('infl', 'abc');
+      await until(async () => (await state()).ticker === '—', 'no value while a field is wrong');
+      assert.match((await state()).tkNote, /Contorul e oprit/);
+      assert.deepEqual(problems, []);
     });
   });
 

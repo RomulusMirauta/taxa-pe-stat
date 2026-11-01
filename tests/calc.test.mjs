@@ -134,6 +134,34 @@ describe('the BNR rate on a date (rateOn)', () => {
   });
 });
 
+describe('the counter since 1 January, local time (F-85)', () => {
+  const at = (iso, offsetNow, offsetJan1 = offsetNow) => C.secondsSinceYearStart(Date.parse(iso), offsetNow, offsetJan1);
+  const DAY = 86400;
+  // Bucharest: UTC+2 in winter (getTimezoneOffset −120), UTC+3 in summer (−180).
+  test('the year changes at local midnight, not at UTC midnight', () => {
+    assert.equal(at('2026-12-31T21:30:00Z', -120), 365 * DAY - 1800, '23:30 on 31 Dec in Bucharest');
+    assert.equal(at('2026-12-31T22:30:00Z', -120), 1800, '00:30 on 1 Jan 2027 in Bucharest, still 31 Dec in UTC');
+    assert.equal(at('2026-01-01T00:00:00Z', 0), 0, 'UTC');
+    assert.equal(at('2027-01-01T03:00:00Z', 300), 365 * DAY - 2 * 3600, 'New York: 22:00 on 31 Dec 2026');
+  });
+  test('summer time: 1 January keeps its winter midnight', () => {
+    assert.equal(at('2026-07-01T00:00:00Z', -180, -120), 181 * DAY + 2 * 3600);
+  });
+  test('the clock changes in spring and autumn do not make the seconds jump', () => {
+    // 29 March 2026, 03:00 → 04:00, and 25 October 2026, 04:00 → 03:00, at 01:00 UTC.
+    assert.equal(at('2026-03-29T01:00:01Z', -180, -120) - at('2026-03-29T00:59:59Z', -120), 2);
+    assert.equal(at('2026-10-25T01:00:01Z', -120) - at('2026-10-25T00:59:59Z', -180, -120), 2);
+  });
+  test('NaN without a valid moment or offset', () => {
+    for (const args of [[NaN, -120, -120], [0, undefined, -120], [0, -120, null]]) assert.ok(Number.isNaN(C.secondsSinceYearStart(...args)));
+  });
+  test('the total is the loss since 1 January: about 2,555 lei on 1 November for 50,000 lei at 6.5%, and the table\'s „An” on 31 December', () => {
+    const cash = { S, pi: 0.065, rate: 0, tax: 0.1, fees: 0, net: true };
+    close(C.realLoss(cash, at('2026-10-31T22:00:00Z', -120) / DAY), 2554.92, 0.005, '1 Nov, 00:00:');
+    close(C.realLoss(cash, at('2026-12-31T21:59:59Z', -120) / DAY), 3051.64, 0.005, '31 Dec, 23:59:59:');
+  });
+});
+
 describe('one mode: the form\'s interest (F-86)', () => {
   test('at 0% and no fees it gives what the „Fără dobândă” switch gave, which ignored the interest and the fees', () => {
     const zero = { S, pi: PI, rate: 0, tax: 0.1, fees: 0, net: true };

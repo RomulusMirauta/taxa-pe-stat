@@ -258,14 +258,23 @@ The formula is exact, not approximate; an earlier version of this document got i
 
 ### 5.6 The live counter
 
-The instantaneous rate of the real loss:
+The loss of the form's sum since 1 January, 00:00 local time, at the pace of now (F-85):
+
+```
+t = seconds since 1 January / 86.400        // days; Calc.secondsSinceYearStart, local time, summer time included
+total = pierdere(t)                         // §5.2, with n = t
+```
+
+It is a what-if: every step recomputes the total from the form, so 100,000 lei show 100,000 lei's loss since 1 January. On 31 December it reaches the table's „An”. On 1 November, for 50,000 lei at 6.5% without interest: about 2,555 lei. While a field is wrong it shows „—”.
+
+The note under it gives the pace of the moment:
 
 ```
 lei_pe_an = S · (ln(1+π) − ln g) + F       // without interest: S · ln(1+π)
-lei_pe_secundă = lei_pe_an / (365 · 86.400)
+pe_oră = lei_pe_an / (365 · 24) ;  pe_zi = lei_pe_an / 365
 ```
 
-The counter adds up at every step (100 ms, or 1 s with "reduced motion", read at every step: FINDINGS O-17), at the rate of that moment. If you change the amount, the past is not recomputed (FINDINGS F-06).
+A step is 100 ms, or 1 s with "reduced motion", read at every step (FINDINGS O-17). Until v0.3.4 the counter started at zero when the page opened and added up at the pace of each moment (F-06); after a minute it showed 0.006 lei, which said the opposite of the page's message (F-85).
 
 ### 5.7 The 10-year chart
 
@@ -419,7 +428,7 @@ This is not financial advice.
 | `CLAUDE.md` | Instructions for Claude Code: where we left off and the working rules. |
 | `docs/DEVELOPMENT.md` | How we work: with Claude, the local copy, the former claude.ai artifact. |
 | `docs/IDEAS.md` | Ideas for later; not scheduled. |
-| `docs/screenshot.png` | The README screenshot (dark theme, the counter at „−0,0029 lei”). |
+| `docs/screenshot.png` | The README screenshot (dark theme, 1280×860, the default state). |
 | `assets/og-card.png` | The preview image when you share the link (WhatsApp, Facebook etc.). It has no figures or dates on purpose, because it is not regenerated with the data (F-76). |
 | `docs/og-card.html` | The template of that image, rendered at 1200×630 with headless Chrome. |
 | `artifact.json` | The link to the claude.ai artifact and its last published version; no longer synced. |

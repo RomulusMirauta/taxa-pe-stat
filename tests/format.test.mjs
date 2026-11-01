@@ -1,7 +1,7 @@
 // Tests for the page's formatting (src/js/format.js): numbers, signs, dates and day counts, the Romanian way.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, duration, groupInput, capInput, splitSign, todayISO } from '../src/js/format.js';
+import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, duration, groupInput, capInput, splitSign, sumLei, todayISO } from '../src/js/format.js';
 
 const cases = (fn, list) => {
   for (const [args, expected] of list) test(`${fn.name}(${args.map((a) => JSON.stringify(a)).join(', ')}) → ${expected}`, () => assert.equal(fn(...args), expected));
@@ -47,12 +47,15 @@ describe('dates and months', () => {
 });
 
 describe('a sum as it is typed: the thousands dots come by themselves (F-93)', () => {
-  const g = (text, caret = text.length) => groupInput(text, caret);
+  const g = (text, caret = text.length, pasted) => groupInput(text, caret, pasted);
   for (const [args, value, caret] of [
     [['50000'], '50.000', 6], [['5000'], '5.000', 5], [['500'], '500', 3], [['1234567,891'], '1.234.567,891', 13],
     [['50.0000'], '500.000', 7], [['5.0000'], '50.000', 6], [['5000,'], '5.000,', 6], [[''], '', 0],
     [['50000', 2], '50.000', 2], [['500000', 3], '500.000', 3], [['50.00', 3], '5.000', 3],
     [['abc'], 'abc', 3], [['50.000,5,1'], '50.000,5,1', 10], [['-50000'], '-50000', 6],
+    // F-100: zeros in front, spaces, a sum pasted with a decimal point.
+    [['05000'], '5.000', 5], [['0050000'], '50.000', 6], [['00'], '0', 1], [['0,5'], '0,5', 3], [['50 000'], '50.000', 6],
+    [['1234.56', 7, true], '1.234,56', 8], [['1234.56', 7], '123.456', 7], [['50.000', 6, true], '50.000', 6], [['abc def', 3], 'abc def', 3],
   ]) test(`groupInput(${args.map((a) => JSON.stringify(a)).join(', ')}) → ${value}, caret ${caret}`, () => assert.deepEqual(g(...args), { value, caret }));
 });
 
@@ -80,4 +83,8 @@ describe('day counts: „de” from 20 on, except 101–119 and the like', () =>
 test('esc: what reaches innerHTML cannot open a tag or an attribute', () => {
   assert.equal(esc('<img src=x onerror="a()">&'), '&lt;img src=x onerror=&quot;a()&quot;&gt;&amp;');
   assert.equal(esc(5.3), '5.3');
+});
+
+describe('the sum as the user wrote it (F-101)', () => {
+  cases(sumLei, [[[50000], '50.000 lei'], [[0.5], '0,50 lei'], [[1234.56], '1.234,56 lei'], [[1], '1 leu'], [[2], '2 lei'], [[0], '0 lei']]);
 });

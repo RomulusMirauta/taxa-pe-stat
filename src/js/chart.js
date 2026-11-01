@@ -1,7 +1,7 @@
 /* The 10-year chart of purchasing power: without interest, and with the form's interest. */
 import { Calc } from './calc.js';
 import { $ } from './dom.js';
-import { compact, fmt, lei, pct, short } from './format.js';
+import { compact, fmt, lei, pct, short, sumLei } from './format.js';
 
 export function renderChart(s) {
   var svg = $('ch'), hint = $('chHint');
@@ -46,7 +46,7 @@ export function renderChart(s) {
   /* The assumption, in the drawing itself: a hint under it is easy to miss (F-87). */
   g += '<text id="chAssume" class="assume" x="' + (W - 2) + '" y="14" text-anchor="end">inflație constantă: ' + short(s.infl) + '%/an</text>';
   svg.innerHTML = g;
-  hint.textContent = 'În lei de azi: peste 10 ani, ' + fmt(s.S, 0) + ' lei fără dobândă cumpără cât ' + fmt(raw[yrs], 0) + ' lei azi' +
+  hint.textContent = 'În lei de azi: peste 10 ani, ' + sumLei(s.S) + ' fără dobândă cumpără cât ' + fmt(raw[yrs], 0) + ' lei azi' +
     (net.length && (Calc.netRate(s.pNet) > 0 || s.fees > 0) ? '; ' + Calc.accountNote(s.pNet, pct, lei) + ', cât ' + fmt(net[yrs], 0) + ' lei' : '') +
     '. Presupune inflație constantă de ' + short(s.infl) + '% pe an.';
 }

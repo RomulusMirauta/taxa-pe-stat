@@ -35,13 +35,21 @@ export function fmtDate(iso) { var t = Calc.parseISODate(iso); return isFinite(t
 export function fmtMonth(ym, brief) { var t = Calc.parseISODate(ym + '-01'); return isFinite(t) ? (brief ? MS : MF).format(t) : ym; }
 /* A sum as it is typed: the thousands get their dots by themselves, wherever the user put or removed them
    ("50000" → "50.000"); the comma and the decimals after it stay as typed. `caret` is the cursor's position;
-   it stays after the same digit. Text that is not a Romanian number ("abc", "50.000,5,1") stays as it is. */
-export function groupInput(text, caret) {
-  if (!/^[0-9.]*(,[0-9]*)?$/.test(text)) return { value: text, caret: caret };
+   it stays after the same digit. Text that is not a Romanian number ("abc", "50.000,5,1") stays as it is.
+   Spaces go, and so do zeros in front ("05000" would read as 5 lei, F-100). `pasted`: a sum pasted the
+   English way, one dot and 1–2 decimals ("1234.56"), keeps its decimals ("1.234,56"); a typed dot never
+   gets there, it is removed at once. */
+export function groupInput(text, caret, pasted) {
+  var original = text, before = text.slice(0, caret).replace(/[\s ]/g, '');
+  text = text.replace(/[\s ]/g, '');
+  if (pasted && /^[0-9]+\.[0-9]{1,2}$/.test(text)) { text = text.replace('.', ','); before = before.replace('.', ','); }
+  if (!/^[0-9.]*(,[0-9]*)?$/.test(text)) return { value: original, caret: caret };
   var cut = text.indexOf(','), int = (cut < 0 ? text : text.slice(0, cut)).replace(/\./g, '');
+  var zeros = int.length - int.replace(/^0+(?=\d)/, '').length;
+  int = int.slice(zeros);
   var value = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (cut < 0 ? '' : text.slice(cut));
-  /* The characters before the cursor that are not dots, then the same count in the new text. */
-  var keep = text.slice(0, caret).replace(/\./g, '').length, at = 0;
+  /* The characters before the cursor that are not dots or dropped zeros, then the same count in the new text. */
+  var keep = Math.max(0, before.replace(/\./g, '').length - zeros), at = 0;
   while (keep > 0 && at < value.length) { if (value.charAt(at) !== '.') keep--; at++; }
   return { value: value, caret: at };
 }
@@ -66,3 +74,5 @@ export function todayISO(now) {
 export function splitSign(text) { return /^[−+]/.test(text) ? [text.charAt(0), text.slice(1)] : ['', text]; }
 /* A field with a ceiling: a number above `max` becomes `max` as it is typed ("999" → "100"); anything else stays. */
 export function capInput(text, max) { return Calc.parseNum(text) > max ? short(max) : text; }
+/* The sum as the user wrote it: its decimals when it has any ("0,50 lei", not "1 lei"), and "1 leu" (F-101). */
+export function sumLei(v) { return v === 1 ? '1 leu' : fmt(v, v % 1 ? 2 : 0) + ' lei'; }

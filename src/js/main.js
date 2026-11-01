@@ -115,7 +115,7 @@ function setup() {
   $('f').addEventListener('input', function (e) {
     var el = e.target;
     if (MONEY[el.id]) {
-      var g = groupInput(el.value, el.selectionStart);
+      var g = groupInput(el.value, el.selectionStart, e.inputType === 'insertFromPaste');
       if (g.value !== el.value) { el.value = g.value; el.setSelectionRange(g.caret, g.caret); }
     }
     /* Inflation, interest and tax above 100% become 100% as they are typed (F-96, F-99). */

@@ -493,9 +493,19 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     for (const ch of ',5') await cdp.send('Input.insertText', { text: ch });
     s = await state();
     assert.equal(s.v.sum, '123.567,5');
-    assert.match(s.text, /Pentru 123\.568 lei/);
+    assert.match(s.text, /Pentru 123\.567,50 lei,/, 'the sum as typed, with its decimals (F-101)');
     await type('sum', '50,000');
     assert.match((await state()).text, /Pentru 50 lei/, 'a comma is never a thousands separator');
+    // Zeros in front go, and a sum pasted the English way keeps its decimals (F-100).
+    await type('sum', '05000');
+    s = await state();
+    assert.equal(s.v.sum, '5.000');
+    assert.match(s.text, /Pentru 5\.000 lei,/);
+    await js(`(() => { const el = document.getElementById('sum'); el.value = '1234.56';
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertFromPaste' })); })()`);
+    assert.equal((await state()).v.sum, '1.234,56');
+    await type('sum', '1');
+    assert.match((await state()).text, /Pentru 1 leu,/);
 
     await type('sum', '-0');
     s = await state();

@@ -2,7 +2,7 @@
    for the sum and the account in the form (F-91); under it, the loss since 1 January (F-85). */
 import { Calc } from './calc.js';
 import { $ } from './dom.js';
-import { duration, esc, fmt, lei, pct, short, signed, splitSign, tone } from './format.js';
+import { duration, esc, fmt, lei, pct, short, signed, splitSign, sumLei, tone } from './format.js';
 
 /* `rate`: lei per second, negative for a loss. The total is the seconds since the page opened at the pace of the
    form now: a new sum recounts them all (F-91 replaces F-06's running sum). While a field is wrong it stops. */
@@ -10,7 +10,7 @@ var tick = { S: NaN, p: null, rate: 0, total: 0, secs: 0, start: performance.now
 /* What the number is, by the colour it is shown in: what rounds to zero is neither a loss nor a gain. */
 var WORDS = { loss: 'ai pierdut', gain: 'ai câștigat', '': 'nu ai pierdut, nu ai câștigat' };
 function label(secs) {
-  $('tkLabel').textContent = isFinite(tick.S) ? 'Pentru ' + fmt(tick.S, 0) + ' lei, de când ai deschis pagina (' + duration(secs) + '), ' + WORDS[tone(tick.total, 4)] + ':' : 'Completează suma.';
+  $('tkLabel').textContent = isFinite(tick.S) ? 'Pentru ' + sumLei(tick.S) + ', de când ai deschis pagina (' + duration(secs) + '), ' + WORDS[tone(tick.total, 4)] + ':' : 'Completează suma.';
 }
 export function renderTicker(s) {
   tick.S = s.S;

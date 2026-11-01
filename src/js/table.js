@@ -3,7 +3,7 @@
 import { Calc } from './calc.js';
 import { DATA } from './builtin-data.js';
 import { $ } from './dom.js';
-import { daysWord, fmt, fmtDate, fmtMonth, pct, short, signed, todayISO } from './format.js';
+import { daysWord, fmt, fmtDate, fmtMonth, pct, short, signed, sumLei, todayISO } from './format.js';
 
 /* A table whose values do not fit beside each other (large sums) gets the phone layout, one period per line. */
 function fit(tbody) {
@@ -72,7 +72,7 @@ export function fxView(s, D, today) {
   var note = 'Ce s-a întâmplat deja: cât valorau banii în euro și în dolari acum o zi, o săptămână, 30 de zile și un an, ' +
     'față de cât valorează la cursul de acum. Nu e o prognoză: cursul urcă și coboară, iar „+” verde înseamnă că leul a câștigat.';
   if (isFinite(s.S) && (Calc.netRate(s.p) > 0 || s.fees > 0)) {
-    note += ' Cu dobânda și comisioanele din formular, suma de atunci e cea care a ajuns la ' + fmt(s.S, 0) + ' lei azi.';
+    note += ' Cu dobânda și comisioanele din formular, suma de atunci e cea care a ajuns la ' + sumLei(s.S) + ' azi.';
   }
   /* A currency is never projected for less than a year: the pace of one interval holds only on average. */
   var pace = [['eur', '€', 'euro'], ['usd', '$', 'dolar']].map(function (c) {

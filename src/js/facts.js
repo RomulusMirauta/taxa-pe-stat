@@ -2,7 +2,7 @@
    the break-even interest. */
 import { Calc } from './calc.js';
 import { $ } from './dom.js';
-import { fmt, fmtDate, lei, pct, short, sign2, signed, tone } from './format.js';
+import { fmt, fmtDate, lei, pct, short, sign2, signed, sumLei, tone } from './format.js';
 
 function fact(value, cls, text) {
   return '<div class="fact"><b class="num ' + cls + '">' + value + '</b><span>' + text + '</span></div>';
@@ -18,7 +18,7 @@ export function renderFacts(s) {
     }
     var a = s.S / fx.c0, b = s.S / fx.c1, d = b - a;
     h += fact(signed(d, c[1]), tone(d),
-      fmt(s.S, 0) + ' lei valorau ' + fmt(a) + ' ' + c[1] + ' pe ' + fmtDate(s.d0) + ' și ' + fmt(b) + ' ' + c[1] + ' pe ' + fmtDate(s.d1) + '.');
+      sumLei(s.S) + ' valorau ' + fmt(a) + ' ' + c[1] + ' pe ' + fmtDate(s.d0) + ' și ' + fmt(b) + ' ' + c[1] + ' pe ' + fmtDate(s.d1) + '.');
   });
   if (isFinite(s.S) && isFinite(s.infl)) {
     /* Deflation is a gain: the words follow the sign that is shown (F-08), never „pierdută” next to a green „+”.

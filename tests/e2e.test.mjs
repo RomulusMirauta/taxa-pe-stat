@@ -923,6 +923,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     await type('tax', '10');
     await type('rate', '150');
     assert.equal((await state()).v.rate, '100', 'interest above 100% becomes 100%');
+    assert.match(await toastText(), /^Dobânda de 100% pe an nu o dă nicio bancă/, 'and says so');
     await type('rate', '0');
     const d1 = (await state()).v.d1;
     await type('d1', '2099-01-01');

@@ -69,4 +69,5 @@ describe('interest, tax, fees and exchange rates (F-99)', () => {
     assert.equal(toastFor('fees', '1.200', true), '');
   });
   test('a tax of 100%: the state takes all the interest', () => assert.equal(toastFor('tax', '100', false), TOASTS.tax100));
+  test('an interest of 100%, typed or capped: no bank pays it', () => assert.equal(toastFor('rate', '100', false), TOASTS.rate100));
 });

@@ -11,7 +11,8 @@ export const TOASTS = {
   inflBad: 'Inflația trebuie să fie un număr între −50% și 100%, de ex. 6,5.',
   inflNegative: 'Inflație negativă înseamnă deflație: prețurile scad. E rar, dar calculul merge. 📉',
   infl100: 'Inflația de 100% este imposibilă, dar poate fi interesantă pentru calcule și teste. 🧪',
-  tax100: 'Impozit de 100%: statul ia toată dobânda. Sperăm să nu ajungem acolo. 😅'
+  tax100: 'Impozit de 100%: statul ia toată dobânda. Sperăm să nu ajungem acolo. 😅',
+  rate100: 'Dobânda de 100% pe an nu o dă nicio bancă, dar e bună pentru calcule și teste. 🧪'
 };
 
 /* The other number fields: what they are called, an example, and the range the form accepts (form.js). */
@@ -55,6 +56,7 @@ export function toastFor(id, text, done) {
   if (NOT_A_NUMBER.test(text)) return f.text + ' trebuie să fie un număr, de ex. ' + f.ex + '. Literele și simbolurile nu merg aici.';
   if (v < 0 || NEGATIVE.test(text) && !(v === 0)) return f.neg;
   if (id === 'tax' && v === 100) return TOASTS.tax100;
+  if (id === 'rate' && v === 100) return TOASTS.rate100;
   var r = RANGE[id], ok = /^(eur|usd)/.test(id) ? v > r[0] && v < r[1] : v >= r[0] && v <= r[1];
   return done && !ok ? f.range : '';
 }

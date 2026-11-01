@@ -16,6 +16,7 @@ h2{font-size:20px;font-weight:700}
 .ticker{background:var(--ticker-bg);color:var(--ticker-fg);border-radius:14px;padding:22px 24px;display:grid;gap:6px}
 .ticker .big{font-family:var(--num);font-size:clamp(30px,6.5vw,56px);font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--ticker-loss);overflow-wrap:anywhere}
 .ticker.is-gain .big{color:var(--ticker-gain)}
+.ticker .sgn{margin-right:.22em}
 .ticker small{opacity:.8;font-size:14px}
 
 .grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:stretch}

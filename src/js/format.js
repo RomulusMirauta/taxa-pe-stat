@@ -61,3 +61,6 @@ export function todayISO(now) {
   var n = now || new Date(), two = function (v) { return (v < 10 ? '0' : '') + v; };
   return n.getFullYear() + '-' + two(n.getMonth() + 1) + '-' + two(n.getDate());
 }
+/* A signed value split into its sign and the rest, so the counter can set the sign apart: "−0,0008 lei" →
+   ["−", "0,0008 lei"]; without a sign the first part is empty. */
+export function splitSign(text) { return /^[−+]/.test(text) ? [text.charAt(0), text.slice(1)] : ['', text]; }

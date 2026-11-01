@@ -2,7 +2,7 @@
    for the sum and the account in the form (F-91); under it, the loss since 1 January (F-85). */
 import { Calc } from './calc.js';
 import { $ } from './dom.js';
-import { duration, fmt, lei, pct, short, signed } from './format.js';
+import { duration, esc, fmt, lei, pct, short, signed, splitSign } from './format.js';
 
 /* `rate`: lei per second, negative for a loss. The total is the seconds since the page opened at the pace of the
    form now: a new sum recounts them all (F-91 replaces F-06's running sum). While a field is wrong it stops. */
@@ -26,7 +26,9 @@ export function loop() {
   tick.secs = secs;
   if (tick.p) tick.total = secs * tick.rate;
   label(secs);
-  $('tk').textContent = signed(tick.total, 'lei', 4);
+  /* The sign apart from the number, as far as the number is from „lei”. */
+  var parts = splitSign(signed(tick.total, 'lei', 4));
+  $('tk').innerHTML = (parts[0] ? '<span class="sgn">' + parts[0] + '</span>' : '') + esc(parts[1]);
   $('ticker').classList.toggle('is-gain', tick.total > 0.00005);
   /* The same sum since 1 January: a what-if, recomputed from the form (F-85). */
   var n = new Date();

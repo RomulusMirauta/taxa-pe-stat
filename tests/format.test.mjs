@@ -1,7 +1,7 @@
 // Tests for the page's formatting (src/js/format.js): numbers, signs, dates and day counts, the Romanian way.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, duration, groupInput, todayISO } from '../src/js/format.js';
+import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, duration, groupInput, splitSign, todayISO } from '../src/js/format.js';
 
 const cases = (fn, list) => {
   for (const [args, expected] of list) test(`${fn.name}(${args.map((a) => JSON.stringify(a)).join(', ')}) → ${expected}`, () => assert.equal(fn(...args), expected));
@@ -54,6 +54,12 @@ describe('a sum as it is typed: the thousands dots come by themselves (F-93)', (
     [['50000', 2], '50.000', 2], [['500000', 3], '500.000', 3], [['50.00', 3], '5.000', 3],
     [['abc'], 'abc', 3], [['50.000,5,1'], '50.000,5,1', 10], [['-50000'], '-50000', 6],
   ]) test(`groupInput(${args.map((a) => JSON.stringify(a)).join(', ')}) → ${value}, caret ${caret}`, () => assert.deepEqual(g(...args), { value, caret }));
+});
+
+test('splitSign: the counter sets the sign apart from the number', () => {
+  assert.deepEqual(splitSign('−0,0008 lei'), ['−', '0,0008 lei']);
+  assert.deepEqual(splitSign('+2,00 €'), ['+', '2,00 €']);
+  assert.deepEqual(splitSign('0,0000 lei'), ['', '0,0000 lei']);
 });
 
 describe('the counter\'s stopwatch (F-91)', () => {

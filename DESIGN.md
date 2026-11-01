@@ -4,7 +4,7 @@ Former name: *Ceasul leului* (renamed on 29 October 2026).
 
 The reference document: why the app exists, what data it relies on, what it computes and how. Problems found are in [`FINDINGS.md`](FINDINGS.md).
 
-**Rule:** if you change the logic in `app.html`, update §5 and the tests in `tests/calc.test.mjs`.
+**Rule:** if you change the logic in `src/js/calc.js`, update §5 and the tests in `tests/calc.test.mjs`.
 
 Updated: 29 October 2026 (after publishing on GitHub Pages and the first run with real data).
 
@@ -38,7 +38,7 @@ The exchange rates and inflation update themselves on every working day (§5.10)
 
 ## 2. Reference data (29 October 2026)
 
-A snapshot of the sources on 29 October 2026. The page itself starts from `data/rates.json` (exchange rates and inflation, updated automatically: §5.10); the interest rates and the BNR forecast are set in `app.html`, in `DATA`.
+A snapshot of the sources on 29 October 2026. The page itself starts from `data/rates.json` (exchange rates and inflation, updated automatically: §5.10); the interest rates and the BNR forecast are set in `src/js/builtin-data.js`, in `DATA`.
 
 ### Inflation
 
@@ -118,7 +118,7 @@ By default, the app uses **the same 12-month interval as annual inflation**. Und
 | Tezaur, October 2026 | 1 year 6.5% · 3 years 7% · 5 years 7.5% | 0% (tax-free) |
 | Fidelis, October 2026 | 2 years 6.6% · 4 years 7.15% · 10 years 7.75% | 0% (tax-free) |
 
-**In the page (`DATA` in `app.html`):** every hand-set value has the month it is from: the deposit rate 5.51% (July 2026), Tezaur 1 year 6.5% (October 2026), the tax 10% (October 2026), and the BNR forecast 3.4% for December 2027 (the August 2026 report). The labels are built from these values, and the page flags them when they get old (F-71).
+**In the page (`DATA` in `src/js/builtin-data.js`):** every hand-set value has the month it is from: the deposit rate 5.51% (July 2026), Tezaur 1 year 6.5% (October 2026), the tax 10% (October 2026), and the BNR forecast 3.4% for December 2027 (the August 2026 report). The labels are built from these values, and the page flags them when they get old (F-71).
 
 **The deposit rate** is BNR's official statistic: the average rate on new term deposits in lei of households, with an initial maturity of 6 to 12 months (Buletin lunar, table 10.1.2, „Depozite noi”). BNR publishes it about two months after its month (July 2026 came out in September), so the page flags it only 150 days after the month's first day, about 4 months after its end, when at least one newer month should be out (F-83). Bank offers vary around it (from ~5.2% at the big banks to ~7% at the best offers). To update it: the newest monthly bulletin on bnr.ro, table 10.1.2, the households' „peste 6 luni și până la 12 luni inclusiv” column.
 
@@ -159,7 +159,7 @@ None combines Romanian inflation, the BNR exchange rate and the net interest.
 
 ## 5. Calculation logic
 
-The pure functions are in `app.html`, in the `<script id="calc">` block, and are tested in `tests/calc.test.mjs`.
+The pure functions are in `src/js/calc.js` and are tested in `tests/calc.test.mjs`; the Romanian formatting of the results is in `src/js/format.js` (`tests/format.test.mjs`).
 
 ### Notation
 
@@ -291,7 +291,7 @@ The data is updated on GitHub's servers, without your computer.
    - a source is unavailable → the previous values stay and a warning appears in Actions, with the cause and the address (F-49);
    - no exchange rate at all, not even an old one, or a result the page would reject → the job fails and GitHub sends an email;
    - after the deploy, `scripts/check-fresh.mjs` fails the run, with an email, when the rates are more than 7 days old (the page badge's threshold) or come from the ECB, or when the inflation month is more than 95 days past its first day (F-42, F-54). Publishing is never blocked by it.
-5. **In the page:** `app.html` reads `data/rates.json` from the same site and validates it (`Calc.normalizeRates`, which also keeps BNR's daily history for §5.3). Whatever fails validation is ignored and the page's own values stay. Data that arrives after you have changed the form fills only the fields you did not touch; the dates and rates are filled together or not at all (F-63).
+5. **In the page:** the page reads `data/rates.json` from the same site and validates it (`Calc.normalizeRates`, which also keeps BNR's daily history for §5.3). Whatever fails validation is ignored and the page's own values stay. Data that arrives after you have changed the form fills only the fields you did not touch; the dates and rates are filled together or not at all (F-63).
 
 Tested in `tests/data.test.mjs`, with a simulated network that answers only at the exact addresses of the sources and checks every request like `fetch` does: parsing each source, the rate from a year ago, the 10-day path with a new day and its fallbacks, January, the ECB fallback and when it is not used, network errors, older months, a result the page would reject, keeping old data. `tests/fresh.test.mjs` checks the limits of the check after publishing; `tests/workflow.test.mjs` the workflow: per-job permissions, the commit that gets published, the order of the steps, the test before the bot's commit and the check job.
 
@@ -353,7 +353,7 @@ This is not financial advice.
 
 ## 8. The app's limitations
 
-- **The exchange rates and inflation are automatic; the BNR forecast and the interest rates are not.** Those are updated by hand, in `app.html` (`DATA`), each with the month it is from; the page flags them when they get old (F-71). BNR publishes its inflation report every quarter (February, May, August, November).
+- **The exchange rates and inflation are automatic; the BNR forecast and the interest rates are not.** Those are updated by hand, in `src/js/builtin-data.js` (`DATA`), each with the month it is from; the page flags them when they get old (F-71). BNR publishes its inflation report every quarter (February, May, August, November).
 - Inflation and the leu's pace are assumed **constant** in the projections.
 - It does not model:
   - CASS;
@@ -374,8 +374,10 @@ This is not financial advice.
 
 | File / folder | Role |
 |---|---|
-| `app.html` | **The single source.** An HTML fragment, wrapped by `build.mjs` for the site. |
-| `build.mjs` | Produces the complete `dist/index.html`, with local fonts, CSP and `<head>`, and a self-contained `dist/404.html`. |
+| `src/index.html` | The page's markup and `<title>`, without `<head>`. It links the stylesheets and `js/main.js`. |
+| `src/css/` | `tokens.css` (the colours, for both themes; `404.html` uses them too) and `style.css` (the rest). |
+| `src/js/` | The ES modules: `calc.js` (the pure calculations, §5), `format.js` (Romanian formatting), `builtin-data.js` (`DATA`: the built-in and hand-set values), `form.js`, one module per block of the page (`table.js`, `facts.js`, `chart.js`, `fresh.js`, `ticker.js`), `dom.js`, and `main.js`, which starts the page. |
+| `build.mjs` | Joins `src/` into one page (the CSS and the modules inline, `bundle()` without a bundler), then produces the complete `dist/index.html`, with local fonts, CSP and `<head>`, and a self-contained `dist/404.html`. |
 | `serve.mjs` | A local server, without dependencies: the same page as on the site, with automatic reload. |
 | `start.cmd` | Double-click on Windows: starts the server and opens the browser. |
 | `fonts/` | The fonts, hosted locally (OFL). |
@@ -398,16 +400,19 @@ This is not financial advice.
 | `docs/og-card.html` | The template of that image, rendered at 1200×630 with headless Chrome. |
 | `artifact.json` | The link to the claude.ai artifact and its last published version; no longer synced. |
 
-**The claude.ai artifact:** `app.html` was also published as a private artifact on claude.ai (last version: 4). Since 29 October 2026 it is no longer synced; the site is the reference. The rules below come from the artifact and stay, because the build and the tests rely on them.
+**The claude.ai artifact:** the page, then a single file (`app.html`), was also published as a private artifact on claude.ai (last version: 4). Since 29 October 2026 it is no longer synced; the site is the reference. On 1 November 2026 the single file was split into `src/`, since only the artifact needed it.
 
-**Rules for `app.html`** (checked by `tests/page.test.mjs`):
-- a fragment, without `<!doctype>`, `<html>`, `<head>` or `<body>`; `build.mjs` wraps it;
-- external scripts only from cdnjs, jsDelivr or unpkg; fonts only from Google Fonts, marked `data-fonts` (the build replaces them with the local ones);
-- no `fetch` to other sites, and only relative paths;
-- no inline event handlers (the CSP would block them); every inline script must parse;
-- colours only as tokens (between `tokens:start` and `tokens:end`), for both themes;
+**Why the site is still one page:** the CSP allows scripts only by their hash. Serving the modules as files would need `'self'` in `script-src`, which would also allow the scripts of every other GitHub Pages site of the account (they share the origin). So the build puts them inline, in one module script, and the source stays split.
+
+**Rules for `src/`** (checked by `tests/page.test.mjs`, `tests/modules.test.mjs`, `tests/build.test.mjs`):
+- `index.html` has no `<!doctype>`, `<html>`, `<head>` or `<body>` (`build.mjs` writes them) and nothing inline: it links `css/*.css` and one `<script type="module" src="js/main.js">`;
+- modules use only `import { a, b } from './file.js';` and `export function|const|class`; anything else stops the build, with the file and the line. Each module runs in its own function and sees only what it imports, as a real module would;
+- every module except `main.js` loads in Node without the page, so the pure ones are tested directly;
+- no `fetch` to other sites, and only relative paths; no external scripts or stylesheets;
+- no inline event handlers (the CSP would block them);
+- colours only as tokens, in `css/tokens.css`, for both themes;
 - numeric fields are text (`inputmode="decimal"`), at least 16 px;
-- the hand-set values carry their month, and their labels come from `DATA`.
+- the hand-set values carry their month, and their labels come from `DATA` (`tests/builtin-data.test.mjs`).
 
 **The site's security** (checked by `tests/build.test.mjs`): a CSP whose `script-src` lists only the hashes of the inline scripts, no referrer, nothing loaded from another site. GitHub Pages cannot send HTTP headers, so `frame-ancestors` and `nosniff` are missing (FINDINGS O-15).
 
@@ -451,7 +456,7 @@ One-time steps (done on 29 October 2026):
 - [x] License: MIT.
 - [x] `scripts/update-data.mjs`: BNR rates (with the ECB as fallback), Eurostat inflation, `data/rates.json`.
 - [x] Workflow `publish.yml`: data on working days after 13:00, a commit by the bot, publishing.
-- [x] `app.html` reads `data/rates.json`; otherwise it uses its own values.
+- [x] The page reads `data/rates.json`; otherwise it uses its own values.
 - [x] A link to the source code in the page footer; `og:url`, `canonical`, a preview image.
 - [x] Push to `RomulusMirauta/taxa-pe-stat` and GitHub Pages: the site is published and loads without errors (29 October 2026).
 - [x] The first run with real data brought nothing and revealed F-38 and F-39; checking BNR's addresses from a computer in Romania found F-40.

@@ -23,8 +23,9 @@ The instructions for Claude Code (local sessions, e.g. from VS Code) are in [`CL
 
 Besides the site, the app was also published as a private artifact on claude.ai. The link and the last published version (4) are in [`artifact.json`](../artifact.json).
 
-- **Why the same file worked in both places:** the artifact received `app.html` as a fragment, without `<head>`. That is why `app.html` has no `<!doctype>`, and `build.mjs` wraps it for the site.
+- **Why the same file worked in both places:** the artifact received `app.html` as a fragment, without `<head>`, and `build.mjs` wrapped the same fragment for the site.
 - **No longer synced since 29 October 2026:** the site on GitHub Pages is the reference. The artifact stays at version 4, with the data of that day.
+- **Split into `src/` on 1 November 2026:** with the artifact gone, the single file was no longer needed. The markup, the stylesheets and the modules are now separate files, easier to change and to test one by one; `build.mjs` still joins them into one page (DESIGN §9). `app.html` lives on in the git history.
 
 ## The local copy
 

@@ -5,7 +5,7 @@ Instructions for Claude Code. Read them at the start of every session in this re
 ## The project, briefly
 
 A calculator, in Romanian: how much money kept in lei loses to inflation and to the EUR/USD exchange rate, per day, week, month and year.
-- **The page** is a single file (`app.html`), with no dependencies.
+- **The page** is in `src/`: the markup, two stylesheets and small ES modules, with no dependencies. `build.mjs` joins them into one page.
 - **The data** (BNR, Eurostat) is updated daily by GitHub Actions.
 - **The site** is on GitHub Pages: https://romulusmirauta.github.io/taxa-pe-stat/
 
@@ -31,7 +31,7 @@ Where to find the rest:
 ## Working rules
 
 **Language**
-- The app's interface (the text in `app.html`) and `README.md` are in Romanian, with diacritics.
+- The app's interface (the text in `src/`) and `README.md` are in Romanian, with diacritics.
 - Everything else is in English: code, comments, test names, messages, documents, commit messages.
 - File names are always in English.
 
@@ -39,7 +39,8 @@ Where to find the rest:
 - They all live in `tests/` and use `node:test`.
 - Run `npm test` before every commit. They must all pass.
 - A test for a fix must fail without the fix: check it with a quick mutation (undo the fix, run the test).
-- `tests/e2e.test.mjs` drives the built page in headless Chrome (Node 22+, no dependency). It skips locally when Chrome is missing and fails in GitHub Actions in that case. Behaviour of the page belongs there; pure logic belongs in `<script id="calc">` and `calc.test`.
+- `tests/e2e.test.mjs` drives the built page in headless Chrome (Node 22+, no dependency). It skips locally when Chrome is missing and fails in GitHub Actions in that case. Behaviour of the page belongs there; pure logic belongs in a module of `src/js/` and that module's test file (`calc.js` → `calc.test`, `format.js` → `format.test`).
+- When a DOM module decides something (which value, which sign or colour, when to show „—”), that decision goes into a pure exported function of the module, tested in Node; the DOM code only writes the result.
 - Tests never read the real clock or today's data values; pass `today` explicitly.
 
 **Bugs**
@@ -58,18 +59,20 @@ Where to find the rest:
 - A new version means: an entry in `CHANGELOG.md`, `version` updated in `package.json` and an annotated tag `vX.Y.Z`.
 
 **Dependencies**
-- Don't add new dependencies without asking. The project has none, and that is a decision, not an accident. A linter was considered on 29 Oct 2026 and not added for this reason; `tests/page.test.mjs` parses every inline script instead.
+- Don't add new dependencies without asking. The project has none, and that is a decision, not an accident. A linter was considered on 29 Oct 2026 and not added for this reason; `tests/modules.test.mjs` loads every module in Node instead. A bundler was not added either: `bundle()` in `build.mjs` joins the modules.
 
-**`app.html`** (checked by `tests/page.test.mjs`):
-- it is a fragment, without `<!doctype>`, `<html>`, `<head>` or `<body>`; `build.mjs` wraps it (it was also published as a claude.ai artifact);
-- it makes no requests to other sites; the data comes from `data/rates.json`, by a relative path;
-- colours are only tokens, between `tokens:start` and `tokens:end`, defined for both themes;
-- the calculations live in `<script id="calc">`, as pure functions tested in `tests/calc.test.mjs`;
+**`src/`** (checked by `tests/page.test.mjs`, `tests/modules.test.mjs` and `tests/build.test.mjs`):
+- `index.html` is the markup and the `<title>`, without `<!doctype>`, `<html>`, `<head>` or `<body>`: `build.mjs` writes those. It links `css/*.css` and one `<script type="module" src="js/main.js">`, and has nothing inline;
+- the page is one file on the site: the build puts the CSS and the modules inline, so the CSP allows scripts only by hash (F-73). Don't serve the modules as separate files;
+- modules use only `import { a, b } from './file.js';` and `export function|const|class`; anything else stops the build. Each module sees only what it imports;
+- no requests to other sites; the data comes from `data/rates.json`, by a relative path;
+- colours are only tokens, in `css/tokens.css`, defined for both themes (`404.html` copies that file whole);
+- the calculations live in `js/calc.js`, as pure functions tested in `tests/calc.test.mjs`;
 - paths are relative, because the site lives under `/taxa-pe-stat/`.
 
 **Data**
 - `data/rates.json` is written only by the bot (`scripts/update-data.mjs`); don't edit it by hand.
-- The BNR forecast and the indicative interest rates live in `DATA`, in `app.html`, each with the month it is from (`asOf`, `report`). When you change them, update that month and the sources in `DESIGN.md` §2; the page flags them when they get old.
+- The BNR forecast and the indicative interest rates live in `DATA`, in `src/js/builtin-data.js`, each with the month it is from (`asOf`, `report`). When you change them, update that month and the sources in `DESIGN.md` §2; the page flags them when they get old.
 - If you change the formulas, update `DESIGN.md` §5 and the tests.
 
 **Screenshots:** `docs/screenshot.png` is taken in the dark theme, at 1280×860, when the counter shows „−0,0029 lei”.
@@ -88,7 +91,7 @@ node scripts/check-fresh.mjs   # is the data still updating? (exit code 1 if not
 
 ## The claude.ai artifact
 
-The page was also published as a private artifact on claude.ai; its URL and last version (4) are in `artifact.json`. Since 29 Oct 2026 it is **no longer synced**: don't publish it unless the owner asks.
+The page was also published as a private artifact on claude.ai; its URL and last version (4) are in `artifact.json`. Since 29 Oct 2026 it is **no longer synced**: don't publish it unless the owner asks. Its `app.html` no longer exists: since the split into `src/` (1 Nov 2026), publishing it again would mean publishing `assemble()`'s output.
 
 ## Environment
 

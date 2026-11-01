@@ -25,14 +25,14 @@ Nu este consultanță financiară. Ce introduci rămâne în browserul tău: pag
 
 ## Cum funcționează
 
-- **Pagina** e un singur fișier, `app.html`, fără framework și fără dependențe. Calculele stau separat, în `<script id="calc">`, ca să poată fi testate.
+- **Pagina** stă în `src/`, în fișiere mici, fără framework și fără dependențe: structura (`index.html`), stilurile (`css/`) și modulele JavaScript (`js/`). Calculele (`js/calc.js`) și formatarea (`js/format.js`) au fiecare testele lor. Pentru site, `build.mjs` le pune laolaltă într-o singură pagină.
 - **Datele:** în zilele lucrătoare, după ce BNR publică cursul, workflow-ul `publish.yml` din GitHub Actions:
   - rulează `scripts/update-data.mjs`, care ia cursul BNR (rezervă: BCE) și inflația IAPC de la Eurostat, le verifică și scrie `data/rates.json`, dacă s-a schimbat ceva;
   - rulează testele pe datele noi, apoi face commit ca `github-actions[bot]`;
   - republică site-ul.
 - **Dacă o sursă cade,** rămân datele anterioare și apare un avertisment. După publicare, o verificare separată eșuează, iar GitHub trimite email, dacă datele s-au oprit: cursul are peste 7 zile sau vine de la BCE, ori inflația e prea veche.
 - **Dobânzile** se actualizează de mână. Depozitul folosește media BNR a dobânzilor la depozitele noi la termen în lei ale populației, cu scadența de 6–12 luni (Buletinul lunar BNR, tabelul 10.1.2). BNR o publică la circa două luni după luna respectivă, așa că pagina arată ultima lună publicată și o marchează ca veche abia după circa 4 luni de la sfârșitul ei. Dobânda Tezaur e cea a emisiunii din luna respectivă.
-- **Pagina citește `data/rates.json`** de pe același domeniu și îl validează. Fără fișier, folosește valorile din `app.html`. Când schimbi o dată, cursul acelei zile vine din istoricul BNR din fișier.
+- **Pagina citește `data/rates.json`** de pe același domeniu și îl validează. Fără fișier, folosește valorile din `src/js/builtin-data.js`. Când schimbi o dată, cursul acelei zile vine din istoricul BNR din fișier.
 
 Formulele, sursele și deciziile sunt în [`DESIGN.md`](DESIGN.md). Problemele, cele reparate și cele încă deschise, sunt în [`FINDINGS.md`](FINDINGS.md). Documentația pentru dezvoltare e în engleză.
 

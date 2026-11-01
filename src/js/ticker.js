@@ -2,13 +2,15 @@
    for the sum and the account in the form (F-91); under it, the loss since 1 January (F-85). */
 import { Calc } from './calc.js';
 import { $ } from './dom.js';
-import { duration, esc, fmt, lei, pct, short, signed, splitSign } from './format.js';
+import { duration, esc, fmt, lei, pct, short, signed, splitSign, tone } from './format.js';
 
 /* `rate`: lei per second, negative for a loss. The total is the seconds since the page opened at the pace of the
    form now: a new sum recounts them all (F-91 replaces F-06's running sum). While a field is wrong it stops. */
 var tick = { S: NaN, p: null, rate: 0, total: 0, secs: 0, start: performance.now() };
+/* What the number is, by the colour it is shown in: what rounds to zero is neither a loss nor a gain. */
+var WORDS = { loss: 'ai pierdut', gain: 'ai câștigat', '': 'nu ai pierdut, nu ai câștigat' };
 function label(secs) {
-  $('tkLabel').textContent = isFinite(tick.S) ? 'Pentru ' + fmt(tick.S, 0) + ' lei, de când ai deschis pagina (' + duration(secs) + '), ai ' + (tick.total > 0.00005 ? 'câștigat' : 'pierdut') + ':' : 'Completează suma.';
+  $('tkLabel').textContent = isFinite(tick.S) ? 'Pentru ' + fmt(tick.S, 0) + ' lei, de când ai deschis pagina (' + duration(secs) + '), ' + WORDS[tone(tick.total, 4)] + ':' : 'Completează suma.';
 }
 export function renderTicker(s) {
   tick.S = s.S;
@@ -30,7 +32,10 @@ export function loop() {
      so the number does not move when the sign comes. */
   var parts = splitSign(signed(tick.total, 'lei', 4));
   $('tk').innerHTML = '<span class="sgn">' + parts[0] + '</span>' + esc(parts[1]);
-  $('ticker').classList.toggle('is-gain', tick.total > 0.00005);
+  /* Red for a loss, green for a gain, grey for what rounds to zero. */
+  var t = tone(tick.total, 4);
+  $('ticker').classList.toggle('is-gain', t === 'gain');
+  $('ticker').classList.toggle('is-zero', t === '');
   /* The same sum since 1 January: a what-if, recomputed from the form (F-85). */
   var n = new Date();
   var year = Calc.secondsSinceYearStart(n.getTime(), n.getTimezoneOffset(), new Date(n.getFullYear(), 0, 1).getTimezoneOffset());

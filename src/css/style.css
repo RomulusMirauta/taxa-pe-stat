@@ -13,9 +13,10 @@ h2{font-size:20px;font-weight:700}
 .fresh{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13.5px;color:var(--muted);margin:12px 0 0;padding:0;list-style:none}
 .badge{display:inline-block;font-size:12.5px;border-radius:999px;padding:0 9px;margin-left:4px;background:var(--warn-soft);color:var(--warn);font-weight:600}
 
-.ticker{background:var(--ticker-bg);color:var(--ticker-fg);border-radius:14px;padding:22px 24px;display:grid;gap:6px;text-align:center}
-.ticker .big{font-family:var(--num);font-size:clamp(36px,8vw,72px);font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--ticker-loss);overflow-wrap:anywhere}
+.ticker{background:var(--ticker-bg);color:var(--ticker-fg);border-radius:14px;padding:22px 24px;display:grid;gap:6px}
+.ticker .big{font-family:var(--num);font-size:clamp(30px,6.5vw,56px);font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--ticker-loss);overflow-wrap:anywhere}
 .ticker.is-gain .big{color:var(--ticker-gain)}
+.ticker.is-zero .big{color:var(--ticker-zero)}
 .ticker .sgn{margin-right:.22em}
 .ticker .sgn:empty::before{content:"−";visibility:hidden}
 .ticker small{opacity:.8;font-size:14px}

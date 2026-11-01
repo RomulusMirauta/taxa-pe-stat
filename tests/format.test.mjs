@@ -28,7 +28,7 @@ describe('signs and colours: what rounds to zero has neither', () => {
     [[0.004, '€'], '0,00 €'], [[-0.004, '€'], '0,00 €'], [[-0.00004, 'lei', 4], '0,0000 lei'],
   ]);
   cases(sign2, [[[0.004], 0], [[0.005], 1], [[-0.006], -1]]);
-  cases(tone, [[[-1], 'loss'], [[1], 'gain'], [[0.004], '']]);
+  cases(tone, [[[-1], 'loss'], [[1], 'gain'], [[0.004], ''], [[0.00004, 4], ''], [[-0.00006, 4], 'loss'], [[0.00006, 4], 'gain']]);
 });
 
 describe('the chart axis: compact numbers', () => {

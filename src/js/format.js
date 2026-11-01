@@ -12,10 +12,10 @@ export const RATE4 = new Intl.NumberFormat('ro-RO', { maximumFractionDigits: 4 }
 export function short(v) { return minus(SHORT.format(v)); }
 export function pct(fraction) { return isFinite(fraction) ? fmt(fraction * 100) + '%' : '—'; }
 export function lei(v) { return fmt(v, 0) + ' lei'; }
-/* The sign of a value as the page shows it, rounded to 2 decimals (−1, 0 or 1), and its colour: a loss in
+/* The sign of a value as the page shows it, rounded to 2 decimals or to `d` (−1, 0 or 1), and its colour: a loss in
    red, a gain in green, zero without a colour. */
-export function sign2(v) { var r = Math.round(v * 100) / 100; return r > 0 ? 1 : r < 0 ? -1 : 0; }
-export function tone(v) { return ['loss', '', 'gain'][sign2(v) + 1]; }
+export function sign2(v, d) { var k = Math.pow(10, d === undefined ? 2 : d), r = Math.round(v * k) / k; return r > 0 ? 1 : r < 0 ? -1 : 0; }
+export function tone(v, d) { return ['loss', '', 'gain'][sign2(v, d) + 1]; }
 export function signed(v, unit, d) {
   d = d === undefined ? 2 : d;
   var k = Math.pow(10, d), r = Math.round(v * k) / k;

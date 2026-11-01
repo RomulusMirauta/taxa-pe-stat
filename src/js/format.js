@@ -76,3 +76,13 @@ export function splitSign(text) { return /^[−+]/.test(text) ? [text.charAt(0),
 export function capInput(text, max) { return Calc.parseNum(text) > max ? short(max) : text; }
 /* The sum as the user wrote it: its decimals when it has any ("0,50 lei", not "1 lei"), and "1 leu" (F-101). */
 export function sumLei(v) { return v === 1 ? '1 leu' : fmt(v, v % 1 ? 2 : 0) + ' lei'; }
+/* What the counter says without a sum: an empty field asks for one, a wrong one asks for a fix. */
+export function sumMissing(text) { return String(text).trim() ? 'Corectează suma: nu e un număr valid.' : 'Completează suma.'; }
+/* Why „Minimul pentru plus” is missing, or '' when it is there or the sum is wrong: with 0 lei nothing can
+   be gained, and a small sum, or large fees, would need more than 100% interest to turn green in 3 s (F-102). */
+export function minPlusNote(S, fees, rate) {
+  if (S === 0) return 'Cu 0 lei, contorul rămâne pe zero, oricare ar fi dobânda.';
+  if (!(S > 0) || !(rate > 100)) return '';
+  return '„Minimul pentru plus” lipsește: pentru ' + sumLei(S) + (fees > 0 ? ' și ' + lei(fees) + ' comisioane pe an' : '') +
+    ', contorul ar ajunge pe plus în 3 secunde doar cu o dobândă de peste 100%.';
+}

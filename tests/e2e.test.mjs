@@ -924,6 +924,11 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.deepEqual((await state()).invalid, ['sum']);
     await type('sum', 'abc!');
     assert.match(await toastText(), /^Suma trebuie să fie un număr/);
+    assert.equal(await js("document.getElementById('tkLabel').textContent"), 'Corectează suma: nu e un număr valid.', 'the counter asks for a fix, not for a sum (F-102)');
+    // A small sum: no „Minimul pentru plus”, and a line says why (F-102).
+    await type('sum', '100');
+    assert.equal(await js("document.querySelector('[data-min]').hidden"), true);
+    assert.match(await js("document.getElementById('minHint').hidden ? '' : document.getElementById('minHint').textContent"), /^„Minimul pentru plus” lipsește: pentru 100 lei/);
     await type('sum', '50.000');
     // The other fields (F-99): letters, a negative tax, interest capped at 100%, a date in the future.
     await type('tax', 'zece');

@@ -2,7 +2,7 @@
 import { Calc } from './calc.js';
 import { DATA } from './builtin-data.js';
 import { $ } from './dom.js';
-import { capInput, fmtDate, fmtMonth, groupInput, short, todayISO } from './format.js';
+import { capInput, fmtDate, fmtMonth, groupInput, minPlusNote, short, todayISO } from './format.js';
 import { fillInputs, noteInput, readState, syncChips } from './form.js';
 import { renderFxTable, renderTable, renderTableHead } from './table.js';
 import { renderFacts } from './facts.js';
@@ -38,10 +38,14 @@ function render() {
 }
 
 /* The best case: the lowest tax-free interest at which the counter turns green within 3 seconds, for the sum,
-   the inflation and the fees in the form. Hidden when the form has none, or when it would be over 100%. */
+   the inflation and the fees in the form. Hidden when the form has none, or when it would be over 100%: then a
+   line says why (F-102). */
 function renderMinChip(s) {
   var r = Calc.rateForGainIn(s.infl / 100, 0, s.fees, s.S, 3), b = document.querySelector('[data-min]');
   b.hidden = !(r <= 100);
+  var note = minPlusNote(s.S, s.fees, r);
+  $('minHint').textContent = note;
+  $('minHint').hidden = !note;
   if (b.hidden) return;
   b.dataset.rate = r;
   b.textContent = 'Minimul pentru plus · ' + short(r) + '%, fără impozit';

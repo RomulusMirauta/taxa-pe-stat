@@ -1,7 +1,7 @@
 // Tests for the page's formatting (src/js/format.js): numbers, signs, dates and day counts, the Romanian way.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, duration, groupInput, capInput, splitSign, sumLei, todayISO } from '../src/js/format.js';
+import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, duration, groupInput, capInput, minPlusNote, splitSign, sumLei, sumMissing, todayISO } from '../src/js/format.js';
 
 const cases = (fn, list) => {
   for (const [args, expected] of list) test(`${fn.name}(${args.map((a) => JSON.stringify(a)).join(', ')}) → ${expected}`, () => assert.equal(fn(...args), expected));
@@ -87,4 +87,20 @@ test('esc: what reaches innerHTML cannot open a tag or an attribute', () => {
 
 describe('the sum as the user wrote it (F-101)', () => {
   cases(sumLei, [[[50000], '50.000 lei'], [[0.5], '0,50 lei'], [[1234.56], '1.234,56 lei'], [[1], '1 leu'], [[2], '2 lei'], [[0], '0 lei']]);
+});
+
+describe('the counter without a sum: an empty field, or a wrong one (F-102)', () => {
+  cases(sumMissing, [[[''], 'Completează suma.'], [['  '], 'Completează suma.'], [['abc'], 'Corectează suma: nu e un număr valid.'], [['-5'], 'Corectează suma: nu e un număr valid.']]);
+});
+
+describe('why „Minimul pentru plus” is missing (F-102)', () => {
+  test('a small sum, or large fees: more than 100% interest would be needed', () => {
+    assert.equal(minPlusNote(100, 0, 1500), '„Minimul pentru plus” lipsește: pentru 100 lei, contorul ar ajunge pe plus în 3 secunde doar cu o dobândă de peste 100%.');
+    assert.match(minPlusNote(1000, 2000, 300), /pentru 1\.000 lei și 2\.000 lei comisioane pe an,/);
+  });
+  test('with 0 lei nothing can be gained', () => assert.equal(minPlusNote(0, 0, NaN), 'Cu 0 lei, contorul rămâne pe zero, oricare ar fi dobânda.'));
+  test('nothing when the button is there, or the sum is wrong', () => {
+    assert.equal(minPlusNote(50000, 0, 7.86), '');
+    assert.equal(minPlusNote(NaN, 0, NaN), '');
+  });
 });

@@ -1,7 +1,7 @@
 // Tests for the page's formatting (src/js/format.js): numbers, signs, dates and day counts, the Romanian way.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, todayISO } from '../src/js/format.js';
+import { esc, fmt, RATE4, short, pct, lei, sign2, tone, signed, compact, fmtDate, fmtMonth, daysWord, duration, todayISO } from '../src/js/format.js';
 
 const cases = (fn, list) => {
   for (const [args, expected] of list) test(`${fn.name}(${args.map((a) => JSON.stringify(a)).join(', ')}) → ${expected}`, () => assert.equal(fn(...args), expected));
@@ -44,6 +44,10 @@ describe('dates and months', () => {
     assert.equal(todayISO(new Date(2026, 0, 5, 23, 59)), '2026-01-05');
     assert.equal(todayISO(new Date(2026, 11, 31, 0, 0)), '2026-12-31');
   });
+});
+
+describe('the counter\'s stopwatch (F-91)', () => {
+  cases(duration, [[[0], '0 s'], [[13.9], '13 s'], [[60], '1 min 0 s'], [[133], '2 min 13 s'], [[3725], '1 h 2 min 5 s'], [[3600], '1 h 0 min 0 s'], [[-3], '0 s']]);
 });
 
 describe('day counts: „de” from 20 on, except 101–119 and the like', () => {

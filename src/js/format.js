@@ -33,6 +33,11 @@ var MF = new Intl.DateTimeFormat('ro-RO', { month: 'long', year: 'numeric', time
 var MS = new Intl.DateTimeFormat('ro-RO', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 export function fmtDate(iso) { var t = Calc.parseISODate(iso); return isFinite(t) ? DF.format(t) : '—'; }
 export function fmtMonth(ym, brief) { var t = Calc.parseISODate(ym + '-01'); return isFinite(t) ? (brief ? MS : MF).format(t) : ym; }
+/* A stopwatch's time: "13 s", "2 min 13 s", "1 h 2 min 5 s". */
+export function duration(secs) {
+  var s = Math.max(0, Math.floor(secs)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  return (h ? h + ' h ' : '') + (h || m ? m + ' min ' : '') + s % 60 + ' s';
+}
 /* Romanian day counts: "1 zi", "7 zile", "365 de zile" */
 export function daysWord(n) {
   if (n === 1) return '1 zi';

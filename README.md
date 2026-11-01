@@ -15,7 +15,7 @@
   - cât pierzi din cauza inflației (puterea de cumpărare);
   - cât a pierdut sau a câștigat deja leul față de euro și de dolar, după cursul BNR din fiecare zi. Cursul urcă și coboară de la o zi la alta, așa că nu e proiectat pe mai puțin de un an.
 - **Unde stau banii schimbă rezultatul:** cont curent, depozit sau titluri de stat, cu impozitul pe dobândă și comisioanele.
-- **Contor live:** cât a pierdut (sau a câștigat) suma ta de la 1 ianuarie până acum, în ritmul de acum.
+- **Contor live:** ca un cronometru, cât pierde (sau câștigă) suma ta secundă cu secundă de când ai deschis pagina; dedesubt, cât a pierdut de la 1 ianuarie.
 - **Pe scurt:** cât s-a pierdut deja în euro și dolari în ultimul an și dobânda minimă cu care ții pasul cu inflația.
 - **Grafic pe 10 ani** al puterii de cumpărare.
 - **Datele se actualizează singure** în zilele lucrătoare: cursul BNR și inflația de la Eurostat.

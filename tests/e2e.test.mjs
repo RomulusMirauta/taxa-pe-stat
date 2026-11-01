@@ -463,7 +463,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
 
     await type('sum', '-0');
     s = await state();
-    assert.match(s.text, /Pentru 0 lei, de la 1 ianuarie/);
+    assert.match(s.text, /Pentru 0 lei, de când ai deschis pagina/);
     assert.doesNotMatch(s.text, /[-−]0(?:[,.]0+)?(?![\d,.])/, 'no zero with a sign');
     await type('sum', '0');
     s = await state();
@@ -550,29 +550,51 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     });
   });
 
-  test('the counter: the loss since 1 January for the sum in the form, recomputed at once, green when the interest wins (F-85)', async () => {
+  test('the counter: a stopwatch from the page\'s opening, once a second, and under it the loss since 1 January (F-91, F-85)', async () => {
     const now = '2026-11-01T10:00:00Z'; // noon in Bucharest, 304.5 days into the year
     await intercept(json(FIXTURE), async () => {
       await open({ now });
       const p = { S: 50000, pi: 0.065, rate: 0, tax: 0.1, fees: 0, net: true };
-      const expected = (q) => C.realLoss(q, C.secondsSinceYearStart(Date.parse(now), -120, -120) / 86400);
-      const shows = (q, what) => until(async () => Math.abs(cellValue((await state()).ticker) - expected(q)) < 1, what, 3000);
-      assert.equal(await js("document.getElementById('tkLabel').textContent"), 'Pentru 50.000 lei, de la 1 ianuarie până acum, în ritmul de acum:');
-      await shows(p, `about ${expected(p).toFixed(0)} lei, the plan's −2.555 lei at midnight plus half a day`);
-      assert.match((await state()).ticker, /^−2\.5\d\d,\d{4} lei$/);
+      const perSecond = (q) => -C.lossRatePerYear(q) / (365 * 86400);
+      const sinceJan = (q) => C.realLoss(q, C.secondsSinceYearStart(Date.parse(now), -120, -120) / 86400);
+      // One snapshot: the loop writes the label, the counter and the line under it in the same tick.
+      const read = () => js("['tkLabel', 'tk', 'tkNote', 'tkYear'].map((id) => document.getElementById(id).textContent)")
+        .then(([label, tk, note, year]) => ({ label, note, year, secs: Number(label.match(/\((\d+) s\):$/)?.[1]), total: -cellValue(tk), tk }));
+      const after = (n, what) => until(async () => { const r = await read(); return r.secs >= n && r; }, what, 8000);
+      const lossSinceJan = (r) => cellValue(r.year.replace('De la 1 ianuarie: ', ''));
 
-      await type('sum', '100.000');
-      await shows({ ...p, S: 100000 }, 'twice as much, right away: a what-if, not a running sum');
+      // Each whole second adds the loss of a second: about 0,0001 lei for 50.000 lei.
+      let r = await after(2, 'two seconds on the stopwatch');
+      assert.match(r.label, /^Pentru 50\.000 lei, de când ai deschis pagina \(\d+ s\):$/);
+      assert.ok(Math.abs(r.total - r.secs * perSecond(p)) < 0.00006, `${r.tk} after ${r.secs} s`);
+      assert.equal(r.note, 'Ritm: −0,0001 lei pe secundă · −8,63 lei pe zi (inflație 6,5%/an, fără dobândă).');
+      assert.ok(Math.abs(lossSinceJan(r) - sinceJan(p)) < 1, `${r.year}: about ${sinceJan(p).toFixed(2)} lei`);
 
+      // A new sum: the seconds already counted stay (F-06); the next ones count at its pace; the year is recomputed.
+      const n1 = r.secs;
+      await type('sum', '50.000.000');
+      const big = { ...p, S: 50000000 };
+      r = await after(n1 + 3, 'three more seconds');
+      const k = Math.abs(r.total / perSecond(big));
+      assert.ok(k >= r.secs - n1 - 1 && k <= r.secs - n1 + 1, `${r.tk}: about ${k.toFixed(1)} seconds at the new pace, of ${r.secs}`);
+      assert.ok(Math.abs(lossSinceJan(r) - sinceJan(big)) < 1, r.year);
+
+      // Interest above inflation: the next seconds are gains, in green.
       await type('rate', '10');
       await type('tax', '0');
-      await shows({ ...p, S: 100000, rate: 0.1, tax: 0 }, 'a gain with 10% interest and no tax');
-      assert.match((await state()).ticker, /^\+[\d.]+,\d{4} lei$/);
+      await type('sum', '5.000.000.000');
+      await until(async () => (await read()).tk.startsWith('+'), 'a gain once a second has passed', 4000);
       assert.equal(await js("document.getElementById('ticker').classList.contains('is-gain')"), true);
+      assert.match((await read()).year, /^De la 1 ianuarie: \+[\d.]+,\d\d lei$/);
 
+      // A wrong field stops the counter, and the year shows „—”.
       await type('infl', 'abc');
-      await until(async () => (await state()).ticker === '—', 'no value while a field is wrong');
-      assert.match((await state()).tkNote, /Contorul e oprit/);
+      const stopped = await read();
+      await sleep(2100);
+      r = await read();
+      assert.equal(r.tk, stopped.tk, 'no seconds added while a field is wrong');
+      assert.match(r.note, /Contorul e oprit/);
+      assert.equal(r.year, 'De la 1 ianuarie: —');
       assert.deepEqual(problems, []);
     });
   });
@@ -790,7 +812,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.deepEqual(problems, []);
   });
 
-  test('turning on reduced motion slows the counter to one update a second, without a reload (O-17)', async () => {
+  test('the counter ticks once a second, like a stopwatch, with or without reduced motion (F-91, O-17)', async () => {
     await open();
     // Updates of the counter's text during `ms`: the loop rewrites it on every tick.
     const updates = (ms) => js(`new Promise((r) => {
@@ -801,14 +823,11 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     })`);
     const motion = (value) => cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }, { name: 'prefers-reduced-motion', value }] });
     try {
-      assert.ok((await updates(1000)) >= 5, 'about 10 updates a second at first');
-      await motion('reduce');
-      await sleep(1100); // the tick already scheduled
-      const slow = await updates(2500);
-      assert.ok(slow <= 3, `${slow} updates in 2.5 s with reduced motion`);
-      await motion('no-preference');
-      await sleep(1100);
-      assert.ok((await updates(1000)) >= 5, 'fast again once it is turned off');
+      for (const value of ['no-preference', 'reduce']) {
+        await motion(value);
+        const n = await updates(3000);
+        assert.ok(n >= 2 && n <= 4, `${n} updates in 3 s (${value})`);
+      }
     } finally {
       await motion('');
     }

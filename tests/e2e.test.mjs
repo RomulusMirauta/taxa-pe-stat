@@ -635,6 +635,15 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       const expected = C.realLoss(p, C.secondsSinceYearStart(Date.parse(now), -120, -120) / 86400);
       assert.match(year, /^De la 1 ianuarie 2027: −[\d.]+,\d\d lei$/);
       assert.ok(Math.abs(cellValue(year.replace('De la 1 ianuarie 2027: ', '')) - expected) < 1, `${year}: about ${expected.toFixed(2)} lei`);
+
+      // The counter's number starts where it stays: at zero, the sign's place is kept empty.
+      const numberLeft = () => js("document.querySelector('#tk .sgn').getBoundingClientRect().right");
+      await type('sum', '0');
+      await until(async () => (await js("document.getElementById('tk').textContent")) === '0,0000 lei', 'zero on the counter', 4000);
+      const atZero = await numberLeft();
+      await type('sum', '50.000');
+      await until(async () => (await js("document.getElementById('tk').textContent")).startsWith('−'), 'a loss on the counter', 4000);
+      assert.equal(await numberLeft(), atZero, 'the number does not move when the minus comes');
       assert.deepEqual(problems, []);
     });
   });

@@ -26,9 +26,10 @@ export function loop() {
   tick.secs = secs;
   if (tick.p) tick.total = secs * tick.rate;
   label(secs);
-  /* The sign apart from the number, as far as the number is from „lei”. */
+  /* The sign apart from the number, as far as the number is from „lei”; without a sign its place stays empty,
+     so the number does not move when the sign comes. */
   var parts = splitSign(signed(tick.total, 'lei', 4));
-  $('tk').innerHTML = (parts[0] ? '<span class="sgn">' + parts[0] + '</span>' : '') + esc(parts[1]);
+  $('tk').innerHTML = '<span class="sgn">' + parts[0] + '</span>' + esc(parts[1]);
   $('ticker').classList.toggle('is-gain', tick.total > 0.00005);
   /* The same sum since 1 January: a what-if, recomputed from the form (F-85). */
   var n = new Date();

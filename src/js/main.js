@@ -36,7 +36,9 @@ function renderStatic() {
   /* Under the chart, the same forecast button: the chart holds today's inflation for 10 years (F-87). */
   var shown = forecastShown(todayISO());
   $('chForecast').hidden = !shown;
-  $('chForecast').innerHTML = shown ? '<button type="button" class="chip" data-infl="' + P.value + '" aria-pressed="false">Vezi cu prognoza BNR (' + short(P.value) + '%)</button>' : '';
+  /* A toggle: pressed, it goes back to the annual rate (data-back), and says so. */
+  $('chForecast').innerHTML = shown ? '<button type="button" class="chip" data-infl="' + P.value + '" data-back="' + I.yoy + '" aria-pressed="false"' +
+    ' data-on="Înapoi la ultimele 12 luni (' + short(I.yoy) + '%)" data-off="Vezi cu prognoza BNR (' + short(P.value) + '%)">Vezi cu prognoza BNR (' + short(P.value) + '%)</button>' : '';
   var hint = 'Rata anuală, după ' + I.source + ', compară prețurile din ' + fmtMonth(I.month) + ' cu aceeași lună de anul trecut.';
   if (I.avg12 !== undefined && I.avg12 - I.yoy > 1) {
     hint += ' Media pe 12 luni, ' + short(I.avg12) + '%, e mai mare pentru că include scumpiri mai vechi; pentru viitor, rata anuală e un reper mai bun.';
@@ -69,7 +71,8 @@ function setup() {
     var b = e.target.closest && e.target.closest('.chip');
     if (!b) return;
     if (b.dataset.infl !== undefined) {
-      $('infl').value = short(Number(b.dataset.infl));
+      var back = b.dataset.back !== undefined && b.getAttribute('aria-pressed') === 'true';
+      $('infl').value = short(Number(back ? b.dataset.back : b.dataset.infl));
     } else if (b.dataset.rate !== undefined) {
       $('rate').value = short(Number(b.dataset.rate));
       $('tax').value = short(Number(b.dataset.tax));

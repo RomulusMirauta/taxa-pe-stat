@@ -128,7 +128,9 @@ export function noteInput(id) {
 export function syncChips() {
   var infl = Calc.parseNum($('infl').value), rate = Calc.parseNum($('rate').value), tax = Calc.parseNum($('tax').value);
   document.querySelectorAll('[data-infl]').forEach(function (b) {
-    b.setAttribute('aria-pressed', String(Math.abs(Number(b.dataset.infl) - infl) < 1e-9));
+    var on = Math.abs(Number(b.dataset.infl) - infl) < 1e-9;
+    b.setAttribute('aria-pressed', String(on));
+    if (b.dataset.on) b.textContent = on ? b.dataset.on : b.dataset.off;
   });
   document.querySelectorAll('[data-rate]').forEach(function (b) {
     b.setAttribute('aria-pressed', String(Math.abs(Number(b.dataset.rate) - rate) < 1e-9 && Math.abs(Number(b.dataset.tax) - tax) < 1e-9));

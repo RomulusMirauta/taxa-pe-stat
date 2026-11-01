@@ -315,6 +315,11 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       assert.equal(s.v.infl, '3,4', 'the button sets the forecast, like the chip by the field');
       assert.equal((await assumption()).text, 'inflație constantă: 3,4%/an');
       assert.equal(await js("document.querySelector('#chForecast .chip').getAttribute('aria-pressed')"), 'true');
+      assert.equal(await js("document.querySelector('#chForecast .chip').textContent"), 'Înapoi la ultimele 12 luni (6,5%)');
+      // A toggle: pressed again, it goes back to the annual rate.
+      await click('#chForecast .chip');
+      assert.equal((await state()).v.infl, '6,5');
+      assert.equal(await js("document.querySelector('#chForecast .chip').textContent"), 'Vezi cu prognoza BNR (3,4%)');
       assert.deepEqual(problems, []);
     });
     // After its target month the forecast is gone from under the chart too.

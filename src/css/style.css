@@ -89,7 +89,7 @@ svg text.assume{fill:var(--ink);font-weight:600}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
 .sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .sw.is-loss{background:var(--loss)} .sw.is-accent{background:var(--accent)}
-footer{font-size:13px;color:var(--muted)}
+footer{font-size:13px;color:var(--muted);text-align:justify;hyphens:auto}
 .src{font-size:13px;color:var(--muted);margin:-12px 0 0}
 .src a{color:var(--accent)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}

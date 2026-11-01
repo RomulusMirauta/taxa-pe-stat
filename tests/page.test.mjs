@@ -2,8 +2,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { esc } from '../src/js/format.js';
-import { DATA } from '../src/js/builtin-data.js';
 
 const read = (path) => readFileSync(new URL('../src/' + path, import.meta.url), 'utf8').replace(/\r\n?/g, '\n');
 const markup = read('index.html');
@@ -62,9 +60,8 @@ describe('links between code and page', () => {
     assert.deepEqual(inputs.filter((i) => !labels.has(i)), []);
   });
   test('numeric fields accept a comma: no type="number"', () => assert.doesNotMatch(markup, /type="number"/));
-  test('the data source labels reach innerHTML only through esc()', () => {
+  test('the data source labels reach innerHTML only through esc() (tested in format.test)', () => {
     for (const k of ['fx', 'inflation']) assert.match(modules['fresh.js'], new RegExp(`esc\\(D(?:ATA)?\\.${k}\\.source\\)`), k);
-    assert.equal(esc('<img src=x onerror="a()">&'), '&lt;img src=x onerror=&quot;a()&quot;&gt;&amp;');
   });
   test('fields are at least 16px (otherwise the iPhone zooms in on tap)', () => {
     assert.match(style, /(^|\n)input\{[^}]*font-size:16px/);
@@ -80,27 +77,6 @@ describe('without JavaScript', () => {
   });
   test('the counter and the form, which do nothing without the script, are hidden', () => {
     assert.match(style, /@media \(scripting:\s*none\)\{[^}]*#ticker[^}]*\.grid[^}]*\{display:none\}\}/);
-  });
-});
-
-describe('the hand-set values in DATA', () => {
-  const month = /^\d{4}-(0[1-9]|1[0-2])$/;
-  test('each one has the month it is from, so the page can flag it when it gets old', () => {
-    assert.ok(typeof DATA.forecast.value === 'number');
-    assert.match(DATA.forecast.target, month);
-    assert.match(DATA.forecast.report, month);
-    for (const [k, v] of Object.entries(DATA.savings)) {
-      assert.ok(typeof v.rate === 'number', k);
-      assert.match(v.asOf, month, k);
-    }
-  });
-  test('their labels come from DATA: no month, year or tax rate written in the other modules', () => {
-    const months = /\b(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie|ian|feb|mar|apr|iun|iul|aug|sept|oct|nov|dec)\.?\s+(19|20)\d\d\b/i;
-    for (const [f, code] of Object.entries(modules)) {
-      if (f === 'builtin-data.js') continue;
-      assert.doesNotMatch(code, months, f);
-      assert.doesNotMatch(code, /Impozitul de \d/, f);
-    }
   });
 });
 

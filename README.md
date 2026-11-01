@@ -88,6 +88,7 @@ Fiecare pas e un commit, iar versiunile au tag-uri. Pe scurt, în [`CHANGELOG.md
 | **v0.3.3** | pe telefon: tabelul cu o perioadă pe rând, graficul la mărimea lui, butoane și câmpuri ușor de atins |
 | **v0.3.4** | dobânda la depozit: media oficială BNR pe 6–12 luni, cu întârzierea ei de publicare explicată |
 | **v0.4.0** | euro și dolar: ce s-a întâmplat deja, nu o proiecție; contorul de la 1 ianuarie; fără comutatorul de dobândă; ipoteza graficului scrisă pe grafic; codul în fișiere separate, cu teste pe module |
+| **v0.4.1** | contorul ca un cronometru, cu zero gri; punctele pentru mii apar singure, virgula e zecimală; „Pe scurt” ține cont de dobândă; butonul „Minimul pentru plus”; cifre mai clare |
 
 Cum lucrăm (cu Claude, copia locală): [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). Idei pentru mai târziu: [`docs/IDEAS.md`](docs/IDEAS.md).
 

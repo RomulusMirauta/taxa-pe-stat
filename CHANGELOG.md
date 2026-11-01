@@ -2,6 +2,21 @@
 
 The project's versions, briefly. The details of each problem are in [`FINDINGS.md`](FINDINGS.md), by ID.
 
+## [0.4.1] - 2026-11-01 - A stopwatch and a way to the plus
+
+### Changed
+- **The counter** is a stopwatch from the page's opening, once a second; a new sum recounts the seconds (F-91). Its label says what the number is („ai pierdut”, „ai câștigat”, or neither at zero), its pace is per hour and per day, and the line under it names the year. Zero is grey; the sign stands apart, and the number does not move when it comes.
+- **Sums** get their thousands dots as they are typed, and the comma is always the decimal one: „50,000” is fifty lei (F-93).
+- **„Pe scurt”** follows the form's interest, as the table does (F-94).
+- **The numbers** are in Source Sans 3 with digits of one width: its 0 is plain.
+- **Layout:** the form as tall as the results, more room before each group of fields, the sources justified across the page; the forecast button under the chart is a toggle.
+
+### Added
+- **„Minimul pentru plus”:** the lowest tax-free interest that turns the counter green within 3 seconds, for the sum, inflation and fees in the form (F-94).
+
+### Fixed
+- **Large sums** take the stacked table layout on wide screens too, instead of running out of the table (F-92).
+
 ## [0.4.0] - 2026-11-01 - Honest numbers, separate files
 
 ### Changed
@@ -127,6 +142,7 @@ The project's versions, briefly. The details of each problem are in [`FINDINGS.m
 - **Publishing and running:** an artifact on claude.ai, a local server, `start.cmd`.
 - **`BAZA.md`** (now `DESIGN.md`): the data, the causes, the formulas and the worked example.
 
+[0.4.1]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.2...v0.3.3

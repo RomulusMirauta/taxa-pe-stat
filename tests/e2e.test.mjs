@@ -466,6 +466,29 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     assert.match(s.tkNote, /fără dobândă, dar cu 240 lei comisioane pe an\)/);
     await type('fees', '0');
 
+    // Real keys: the thousands dots come by themselves, Backspace on a dot takes the digit before it,
+    // and the comma is the decimal one (F-93).
+    await js("(() => { const el = document.getElementById('sum'); el.value = ''; el.focus(); })()");
+    for (const ch of '1234567') await cdp.send('Input.insertText', { text: ch });
+    assert.equal(await js("document.getElementById('sum').value"), '1.234.567');
+    await js("document.getElementById('sum').setSelectionRange(6, 6)"); // after „1.234.”, just after the dot
+    for (const type of ['rawKeyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key: 'Backspace', code: 'Backspace', windowsVirtualKeyCode: 8 });
+    assert.equal(await js("document.getElementById('sum').value"), '123.567');
+    // Delete just before a dot takes the digit after it; a dot typed by hand does not stay.
+    await js("document.getElementById('sum').setSelectionRange(3, 3)");
+    for (const type of ['rawKeyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+    assert.equal(await js("document.getElementById('sum').value"), '12.367');
+    await cdp.send('Input.insertText', { text: '.' });
+    assert.equal(await js("document.getElementById('sum').value"), '12.367');
+    await type('sum', '123.567');
+    await js("document.getElementById('sum').setSelectionRange(7, 7)");
+    for (const ch of ',5') await cdp.send('Input.insertText', { text: ch });
+    s = await state();
+    assert.equal(s.v.sum, '123.567,5');
+    assert.match(s.text, /Pentru 123\.568 lei/);
+    await type('sum', '50,000');
+    assert.match((await state()).text, /Pentru 50 lei/, 'a comma is never a thousands separator');
+
     await type('sum', '-0');
     s = await state();
     assert.match(s.text, /Pentru 0 lei, de când ai deschis pagina/);

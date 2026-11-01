@@ -33,6 +33,18 @@ var MF = new Intl.DateTimeFormat('ro-RO', { month: 'long', year: 'numeric', time
 var MS = new Intl.DateTimeFormat('ro-RO', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 export function fmtDate(iso) { var t = Calc.parseISODate(iso); return isFinite(t) ? DF.format(t) : '—'; }
 export function fmtMonth(ym, brief) { var t = Calc.parseISODate(ym + '-01'); return isFinite(t) ? (brief ? MS : MF).format(t) : ym; }
+/* A sum as it is typed: the thousands get their dots by themselves, wherever the user put or removed them
+   ("50000" → "50.000"); the comma and the decimals after it stay as typed. `caret` is the cursor's position;
+   it stays after the same digit. Text that is not a Romanian number ("abc", "50.000,5,1") stays as it is. */
+export function groupInput(text, caret) {
+  if (!/^[0-9.]*(,[0-9]*)?$/.test(text)) return { value: text, caret: caret };
+  var cut = text.indexOf(','), int = (cut < 0 ? text : text.slice(0, cut)).replace(/\./g, '');
+  var value = int.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (cut < 0 ? '' : text.slice(cut));
+  /* The characters before the cursor that are not dots, then the same count in the new text. */
+  var keep = text.slice(0, caret).replace(/\./g, '').length, at = 0;
+  while (keep > 0 && at < value.length) { if (value.charAt(at) !== '.') keep--; at++; }
+  return { value: value, caret: at };
+}
 /* A stopwatch's time: "13 s", "2 min 13 s", "1 h 2 min 5 s". */
 export function duration(secs) {
   var s = Math.max(0, Math.floor(secs)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);

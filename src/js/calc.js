@@ -12,7 +12,8 @@ var PERIODS = [
 ];
 
 /* Reads numbers written the Romanian or English way: "6,61", "6.61", "50.000", "50 000", "1.234,56", "6,61%".
-   opts.money: for amounts, "50.000" and "50,000" mean fifty thousand. A group of thousands never starts
+   opts.money: for amounts, "50.000" means fifty thousand and the comma is always the decimal one ("50,000" is
+   fifty lei, F-93): the page writes the dots by itself. A group of thousands never starts
    with 0, so "0,500" is half a leu, not 500. "-0" is 0: the page never shows a sign on zero. */
 function parseNum(input, opts) {
   var money = !!(opts && opts.money);
@@ -38,7 +39,7 @@ function parseNum(input, opts) {
     if (parts.length > 2) {
       if (!grouped) return NaN;
       intPart = parts.join('');
-    } else if (money && grouped) {
+    } else if (money && grouped && dot >= 0) {
       intPart = parts.join('');
     } else {
       intPart = parts[0]; frac = parts[1];

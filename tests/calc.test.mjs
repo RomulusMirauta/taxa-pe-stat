@@ -21,9 +21,9 @@ describe('parseNum: numbers written the Romanian or English way', () => {
   for (const [input, expected] of cases) {
     test(`"${input}" → ${expected}`, () => assert.equal(C.parseNum(input), expected));
   }
-  test('for amounts, a dot or comma followed by 3 digits separates thousands', () => {
+  test('for amounts, a dot followed by 3 digits separates thousands; the comma is the decimal one', () => {
     assert.equal(C.parseNum('50.000', { money: true }), 50000);
-    assert.equal(C.parseNum('50,000', { money: true }), 50000);
+    assert.equal(C.parseNum('50,000', { money: true }), 50); // the comma is the decimal one (F-93)
     assert.equal(C.parseNum('50 000', { money: true }), 50000);
     assert.equal(C.parseNum('50.000,50', { money: true }), 50000.5);
     assert.equal(C.parseNum('50,5', { money: true }), 50.5);

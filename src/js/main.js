@@ -2,7 +2,7 @@
 import { Calc } from './calc.js';
 import { DATA } from './builtin-data.js';
 import { $ } from './dom.js';
-import { fmtDate, fmtMonth, short, todayISO } from './format.js';
+import { fmtDate, fmtMonth, groupInput, short, todayISO } from './format.js';
 import { fillInputs, noteInput, readState, syncChips } from './form.js';
 import { renderFxTable, renderTable, renderTableHead } from './table.js';
 import { renderFacts } from './facts.js';
@@ -79,8 +79,22 @@ function setup() {
     }
     render();
   });
+  /* The sums get their thousands dots as they are typed (F-93). Backspace or Delete next to a dot removes the
+     digit beyond it: the dot itself would come back at once. */
+  var MONEY = { sum: 1, fees: 1 };
+  $('f').addEventListener('keydown', function (e) {
+    var el = e.target, c = el.selectionStart;
+    if (!MONEY[el.id] || c !== el.selectionEnd) return;
+    if (e.key === 'Backspace' && el.value.charAt(c - 1) === '.') el.setSelectionRange(c - 1, c - 1);
+    else if (e.key === 'Delete' && el.value.charAt(c) === '.') el.setSelectionRange(c + 1, c + 1);
+  });
   $('f').addEventListener('input', function (e) {
-    noteInput(e.target.id);
+    var el = e.target;
+    if (MONEY[el.id]) {
+      var g = groupInput(el.value, el.selectionStart);
+      if (g.value !== el.value) { el.value = g.value; el.setSelectionRange(g.caret, g.caret); }
+    }
+    noteInput(el.id);
     render();
   });
   $('f').addEventListener('submit', function (e) { e.preventDefault(); });

@@ -115,6 +115,7 @@ The first table lists what is fixed; the second, what is still in the app. The d
 | F-85 | Minor | The counter, the page's biggest number, started at zero when the page opened and showed almost nothing | Fixed: the loss since 1 January, recomputed from the form | `calc.test`, `e2e.test` |
 | F-86 | Minor | A „Fără dobândă / Cu dobânda netă” switch said again what the 0% rate already says | Fixed: removed; the form's interest always applies | `calc.test`, `e2e.test` |
 | F-87 | Minor | The chart held September's backward-looking rate for 10 years, and said so only in a sentence under it | Fixed: the assumption in the drawing, and a button for BNR's forecast | `e2e.test` |
+| F-88 | Minor | The scheduled data runs started 4.5 to 6 hours late, while the documents promised 13:30 | Fixed: three runs off the round minutes; the documents give observed times | `workflow.test` |
 | O-07 | — | The license for the open-source version | Resolved: MIT | — |
 | O-09 | — | BNR publishes only on working days, around 13:00 | Resolved: the script uses the last published day | `data.test` |
 | O-10 | — | `start.cmd` had not been tested on a real Windows machine | Resolved: tested on Windows 11 | — |
@@ -689,3 +690,9 @@ Headless Chrome at 320×568, 360×740, 375×667, 390×844, 430×932, 568×320, 7
 - **Problem:** the 10-year chart holds the latest annual rate (6.5% for September 2026, which looks back) constant for 10 years, while BNR expects 3.4% at the end of 2027. The assumption appeared only in the hint under the chart and in the footer, where it is easy to miss.
 - **Fix:** the drawing says it, in a band above the lines („inflație constantă: 6,5%/an”, in the ink colour), so no line can reach it, whether the lines fall or rise. A button under the chart, „Vezi cu prognoza BNR (3,4%)”, is a chip like the one by the field: it reuses the same click handler and has no state of its own; it is pressed while the inflation is the forecast, and goes away with the forecast after its target month.
 - **Test:** `e2e.test` → "the chart states its assumption": the text follows the inflation; at 1280 and 320 px it stays clear of the lines in the worst cases, a line at the top of the axis on the left (falling) and on the right (rising, under the label); the button sets 3,4 and is pressed; no button in January 2028. The F-78 test also keeps it inside the drawing. Mutation-checked: without the band, the falling case overlaps; without the button, the test fails.
+
+### F-88 · Minor · The scheduled runs started 4.5 to 6 hours late
+- **Problem:** the runs on 29 and 30 October 2026, scheduled for 11:30 and 15:30 UTC, started at 17:29, 20:28, 17:05 and 20:00 UTC. The day's BNR rate reached the site at about 19:00 Romania time, while DESIGN §5.10 and the workflow's comments said 13:30. GitHub documents that `schedule` events can be delayed at high load, especially at the start of the hour. The page's numbers do not depend on this; the documents were simply not accurate.
+- **Fix:** three runs, off the round minutes: `17 11`, `47 13` and `23 16 * * 1-5` (UTC). DESIGN §5.10 and the workflow's comments give the times observed, not the times requested.
+- **To check:** a week after v0.4.0, `gh run list -R RomulusMirauta/taxa-pe-stat --workflow publish.yml --event schedule --json createdAt --limit 20`, and write the observed start times here and in DESIGN §5.10.
+- **Test:** `workflow.test` → "the schedule": working days only, three runs, none at minute 0 or 30, none before BNR publishes (mutation-checked: a run at minute 30 fails).

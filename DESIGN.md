@@ -304,7 +304,7 @@ Romanian inflation already includes part of the exchange-rate effect: imported g
 
 The data is updated on GitHub's servers, without your computer.
 
-1. **When:** on working days, at 13:30 and 17:30 Romanian time in winter (an hour later in summer). BNR publishes around 13:00; the second run is a safety net.
+1. **When:** on working days, three runs set for 13:17, 15:47 and 18:23 Romanian time in winter (an hour later in summer); BNR publishes around 13:00. The times are requests: GitHub delays scheduled runs, most of all at the start of the hour. On 29–30 October 2026 the runs then set for 13:30 and 17:30 started 4.5 to 6 hours late, so the day's rate reached the site at about 19:00; hence the third run and the odd minutes (F-88). The times observed since are in FINDINGS F-88.
 2. **What:** `scripts/update-data.mjs` fetches:
    - **exchange rates:** BNR's XML files from `curs.bnr.ro` (FINDINGS F-40). Normally only the last 10 days (`nbrfxrates10days.xml`), joined to the history already saved in `data/rates.json` (O-14). The yearly files are fetched only when that history is missing, comes from the ECB, does not overlap those 10 days or does not cover 400 days without gaps; which years are needed follows from the last published day (F-41). From the series, the script picks today's rate and the one from a year ago (the last working day at most 10 days before the same date). If BNR does not answer, or redirects (F-40), it uses the ECB rates, but only when the ECB has a newer day than the saved rate (F-48);
    - **inflation:** Eurostat, HICP (`prc_hicp_minr`): Romania total, services, the 12-month average and the euro area. An older month never replaces a newer one (F-51), and a series without usable data is reported (F-50).

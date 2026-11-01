@@ -12,9 +12,14 @@ name: Publish
 on:
   push:
     branches: [main]
+  # A scheduled time is a request: GitHub delays these runs, most of all at the start of the hour (F-88).
+  # Observed on 29–30 Oct 2026: the runs set for 11:30 and 15:30 UTC started at 17:05–20:28 UTC, so the day's
+  # BNR rate (published around 13:00 Romania time) reached the site at about 19:00. Hence three runs, off the
+  # round minutes. The page's numbers do not depend on this, only how soon a new day's rate shows up.
   schedule:
-    - cron: '30 11 * * 1-5'   # 13:30 Romania time in winter, 14:30 in summer (BNR publishes around 13:00)
-    - cron: '30 15 * * 1-5'   # second attempt, in case the first one was late or failed
+    - cron: '17 11 * * 1-5'   # 13:17 Romania time in winter, 14:17 in summer
+    - cron: '47 13 * * 1-5'   # 15:47 / 16:47: in case the first one was late or failed
+    - cron: '23 16 * * 1-5'   # 18:23 / 19:23
   workflow_dispatch:
 
 # Each job gets only what it needs (F-44).

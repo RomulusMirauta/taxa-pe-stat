@@ -20,6 +20,16 @@ test('the tip of main is published, not the commit that triggered the run (F-43)
   assert.match(job('build'), /uses: actions\/checkout@v\d+\n\s+with:\n(?:\s+#.*\n)*\s+ref: \$\{\{ github\.ref \}\}\n/);
 });
 
+test('the schedule: working days only, three runs, none at minute 0 or 30, which GitHub delays the most (F-88)', () => {
+  const crons = [...publish.matchAll(/^ {4}- cron: '([^']+)'/gm)].map((m) => m[1].split(' '));
+  assert.equal(crons.length, 3);
+  for (const [minute, hour, , , days] of crons) {
+    assert.equal(days, '1-5', 'Monday to Friday');
+    assert.ok(![0, 30].includes(Number(minute)), `minute ${minute}`);
+    assert.ok(Number(hour) >= 11, `${hour}:${minute} UTC is before BNR publishes (about 11:00 UTC in winter)`);
+  }
+});
+
 test('data is fetched only on scheduled or manual runs; tests pass before publishing', () => {
   const build = job('build');
   assert.equal(build.match(/if: github\.event_name != 'push'/g)?.length, 3, 'the data steps do not run on push');

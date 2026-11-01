@@ -6,7 +6,7 @@ The reference document: why the app exists, what data it relies on, what it comp
 
 **Rule:** if you change the logic in `src/js/calc.js`, update §5 and the tests in `tests/calc.test.mjs`.
 
-Updated: 29 October 2026 (after publishing on GitHub Pages and the first run with real data).
+Updated: 1 November 2026 (v0.4.0: what already happened against EUR and USD, the counter since 1 January, the source in `src/`).
 
 The app's interface is in Romanian. Quoted labels below („Pe scurt”, „Cu dobânda netă”) are the names used in the page.
 
@@ -501,6 +501,8 @@ One-time steps (done on 29 October 2026):
 - [x] Tests and fixes for phones, in v0.3.3: a sweep at nine sizes found F-80…F-82.
 - [ ] The owner's decision on protecting `main` and the tags, and on Dependabot for the actions (O-16).
 - [x] A current, official source for the deposit rate, in v0.3.4: BNR's average for new household term deposits in lei, 6–12 months (F-83). Reading it automatically is idea #7 in [`docs/IDEAS.md`](docs/IDEAS.md).
+- [x] v0.4.0: the page's numbers checked against the real data and the Actions runs (F-84…F-90): EUR and USD as what already happened, the counter since 1 January, one mode, the chart's assumption in the drawing; the source split into `src/`, with a test file per module.
+- [ ] A week after v0.4.0: the start times of the scheduled runs, observed, in §5.10 and FINDINGS F-88.
 - [ ] What is still in the app: the second table in [`FINDINGS.md`](FINDINGS.md).
 
 Ideas for later (a EUR/RON chart, CASS, the FX spread, personal inflation, lei vs euros) are in [`docs/IDEAS.md`](docs/IDEAS.md); they are not scheduled.

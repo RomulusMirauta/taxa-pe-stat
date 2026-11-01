@@ -2,6 +2,23 @@
 
 The project's versions, briefly. The details of each problem are in [`FINDINGS.md`](FINDINGS.md), by ID.
 
+## [0.4.0] - 2026-11-01 - Honest numbers, separate files
+
+### Changed
+- **EUR and USD show what already happened** (F-84): their own table, „Față de euro și dolar, până acum”, compares BNR's rate 1, 7, 30 and 365 days back with today's. The old rows stretched the year's pace over a day and a week and often got even the sign wrong: on 30 October they said the last day cost 1.26 €, when the leu had gained 4.03 €. The only projection left is a year's, in one sentence under the table.
+- **The counter** shows the loss since 1 January for the sum in the form, about −2,555 lei on 1 November for 50,000 lei at 6.5%, instead of starting at zero when the page opens (F-85).
+- **One mode:** the „Fără dobândă / Cu dobânda netă” switch is gone; the form's interest always applies, and 0% is a current account (F-86).
+- **The chart** states its constant-inflation assumption in the drawing, with a button for BNR's forecast (F-87).
+- **The scheduled data runs:** three, off the round minutes, since GitHub started them 4.5 to 6 hours late (F-88).
+- **The source is split** into `src/`: the markup, two stylesheets and eleven ES modules, joined into one page by `build.mjs` without a bundler. The site is still one page, whose CSP allows scripts only by hash.
+
+### Fixed
+- **The end-to-end tests** start Chrome as root, and say why when Chrome does not start (F-90).
+
+### Added
+- **Tests:** from 242 to 360, with a test file per module (`format`, `builtin-data`, `table`, `modules`, `chrome`). Every fix fails its test when undone.
+- **Docs:** `pull.rebase` for a new clone (F-89). O-01 (CASS) and O-06 (interest at maturity) are accepted limitations.
+
 ## [0.3.4] - 2026-10-29 - An official deposit rate
 
 ### Changed
@@ -110,6 +127,7 @@ The project's versions, briefly. The details of each problem are in [`FINDINGS.m
 - **Publishing and running:** an artifact on claude.ai, a local server, `start.cmd`.
 - **`BAZA.md`** (now `DESIGN.md`): the data, the causes, the formulas and the worked example.
 
+[0.4.0]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/RomulusMirauta/taxa-pe-stat/compare/v0.3.1...v0.3.2

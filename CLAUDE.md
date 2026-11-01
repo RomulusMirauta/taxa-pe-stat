@@ -20,9 +20,10 @@ Where to find the rest:
 | `docs/DEVELOPMENT.md` | how we work: Claude, the local copy, the former claude.ai artifact |
 | `docs/IDEAS.md` | ideas for later, not scheduled |
 
-## Where we left off (29 Oct 2026)
+## Where we left off (1 Nov 2026)
 
-- **Published:** v0.3.4, on GitHub Pages; the repo's "About" is filled in.
+- **Version:** v0.4.0, on GitHub Pages: the source split into `src/`, EUR and USD as what already happened (F-84), the counter since 1 January (F-85). The repo's "About" is filled in.
+- **To check, from 8 Nov 2026:** the start times of the scheduled runs (F-88: `gh run list … --event schedule`), written in DESIGN §5.10.
 - **The daily data works:** BNR (from `curs.bnr.ro`) and Eurostat answer from GitHub Actions, and the bot commits "data: rates …". After every deploy, the `check` job fails (with an email) if the data has stopped updating. If a run's warnings look odd, read F-38…F-54 in `FINDINGS.md` first.
 - **Waiting for the owner:** O-16 (protecting `main` and the tags, Dependabot for the actions).
 - **By hand, monthly:** the deposit rate from BNR's Buletin lunar (table 10.1.2, households, 6–12 months; DESIGN §2) and the Tezaur rate of the month's issue.

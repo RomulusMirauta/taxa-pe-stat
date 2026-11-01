@@ -4,16 +4,16 @@ import { Calc } from './calc.js';
 import { $ } from './dom.js';
 import { duration, fmt, lei, pct, short, signed } from './format.js';
 
-/* `rate`: lei per second, negative for a loss; 0 while a field is wrong, so the counter stops. `counted`: the whole
-   seconds already added. A new sum changes the seconds to come, not those already counted (F-06). */
-var tick = { S: NaN, p: null, rate: 0, total: 0, counted: 0, start: performance.now() };
+/* `rate`: lei per second, negative for a loss. The total is the seconds since the page opened at the pace of the
+   form now: a new sum recounts them all (F-91 replaces F-06's running sum). While a field is wrong it stops. */
+var tick = { S: NaN, p: null, rate: 0, total: 0, secs: 0, start: performance.now() };
 function label(secs) {
   $('tkLabel').textContent = isFinite(tick.S) ? 'Pentru ' + fmt(tick.S, 0) + ' lei, de când ai deschis pagina (' + duration(secs) + '):' : 'Completează suma.';
 }
 export function renderTicker(s) {
   tick.S = s.S;
-  label(tick.counted);
-  if (!s.ok) { tick.p = null; tick.rate = 0; $('tkNote').textContent = 'Contorul e oprit până corectezi câmpurile marcate.'; return; }
+  label(tick.secs);
+  if (!s.ok) { tick.p = null; $('tkNote').textContent = 'Contorul e oprit până corectezi câmpurile marcate.'; return; }
   tick.p = s.p;
   var perYear = Calc.lossRatePerYear(s.p);
   tick.rate = -perYear / (Calc.YEAR_DAYS * 86400);
@@ -23,7 +23,8 @@ export function renderTicker(s) {
 /* Once a second, on the second since the page opened, like a stopwatch; that is calm enough for reduced motion too. */
 export function loop() {
   var ms = performance.now() - tick.start, secs = Math.floor(ms / 1000);
-  for (; tick.counted < secs; tick.counted++) tick.total += tick.rate;
+  tick.secs = secs;
+  if (tick.p) tick.total = secs * tick.rate;
   label(secs);
   $('tk').textContent = signed(tick.total, 'lei', 4);
   $('ticker').classList.toggle('is-gain', tick.total > 0.00005);

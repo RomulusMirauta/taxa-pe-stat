@@ -258,7 +258,7 @@ The formula is exact, not approximate; an earlier version of this document got i
 
 ### 5.6 The live counter
 
-**By default, a stopwatch** (F-91): from the moment the page opens, once a second, each second adds `lei_pe_an / (365 · 86.400)` at the pace of that second; a new sum changes only the seconds to come (F-06). Under it, the line below:
+**By default, a stopwatch** (F-91): from the moment the page opens, once a second, the total is `secunde · lei_pe_an / (365 · 86.400)` at the form's pace now, so a new sum recounts every second since the page opened. Under it, the line below:
 
 The loss of the form's sum since 1 January, 00:00 local time, at the pace of now (F-85):
 

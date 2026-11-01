@@ -570,13 +570,13 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       assert.equal(r.note, 'Ritm: −0,0001 lei pe secundă · −8,63 lei pe zi (inflație 6,5%/an, fără dobândă).');
       assert.ok(Math.abs(lossSinceJan(r) - sinceJan(p)) < 1, `${r.year}: about ${sinceJan(p).toFixed(2)} lei`);
 
-      // A new sum: the seconds already counted stay (F-06); the next ones count at its pace; the year is recomputed.
+      // A new sum recounts every second since the page opened at its pace; the year is recomputed too.
       const n1 = r.secs;
       await type('sum', '50.000.000');
       const big = { ...p, S: 50000000 };
-      r = await after(n1 + 3, 'three more seconds');
+      r = await after(n1 + 1, 'one more second');
       const k = Math.abs(r.total / perSecond(big));
-      assert.ok(k >= r.secs - n1 - 1 && k <= r.secs - n1 + 1, `${r.tk}: about ${k.toFixed(1)} seconds at the new pace, of ${r.secs}`);
+      assert.ok(Math.abs(k - r.secs) < 0.01, `${r.tk}: ${k.toFixed(2)} seconds at the new pace, of ${r.secs}`);
       assert.ok(Math.abs(lossSinceJan(r) - sinceJan(big)) < 1, r.year);
 
       // Interest above inflation: the next seconds are gains, in green.

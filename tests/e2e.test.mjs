@@ -883,7 +883,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
   });
 
   test('the largest sums: „Pe scurt” stays in its columns, and a toast says the sum is too large (F-97)', async () => {
-    const toastText = () => js("(() => { const t = document.getElementById('toast'); return t.hidden ? null : t.textContent; })()");
+    const toastText = () => js("(() => { const t = document.getElementById('toast'); return t.hidden ? null : document.getElementById('toastText').textContent; })()");
     for (const width of [1280, 375]) {
       await open({ width });
       for (const sum of ['999.999.999.999.999.999.999.999.999.999', '9.999.999.999.999.999.999.999.999.999.999']) {
@@ -897,10 +897,26 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     await type('sum', '50.000');
     await type('infl', '100');
     assert.match(await toastText(), /^Inflația de 100% este imposibilă/);
-    await type('infl', 'abc');
-    assert.match(await toastText(), /^Inflația de 100%/, 'nothing new while the inflation is being typed');
-    await js("document.getElementById('infl').dispatchEvent(new Event('change', { bubbles: true }))");
+    const leave = (id) => js(`document.getElementById('${id}').dispatchEvent(new Event('change', { bubbles: true }))`);
+    await type('infl', '-');
+    assert.match(await toastText(), /^Inflația de 100%/, 'nothing new while „-” may still become a number');
+    await leave('infl');
     assert.match(await toastText(), /^Inflația trebuie să fie un număr între −50% și 100%/);
+    await type('infl', '-2');
+    assert.match(await toastText(), /^Inflație negativă înseamnă deflație/);
+    await type('infl', 'abc');
+    assert.match(await toastText(), /^Inflația trebuie să fie un număr, de ex\. 6,5\. Literele/, 'letters: at once');
+    await type('infl', '6,5');
+    // The sum: negative, or letters and symbols (F-98).
+    await type('sum', '-50000');
+    assert.match(await toastText(), /^Suma nu poate fi negativă/);
+    assert.deepEqual((await state()).invalid, ['sum']);
+    await type('sum', 'abc!');
+    assert.match(await toastText(), /^Suma trebuie să fie un număr/);
+    await type('sum', '50.000');
+    // The × closes it before its 5 seconds.
+    await click('#toastClose');
+    assert.equal(await toastText(), null);
     assert.deepEqual(problems, []);
   });
 
@@ -918,7 +934,8 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     try {
       await open({ width: 375 });
       assert.equal(await js("matchMedia('(pointer: coarse)').matches"), true, 'the touch screen is emulated');
-      const small = await js(`[...document.querySelectorAll('input, button')]
+      // Only what is on the screen: a hidden toast's button cannot be touched.
+      const small = await js(`[...document.querySelectorAll('input, button')].filter((el) => el.getClientRects().length)
         .map((el) => [el.id || el.textContent.trim(), el.getBoundingClientRect().height]).filter(([, h]) => h < 44)`);
       assert.deepEqual(small, []);
     } finally {

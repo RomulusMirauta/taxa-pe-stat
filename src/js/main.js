@@ -9,7 +9,7 @@ import { renderFacts } from './facts.js';
 import { renderChart } from './chart.js';
 import { forecastShown, renderFresh } from './fresh.js';
 import { loop, renderTicker } from './ticker.js';
-import { toast, toastFor } from './toast.js';
+import { closeToast, toast, toastFor } from './toast.js';
 
 /* After „Minimul pentru plus”, the interest follows the sum, the inflation and the fees, until the user types an
    interest or a tax or picks another account: the order of a click and a new sum does not matter (F-95). */
@@ -125,9 +125,11 @@ function setup() {
     noteInput(el.id);
     render();
   });
-  /* A wrong inflation is told once it is typed: when the field is left or Enter is pressed (F-97). */
+  $('toastClose').addEventListener('click', closeToast);
+  /* What may still become a number is told once it is typed: when the field is left or Enter is pressed (F-97). */
   $('f').addEventListener('change', function (e) {
-    if (e.target.id === 'infl') toast('infl', toastFor('infl', e.target.value, true));
+    var id = e.target.id;
+    if (id === 'sum' || id === 'infl') toast(id, toastFor(id, e.target.value, true));
   });
   $('f').addEventListener('submit', function (e) { e.preventDefault(); });
   var pending = false;

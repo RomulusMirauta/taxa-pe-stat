@@ -134,6 +134,22 @@ describe('the BNR rate on a date (rateOn)', () => {
   });
 });
 
+describe('one mode: the form\'s interest (F-86)', () => {
+  test('at 0% and no fees it gives what the „Fără dobândă” switch gave, which ignored the interest and the fees', () => {
+    const zero = { S, pi: PI, rate: 0, tax: 0.1, fees: 0, net: true };
+    const old = { S, pi: PI, rate: 0.055, tax: 0.1, fees: 120, net: false };
+    for (const days of [1, 7, 365 / 12, 365]) {
+      assert.equal(C.realLoss(zero, days), C.realLoss(old, days), 'realLoss');
+      assert.equal(C.fxLoss(zero, 0.05, 5.3, days), C.fxLoss(old, 0.05, 5.3, days), 'fxLoss');
+      assert.equal(C.fxRealizedLoss(zero, 5.1, 5.3, days), C.fxRealizedLoss(old, 5.1, 5.3, days), 'fxRealizedLoss');
+    }
+    assert.equal(C.lossRatePerYear(zero), C.lossRatePerYear(old), 'the counter');
+    const pct = (v) => (v * 100).toFixed(2) + '%', lei = (v) => v + ' lei';
+    assert.equal(C.accountNote(zero, pct, lei), 'fără dobândă');
+    assert.equal(C.accountNote(old, pct, lei), 'fără dobândă');
+  });
+});
+
 describe('what already happened against a currency (fxRealizedLoss, fxRealized; F-84)', () => {
   const cash = { S, pi: PI, rate: 0, tax: 0.1, fees: 0, net: true };
   // The lei that the money of then was, from the loss at an unchanged rate c: (B − S) / c.

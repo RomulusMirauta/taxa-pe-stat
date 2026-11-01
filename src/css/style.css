@@ -39,11 +39,8 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline
 .hint.warn{color:var(--warn);font-weight:600}
 .formerr{margin:0;font-size:14px;color:var(--loss);background:var(--loss-soft);border-radius:8px;padding:8px 10px}
 
-.toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--bg)}
-.toggle button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--muted);padding:6px 14px;border-radius:999px;cursor:pointer}
-.toggle button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 /* On touch screens every control is at least 44px tall, the size a finger needs (F-82). */
-@media (pointer:coarse){input,.chip,.toggle button{min-height:44px}}
+@media (pointer:coarse){input,button{min-height:44px}}
 .head{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
 
 .tablewrap,.chartwrap{overflow-x:auto}

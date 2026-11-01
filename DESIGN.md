@@ -176,9 +176,7 @@ The pure functions are in `src/js/calc.js` and are tested in `tests/calc.test.mj
 | `n` | the days of the period: 1, 7, 365/12, 365 | — |
 | `y = n/365` | the period in years | — |
 
-**The calculation modes:**
-- **without interest** („Fără dobândă”): `g = 1`, fees are ignored;
-- **with the net interest** („Cu dobânda netă”): `g = 1 + i`, fees are paid along the way.
+**One mode** (F-86): the tables, the counter and the facts use the form's interest, tax and fees: `g = 1 + i`, fees paid along the way. A current account is `r = 0` and `F = 0`, so `g = 1`. Only the chart and the year in „Pe scurt” also show money kept without interest, as a comparison.
 
 Growth is **compounded**.
 
@@ -362,7 +360,7 @@ All the values are checked by `tests/calc.test.mjs`.
 
 Facts, not investment advice:
 
-- The figure that matters is the **real loss**, i.e. inflation minus the net interest. That is what the „Inflație” row shows in the „Cu dobânda netă” mode.
+- The figure that matters is the **real loss**, i.e. inflation minus the net interest. That is what the „Inflație” row shows, with the interest from the form.
 - At 6.61%:
   - a current account loses ~3,100 lei a year on 50,000 lei;
   - a typical deposit at a big bank (5.5% gross) still loses ~780 lei a year;

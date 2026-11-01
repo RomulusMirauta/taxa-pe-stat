@@ -3,7 +3,7 @@ import { Calc } from './calc.js';
 import { DATA } from './builtin-data.js';
 import { $ } from './dom.js';
 import { fmtDate, fmtMonth, short, todayISO } from './format.js';
-import { fillInputs, noteInput, readState, setMode, syncChips } from './form.js';
+import { fillInputs, noteInput, readState, syncChips } from './form.js';
 import { renderFxTable, renderTable, renderTableHead } from './table.js';
 import { renderFacts } from './facts.js';
 import { renderChart } from './chart.js';
@@ -69,13 +69,9 @@ function setup() {
     } else if (b.dataset.rate !== undefined) {
       $('rate').value = short(Number(b.dataset.rate));
       $('tax').value = short(Number(b.dataset.tax));
-      switchMode('net');
-      return;
     }
     render();
   });
-  $('mRaw').addEventListener('click', function () { switchMode('raw'); });
-  $('mNet').addEventListener('click', function () { switchMode('net'); });
   $('f').addEventListener('input', function (e) {
     noteInput(e.target.id);
     render();
@@ -87,10 +83,6 @@ function setup() {
     pending = true;
     requestAnimationFrame(function () { pending = false; render(); });
   });
-}
-function switchMode(m) {
-  setMode(m);
-  render();
 }
 
 /* Daily data, from the same domain (GitHub Pages, the local server, the artifact if the file is published next to the page).

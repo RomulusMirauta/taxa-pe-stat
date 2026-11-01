@@ -33,13 +33,13 @@ export function renderTable(s) {
   $('tb').innerHTML = row('Inflație', inflSub, Calc.PERIODS.map(function (q) { return s.ok ? Calc.realLoss(s.p, q.days) : NaN; }), 'lei');
 
   var t;
-  if (s.p.net && isFinite(s.rate) && isFinite(s.tax) && (Calc.netRate(s.p) > 0 || s.fees > 0)) {
+  if (isFinite(s.rate) && isFinite(s.tax) && (Calc.netRate(s.p) > 0 || s.fees > 0)) {
     t = 'Cu dobânda netă de ' + pct(Calc.netRate(s.p)) + ' pe an (' + short(s.rate) + '% minus impozit ' + short(s.tax) + '%)' +
         (s.fees > 0 ? ' și ' + fmt(s.fees, 0) + ' lei comisioane pe an' : '') + '. „+” verde înseamnă că dobânda acoperă pierderea.';
   } else {
     t = 'Bani ținuți fără dobândă (cash, cont curent).';
   }
-  $('modeHint').textContent = t;
+  $('lossHint').textContent = t;
 }
 
 /* What already happened against EUR and USD (F-84): the rows, and the note with the only projection, a year's.
@@ -63,7 +63,7 @@ export function fxView(s, D, today) {
 
   var note = 'Ce s-a întâmplat deja: cât valorau banii în euro și în dolari acum o zi, o săptămână, 30 de zile și un an, ' +
     'față de cât valorează la cursul de acum. Nu e o prognoză: cursul urcă și coboară, iar „+” verde înseamnă că leul a câștigat.';
-  if (s.p.net && isFinite(s.S) && (Calc.netRate(s.p) > 0 || s.fees > 0)) {
+  if (isFinite(s.S) && (Calc.netRate(s.p) > 0 || s.fees > 0)) {
     note += ' Cu dobânda și comisioanele din formular, suma de atunci e cea care a ajuns la ' + fmt(s.S, 0) + ' lei azi.';
   }
   /* A currency is never projected for less than a year: the pace of one interval holds only on average. */

@@ -1,4 +1,4 @@
-/* The form: reading and checking the fields, filling them from the data, the scenario chips, the mode switch. */
+/* The form: reading and checking the fields, filling them from the data, the scenario chips. */
 import { Calc } from './calc.js';
 import { DATA } from './builtin-data.js';
 import { $ } from './dom.js';
@@ -56,14 +56,6 @@ function sideDay(i, d, today) {
   return row && row[0] === p ? p : null;
 }
 
-var mode = 'net';
-/* The „Fără dobândă / Cu dobânda netă” switch: the mode readState uses, and the pressed button. */
-export function setMode(m) {
-  mode = m;
-  $('mRaw').setAttribute('aria-pressed', String(m === 'raw'));
-  $('mNet').setAttribute('aria-pressed', String(m === 'net'));
-}
-
 export function readState() {
   var errors = [], today = todayISO();
   var S = readNum('sum', errors), infl = readNum('infl', errors);
@@ -114,13 +106,14 @@ export function readState() {
   var now = {};
   ['eur', 'usd'].forEach(function (k) { now[k] = fxDay[1] && fxDay[1] !== 'missing' ? c[k][1] : NaN; });
   var netOk = isFinite(rate) && isFinite(tax) && isFinite(fees);
-  var p = { S: S, pi: infl / 100, rate: rate / 100, tax: tax / 100, fees: fees, net: mode === 'net' };
+  /* Always the form's interest, tax and fees: at 0% and no fees that is money kept without interest (F-86). */
+  var p = { S: S, pi: infl / 100, rate: rate / 100, tax: tax / 100, fees: fees, net: true };
   return {
     p: p,
-    pNet: netOk ? { S: S, pi: infl / 100, rate: rate / 100, tax: tax / 100, fees: fees, net: true } : null,
-    ok: isFinite(S) && isFinite(infl) && (!p.net || netOk),
+    pNet: netOk ? p : null,
+    ok: isFinite(S) && isFinite(infl) && netOk,
     /* The exchange rates do not need inflation. */
-    okFx: isFinite(S) && (!p.net || netOk),
+    okFx: isFinite(S) && netOk,
     fx: fx, now: now, days: days, d0: d0, d1: d1, fxDay: fxDay, fxMissing: fxMissing, errors: errors,
     S: S, infl: infl, rate: rate, tax: tax, fees: fees
   };

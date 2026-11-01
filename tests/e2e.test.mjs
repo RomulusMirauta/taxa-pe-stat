@@ -166,7 +166,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
       formErr: $('formErr').hidden ? null : $('formErr').textContent,
       fresh: $('fresh').textContent,
       fxHint: $('fxHint').className + ': ' + $('fxHint').textContent,
-      modeHint: $('modeHint').textContent,
+      lossHint: $('lossHint').textContent,
       tkNote: $('tkNote').textContent,
       foot: $('foot').textContent,
       paths: [...$('ch').querySelectorAll('path')].map((p) => p.getAttribute('d')),
@@ -341,7 +341,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     const want = [p.S / n('eur1') - p.S / n('eur0'), p.S / n('usd1') - p.S / n('usd0'),
       -C.realLoss({ S: p.S, pi: p.pi, net: false }, 365), C.breakEvenRate(p.pi, p.tax, p.fees, p.S) * 100];
     want.forEach((w, i) => assert.ok(Math.abs(shown[i] - w) < 0.0051, `Pe scurt #${i + 1}: ${s.facts[i].value} ≠ ${w}`));
-    if (p.rate === 0) assert.match(s.modeHint, /^Bani ținuți fără dobândă/, 'F-14: no „dobânda netă de 0,00%”');
+    if (p.rate === 0) assert.match(s.lossHint, /^Bani ținuți fără dobândă/, 'F-14: no „dobânda netă de 0,00%”');
     // The counter's sign follows the data: a loss with inflation, a gain with deflation (F-07). With 50 million,
     // the first visible decimal appears within ~0.1 s even at a low inflation.
     const perYear = C.lossRatePerYear(p);
@@ -443,12 +443,21 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     s = await state();
     assert.ok([...s.rows, ...s.fxRows].flatMap((row) => row.slice(1)).every((c) => /^0,00 (lei|€|\$)$/.test(c)), 'F-08: zero without a sign');
 
-    await click('#mRaw');
-    await click('#mNet');
+    // One way to say „no interest”: the form's 0% (F-86). A scenario button changes every result at once.
+    assert.equal(await js("document.querySelectorAll('#mRaw, #mNet, .toggle').length"), 0, 'no „Fără dobândă / Cu dobânda netă” switch');
+    await type('sum', '50.000');
+    const cash = await state();
+    assert.match(cash.lossHint, /^Bani ținuți fără dobândă/);
     const deposit = '#rateChips .chip:nth-child(2)';
     await click(deposit);
     s = await state();
-    assert.equal(C.parseNum(s.v.rate), Number(await js(`document.querySelector('${deposit}').dataset.rate`)));
+    const rate = Number(await js(`document.querySelector('${deposit}').dataset.rate`)) / 100;
+    const dp = { S: 50000, pi: 0.065, rate, tax: 0.1, fees: 0, net: true };
+    assert.equal(C.parseNum(s.v.rate), rate * 100);
+    assert.ok(Math.abs(cellValue(s.rows[0][4]) - C.realLoss(dp, 365)) < 0.0051, `the table: ${s.rows[0][4]}`);
+    assert.match(s.lossHint, /^Cu dobânda netă de /);
+    assert.match(s.tkNote, /cu dobânda netă de /, 'the counter too');
+    assert.equal(s.facts[2].value, cash.facts[2].value, '„Pe scurt” keeps its year without interest');
     assert.match(await js(`document.querySelector('${deposit}').textContent`), /^Depozit 6–12 luni, media BNR · \d+(,\d+)?%$/);
     assert.equal(await js(`document.querySelector('${deposit}').getAttribute('aria-pressed')`), 'true');
     assert.match(await js("document.getElementById('rateHint').textContent"), /BNR o publică la circa două luni după/, 'the lag of the source, under the buttons');
@@ -719,7 +728,7 @@ describe('the page in Chrome (end-to-end)', { skip }, () => {
     try {
       await open({ width: 375 });
       assert.equal(await js("matchMedia('(pointer: coarse)').matches"), true, 'the touch screen is emulated');
-      const small = await js(`[...document.querySelectorAll('input, .chip, .toggle button')]
+      const small = await js(`[...document.querySelectorAll('input, button')]
         .map((el) => [el.id || el.textContent.trim(), el.getBoundingClientRect().height]).filter(([, h]) => h < 44)`);
       assert.deepEqual(small, []);
     } finally {

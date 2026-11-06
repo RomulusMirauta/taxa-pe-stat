@@ -1,7 +1,7 @@
-// Starting headless Chrome for the end-to-end test (tests/chrome.mjs): the sandbox flag, and the reason when it fails (F-90).
+// Starting headless Chrome for the end-to-end test (tests/chrome.mjs): the sandbox flag, the reason when it fails (F-90), a second try when it hangs (F-103).
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromeArgs, launchChrome } from './chrome.mjs';
@@ -38,6 +38,30 @@ describe('launchChrome: a browser that does not start says why', () => {
   test('it never writes its DevTools port: a time limit, not a hang, and the process is stopped', async () => {
     const [cmd, args] = fake("console.error('stuck'); setInterval(() => {}, 1000)");
     await assert.rejects(launchChrome(cmd, args, await profile(), { timeout: 500 }), /no DevTools port within 0\.5 s.*\nstuck/s);
+  });
+  // A stand-in that writes one line per start, so a test can count them.
+  const counted = (dir, code) => fake(`const fs = require('fs'), log = ${JSON.stringify(join(dir, 'starts'))}; const n = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').length : 0; fs.appendFileSync(log, 'x'); ${code}`);
+  const starts = (dir) => readFile(join(dir, 'starts'), 'utf8').then((t) => t.length);
+
+  test('a start that hangs, then works: it is tried again, and the second start counts (F-103)', async () => {
+    const dir = await profile();
+    const [cmd, args] = counted(dir, `if (n === 0) setInterval(() => {}, 1000); else { fs.writeFileSync(${JSON.stringify(join(dir, 'DevToolsActivePort'))}, '9222\\n/devtools/browser/abc'); setTimeout(() => {}, 3000); }`);
+    const { chrome, port } = await launchChrome(cmd, args, dir, { timeout: 1500 });
+    chrome.kill();
+    assert.equal(port, '9222');
+    assert.equal(await starts(dir), 2);
+  });
+  test('a start that always hangs: two tries, then the error (F-103)', async () => {
+    const dir = await profile();
+    const [cmd, args] = counted(dir, 'setInterval(() => {}, 1000)');
+    await assert.rejects(launchChrome(cmd, args, dir, { timeout: 1000 }), /no DevTools port within 1 s/);
+    assert.equal(await starts(dir), 2);
+  });
+  test('a start that fails outright is not tried again (F-103)', async () => {
+    const dir = await profile();
+    const [cmd, args] = counted(dir, 'process.exit(1)');
+    await assert.rejects(launchChrome(cmd, args, dir), /Chrome stopped at startup \(1\)/);
+    assert.equal(await starts(dir), 1);
   });
   test('it writes the port: the process, the port and the path', async () => {
     const dir = await profile();

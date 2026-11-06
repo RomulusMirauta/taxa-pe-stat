@@ -23,9 +23,22 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /**
  * Starts `command` with `args` and waits for the DevTools port it writes into `profile` (with port 0, Chrome picks
  * a free one: no collisions when several tests run). If it stops first, or never writes it, the error says why, with
- * the end of what it wrote to stderr (F-90). Returns the process, the port and the browser's DevTools path.
+ * the end of what it wrote to stderr (F-90). A start that hangs is stopped and tried `retries` times more: on a slow
+ * runner it is a passing delay (F-103). One that fails outright would only fail again, so it is not retried.
+ * Returns the process, the port and the browser's DevTools path.
  */
-export async function launchChrome(command, args, profile, { timeout = 30000 } = {}) {
+export async function launchChrome(command, args, profile, { timeout = 30000, retries = 1 } = {}) {
+  for (let left = retries; ; left--) {
+    try {
+      return await startOnce(command, args, profile, timeout);
+    } catch (e) {
+      if (!e.hung || left <= 0) throw e;
+      console.error(e.message, '(trying once more)');
+    }
+  }
+}
+
+async function startOnce(command, args, profile, timeout) {
   const chrome = spawn(command, args, { stdio: ['ignore', 'ignore', 'pipe'] });
   let stderr = '';
   // Read all of it, or a full pipe would block Chrome; keep the end.
@@ -42,8 +55,11 @@ export async function launchChrome(command, args, profile, { timeout = 30000 } =
     const [port, path] = (await readFile(join(profile, 'DevToolsActivePort'), 'utf8').catch(() => '')).split(/\r?\n/);
     if (/^\d+$/.test(port) && path) return { chrome, port, path };
     if (Date.now() > end) {
-      chrome.kill();
-      throw new Error(`Chrome wrote no DevTools port within ${timeout / 1000} s: ${command}${why()}`);
+      // Gone before the next try, which uses the same profile.
+      const gone = new Promise((r) => chrome.once('close', r));
+      chrome.kill('SIGKILL');
+      await gone;
+      throw Object.assign(new Error(`Chrome wrote no DevTools port within ${timeout / 1000} s: ${command}${why()}`), { hung: true });
     }
     await sleep(20);
   }
